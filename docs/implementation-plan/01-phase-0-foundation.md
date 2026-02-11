@@ -124,20 +124,24 @@ Pre-development preparation. No code is written. All outputs feed into Phase 1.
 
 ---
 
-## Epic 0.7: Anatomy Diagram Production
+## Epic 0.7: Anatomy Diagram Production - REVISED
 
 **Owner:** UI/UX Designer
 **Duration:** Weeks 4-8
-**Budget:** $2,000-$4,000
-**Blocks:** Exercise detail view implementation
+**Status:** APPROACH CHANGED — Using a single stock SVG template with programmatic muscle highlighting instead of 78 individual per-exercise diagrams.
 
-| # | Task | Owner | Week | Deliverable |
-|---|------|-------|------|-------------|
-| 0.7.1 | Source illustrator or licensed SVG library | Design | 4 | 3 candidate options with pricing |
-| 0.7.2 | Commission/license 78 exercise anatomy diagrams | Design | 4-5 | Contract signed |
-| 0.7.3 | Receive and review first batch (20 diagrams) | Design + CSCS | 5-6 | Anatomical accuracy validated |
-| 0.7.4 | Receive and review remaining 58 diagrams | Design + CSCS | 6-8 | All 78 diagrams delivered |
-| 0.7.5 | Optimize SVGs for mobile (<50KB each) | Design | 7-8 | Optimized assets ready for bundling |
+**Decision:** Rather than commissioning 78 individual anatomy diagrams ($2K-4K, external dependency), we use a single male front+back anatomy template SVG (`resources/anatomy_template.svg`, 309KB) with all muscle zones in neutral gray. The app highlights relevant zones per-exercise at runtime using the 7 muscle group colors from design-system.md.
+
+| # | Task | Owner | Week | Deliverable | Status |
+|---|------|-------|------|-------------|--------|
+| 0.7.1 | ~~Source illustrator or licensed SVG library~~ | ~~Design~~ | ~~4~~ | ~~3 candidate options with pricing~~ | **SUPERSEDED** — Stock SVG selected from `resources/` |
+| 0.7.2 | ~~Commission/license 78 exercise anatomy diagrams~~ | ~~Design~~ | ~~4-5~~ | ~~Contract signed~~ | **SUPERSEDED** — Single template approach adopted |
+| 0.7.3 | Select and clean stock SVG template | Design + PM | — | `resources/anatomy_template.svg` | **DONE** — `man_muscles_fitness_20.svg` cleaned: red highlights neutralized, skin tones grayed, background grid removed, transparent background |
+| 0.7.4 | Define template color spec | Design | — | Color mapping documented | **DONE** — Base: `#717171`, non-muscle: `#9A9A9A`, highlights: per-group tokens at 85% opacity |
+| 0.7.5 | Tag SVG paths with muscle group IDs | Dev | Phase 1 (Epic 5.8) | Each path mapped to a muscle group for programmatic highlighting | **PENDING** — Deferred to implementation |
+
+**Cost savings:** $2,000-$4,000 (external illustrator no longer needed).
+**Trade-off:** Less anatomically specific per-exercise — highlights show muscle *groups*, not individual muscles. Acceptable for MVP; per-exercise diagrams can be added in Phase 2 if user research indicates demand.
 
 ---
 
@@ -165,11 +169,11 @@ Pre-development preparation. No code is written. All outputs feed into Phase 1.
 - [x] Wireframes complete for all core loop screens — **DONE (text specs in design-system.md, all screens including template creation)**
 - [x] Design system tokens finalized — **DONE (48 colors, 16 typography, 11 spacing, 7 radius, 6 elevation, 5 motion tokens)**
 - [x] AI prompt templates tested with sample outputs — **DONE: 10 test fixtures in `ai-prompt-test-fixtures.md`. Templates finalized, schemas reconciled, safety guardrails validated.**
-- [ ] Anatomy diagrams delivered (or at least 60 of 78, rest in progress) — **NOT STARTED (requires external commissioning, $2K-4K budget)**
+- [x] Anatomy diagrams delivered (or at least 60 of 78, rest in progress) — **DONE (REVISED APPROACH)** — Single template SVG with programmatic highlighting replaces 78 individual diagrams. `resources/anatomy_template.svg` ready. $2K-4K budget saved.
 - [ ] CI/CD pipeline scaffolded (at minimum: lint + unit test + build) — **NOT STARTED (Phase 1 Day 1 task)**
 - [x] All MVP-phase team members onboarded — **DONE (AI agent team operational)**
 - [ ] UX validation sessions completed (Epic 0.8) — **NOT STARTED (materials drafted, requires human execution + Figma wireframes)**
 
-**Gate Status: 6 of 9 criteria met. 3 remaining require external resources (human participants, external illustrator, code repository).**
+**Gate Status: 7 of 9 criteria met. 2 remaining require external resources (human participants for UX validation, code repository for CI/CD).**
 
 **Decision maker:** CEO / Product Owner

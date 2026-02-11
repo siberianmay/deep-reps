@@ -433,8 +433,8 @@ Email is secondary to push notifications. Used for users who opt in during waitl
 The exercise library is the app's content foundation. Every exercise needs visual and educational media.
 
 **Phase 1 (Pre-launch):**
-- 2D anatomical diagrams for all exercises (primary + secondary muscle highlighting)
-- Production method: Commission a medical illustrator or use licensed anatomy asset library. Budget: $2,000-$4,000 for full library.
+- 2D anatomical diagram: single shared template SVG (`resources/anatomy_template.svg`) with programmatic muscle group highlighting per exercise (primary at 85% opacity, secondary at 30%)
+- Production method: Stock SVG cleaned and neutralized in-house. No external commissioning. Budget: $0.
 - Text content (descriptions, cues, pros) written by CSCS
 
 **Phase 2 (Post-launch, Month 2-4):**

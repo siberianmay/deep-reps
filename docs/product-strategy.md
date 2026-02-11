@@ -408,10 +408,10 @@ Low Prob.   |             |                 | #8           |
 | 2-4 | Architecture design: tech stack selection, data model, offline-first strategy | Lead Android Dev | Architecture Decision Record (ADR) document |
 | 3-6 | UI/UX design: wireframes for entire core loop | UI/UX Designer | Figma wireframes: onboarding, group select, exercise pick, plan view, workout logging, summary, progress |
 | 4-6 | AI prompt engineering: design and test Gemini prompts with CSCS | CSCS + Lead Dev | Prompt templates with sample inputs/outputs, safety guardrail rules |
-| 4-8 | Anatomy diagram production: 78 exercise diagrams (SVG with fillable muscle regions). Contractor or designer. **Budget: $2,000-$4,000.** Blocks exercise library implementation. | UI/UX Designer | SVG assets for all exercises |
+| 4-8 | ~~Anatomy diagram production~~ **REVISED:** Single stock SVG template (`resources/anatomy_template.svg`) with programmatic muscle group highlighting. No external commissioning needed. **Budget: $0 (saved $2K-4K).** | PM + Design | Cleaned template SVG ready for implementation |
 | 4-8 | UX validation: Product Owner conducts 5-8 moderated usability sessions with gym contacts using wireframes. Lower fidelity than professional research; UX Researcher hired post-launch (Phase 3) for retention deep-dive. | CEO | Usability findings incorporated into high-fidelity designs |
 | 6-8 | UI/UX design: high-fidelity mockups and design system | UI/UX Designer | Figma high-fidelity designs, Material Design 3 component library, dark theme |
-| 8 | **Gate: Go/No-Go for development start** | CEO | Exercise library complete, architecture approved, designs approved, AI prompts validated, anatomy diagrams delivered |
+| 8 | **Gate: Go/No-Go for development start** | CEO | Exercise library complete, architecture approved, designs approved, AI prompts validated, anatomy template ready |
 
 ### Phase 1: MVP Development (Weeks 9-22, ~14 weeks)
 

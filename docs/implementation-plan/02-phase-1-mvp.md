@@ -205,7 +205,7 @@ Week  Lead Android Dev                    Mid-Senior Android Dev
 | 5.5 | Implement `ExerciseSelectionScreen` | 1.5d | `:feature:exercise-library` | Multi-select exercise picker with checkboxes |
 | 5.6 | Implement `ExerciseSelectionViewModel` | 1d | `:feature:exercise-library` | Selected exercises state, group filtering |
 | 5.7 | Implement `ExerciseListItem` component | 0.5d | `:feature:exercise-library` | Name, equipment tag, movement type tag, difficulty chip |
-| 5.8 | Implement `AnatomyDiagram` component (Coil) | 0.5d | `:feature:exercise-library` | Load SVG/PNG from assets, primary/secondary muscle highlighting |
+| 5.8 | Implement `AnatomyDiagram` component | 1d | `:feature:exercise-library` | Load `anatomy_template.svg` from assets, tag paths with muscle group IDs, programmatic fill swap for primary (85% opacity) and secondary (30% opacity) highlighting per exercise |
 | 5.9 | Wire navigation routes | 0.5d | `:feature:exercise-library` + `:app` | `ExerciseListRoute`, `ExerciseDetailRoute` |
 | 5.10 | Write unit tests (ViewModels) + UI tests | 1d | `:feature:exercise-library` | Happy path tests |
 

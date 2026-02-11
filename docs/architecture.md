@@ -408,7 +408,7 @@ Timber for all logging. No `Log.d()` or `println()` anywhere. Timber trees are p
                          | primary_group_id(FK)|
                          | tips                |
                          | pros                |
-                         | anatomy_asset_path  |
+                         | (anatomy: shared template) |
                          | display_order       |
                          +---------------------+
 
@@ -499,7 +499,7 @@ data class ExerciseEntity(
     @ColumnInfo(name = "secondary_muscles") val secondaryMuscles: String, // JSON array of sub-muscle name strings (e.g., ["Glutes", "lower back", "core"]) — sub-muscle level, not group level
     @ColumnInfo(name = "tips") val tips: String, // stored as JSON array of strings
     @ColumnInfo(name = "pros") val pros: String, // stored as JSON array of strings
-    @ColumnInfo(name = "anatomy_asset_path") val anatomyAssetPath: String,
+    // anatomy_asset_path removed — single shared template SVG (resources/anatomy_template.svg) with programmatic muscle group highlighting
     @ColumnInfo(name = "display_order") val displayOrder: Int, // ordering in exercise library browsing
     @ColumnInfo(name = "order_priority") val orderPriority: Int, // CSCS-defined priority for auto-ordering algorithm (lower = earlier in workout). Distinct from displayOrder.
     @ColumnInfo(name = "superset_tags") val supersetTags: String, // JSON array of compatibility tags per exercise-science Section 6.3.1

@@ -2,7 +2,7 @@
 
 **Created:** 2026-02-11
 **Owner:** Project Manager
-**Status:** Approved — Phase 0 execution complete (6/9 gate criteria met; 3 require external resources)
+**Status:** Approved — Phase 0 execution complete (7/9 gate criteria met; 2 require external resources)
 
 ---
 
@@ -192,7 +192,7 @@ If the team is behind schedule at Week 18, deprioritize in this order:
 
 ### CAN start development while Phase 0 finishes:
 - ~~High-fidelity mockups~~ — **DONE** (delivered as text specs with exact tokens, not Figma)
-- Anatomy diagrams — **NOT STARTED** (requires external illustrator, $2K-4K budget; not needed until exercise detail view at ~Week 14)
+- ~~Anatomy diagrams~~ — **DONE (REVISED)** — Single template SVG (`resources/anatomy_template.svg`) with programmatic highlighting replaces 78 individual diagrams. $2K-4K saved.
 - ~~AI prompt templates~~ — **DONE** (10 test fixtures validated, prompt v2.0 finalized in exercise-science.md 5.4)
 - UX validation sessions — **NOT STARTED** (test script + screener drafted; requires Figma wireframes + 5-8 human participants)
 
@@ -203,7 +203,7 @@ If the team is behind schedule at Week 18, deprioritize in this order:
 Phase 0 is complete (all AI-executable work done). To begin Phase 1 development:
 
 1. **Decision:** Proceed with 4/5 MUST-have gates met, or wait for CI/CD scaffold? (CI/CD is a Day-1 task regardless)
-2. **External:** Commission anatomy diagrams ($2K-4K) — deadline: Week 14 (exercise detail view)
+2. ~~**External:** Commission anatomy diagrams ($2K-4K)~~ — **DONE** — Template SVG approach adopted, no external commissioning needed
 3. **External:** Execute UX validation sessions (Epic 0.8) — need Figma wireframes + 5-8 participants (~4 weeks)
 4. **Immediate:** Initialize code repository, scaffold project structure, set up CI/CD (Epic 1.1 in `02-phase-1-mvp.md`) - DONE
 5. **Immediate:** Begin Room schema + pre-populated exercise DB (highest-risk, critical path item #1)

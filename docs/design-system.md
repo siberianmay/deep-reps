@@ -638,10 +638,13 @@ Bottom navigation bar. Persistent across all main screens.
   - Equipment chip: `label-medium`, `surface-highest` background
   - Movement type chip: "Compound" or "Isolation", `label-medium`, `surface-highest` background
   - Difficulty chip: `label-medium`, color-coded — Beginner: `status-success` tint, Intermediate: `status-warning` tint, Advanced: `status-error` tint
-- Anatomical diagram: 200dp tall, centered, custom 2D illustration
-  - Primary muscles: filled with muscle group color at 80% opacity
+- Anatomical diagram: 200dp tall, centered, `resources/anatomy_template.svg` (single male front+back template)
+  - Source: Stock SVG, cleaned and neutralized. All muscle zones base fill `#717171`, non-muscle areas (face/hands) `#9A9A9A`, transparent background.
+  - Primary muscles: filled with muscle group color at 85% opacity (from Section 2.1.3 muscle group tokens)
   - Secondary muscles: filled at 30% opacity — driven by `secondaryMuscles` JSON column on `ExerciseEntity` (sub-muscle level, e.g., "Anterior delts, triceps"), not group-level data
-  - Body outline: `on-surface-tertiary` stroke, 1.5dp
+  - Non-highlighted zones: remain at `#717171` (default base state)
+  - Face/hands: always `#9A9A9A` regardless of highlighting — never inherit muscle group color
+  - Body outline: `#4A4A54` stroke, 1.5dp (slightly lighter than zones for definition on dark backgrounds)
 - Pros / Key Benefits section:
   - Section title: `headline-small` (18sp)
   - Bullet list: `body-medium` (14sp), `on-surface-primary`, 4dp between items
