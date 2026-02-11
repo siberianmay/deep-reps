@@ -10,7 +10,8 @@ Pre-development. Team composition defined, product planning not yet started.
 
 - **Platform:** Android (iOS deferred until product-market fit is validated)
 - **Domain:** Strength training and gym workout tracking
-- **Team:** 14 roles identified across 3 phases — see [TEAM.md](TEAM.md)
+- **Cost:** The app should be free for users, no subscription or plans
+- **Team:** 10 roles identified across 3 phases — see [TEAM.md](TEAM.md)
 
 ## What's Not Decided Yet
 
