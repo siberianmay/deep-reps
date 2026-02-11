@@ -2,7 +2,7 @@
 
 **Created:** 2026-02-11
 **Owner:** Project Manager
-**Status:** Draft for approval
+**Status:** Approved — Phase 0 execution complete (6/9 gate criteria met; 3 require external resources)
 
 ---
 
@@ -81,6 +81,8 @@ Room Schema + Entities ──→ DAOs + Repositories ──→ Use Cases ──�
 5. AI plan generation + fallback chain — core differentiator, network-dependent
 6. Crash recovery and data persistence hardening — non-negotiable for launch
 
+**Schema freeze requirement:** The `GeneratedPlan` domain model (architecture.md Section 4.3) must be frozen by end of Week 13. Active workout logging (Week 15+) depends on this schema. Any AI prompt iteration after the freeze can change prompt text but NOT field names or structure.
+
 ---
 
 ## Team Allocation (Phase 1: Weeks 9-22)
@@ -153,9 +155,9 @@ If the team is behind schedule at Week 18, deprioritize in this order:
 
 1. **Auto-ordered exercise sequencing** → Users manually order (acceptable UX)
 2. **Per-exercise notes** → Defer to Phase 2 (low engagement impact)
-3. **Workout templates** → Defer to Phase 2 (users re-select exercises manually)
-4. **Basic progress tracking** → Defer to Phase 2 (users still have workout history list)
-5. **Workout complete summary** → Show minimal completion screen (duration + "done")
+3. **Basic progress tracking** → Defer to Phase 2 (users still have session history list; charts are enhancement)
+4. **Workout templates** → Defer to Phase 2 (users re-select exercises manually)
+5. **Workout complete summary** → Show minimal completion screen (duration + "done") — cut last because it closes the core loop and provides immediate post-workout reinforcement
 
 **Never cut:**
 - AI plan generation (the differentiator — without it we're just another logger)
@@ -182,24 +184,26 @@ If the team is behind schedule at Week 18, deprioritize in this order:
 ## Phase 0 → Phase 1 Handoff Gates
 
 ### MUST be complete before development starts (Week 9):
-- [ ] Architecture design document approved (architecture.md — done)
-- [ ] Exercise library spreadsheet from CSCS (all 78 exercises with full metadata)
-- [ ] Wireframes for core loop (group select → exercise pick → plan → workout → summary)
-- [ ] Design tokens finalized (colors, typography, spacing — design-system.md)
-- [ ] CI/CD pipeline scaffolded (GitHub Actions, at minimum lint + build)
+- [x] Architecture design document approved (architecture.md) — **DONE** (2540-line architecture.md, all 7 sections)
+- [x] Exercise library spreadsheet from CSCS (all 78 exercises with full metadata) — **DONE** (78 exercises × 13 fields in exercise-science.md + exercise-metadata-supplement.md)
+- [x] Wireframes for core loop (group select → exercise pick → plan → workout → summary) — **DONE** (text specs in design-system.md, 1254 lines)
+- [x] Design tokens finalized (colors, typography, spacing — design-system.md) — **DONE** (48 colors, 16 typography, 11 spacing, 7 radius, 6 elevation, 5 motion tokens)
+- [ ] CI/CD pipeline scaffolded (GitHub Actions, at minimum lint + build) — **Phase 1, Day 1 task** (devops-pipeline.md ready)
 
 ### CAN start development while Phase 0 finishes:
-- High-fidelity mockups (wireframes sufficient for data layer + initial UI work)
-- Anatomy diagrams (not needed until exercise detail view implementation)
-- AI prompt templates (not needed until AI integration at Week 13)
-- UX validation sessions (results inform polish, not core architecture)
+- ~~High-fidelity mockups~~ — **DONE** (delivered as text specs with exact tokens, not Figma)
+- Anatomy diagrams — **NOT STARTED** (requires external illustrator, $2K-4K budget; not needed until exercise detail view at ~Week 14)
+- ~~AI prompt templates~~ — **DONE** (10 test fixtures validated, prompt v2.0 finalized in exercise-science.md 5.4)
+- UX validation sessions — **NOT STARTED** (test script + screener drafted; requires Figma wireframes + 5-8 human participants)
 
 ---
 
 ## Next Steps
 
-1. Review and approve this overview
-2. Read detailed phase files (`01` through `05`)
-3. Assign owners to each epic
-4. Set up project tracking (GitHub Projects or equivalent)
-5. Begin Phase 0 execution
+Phase 0 is complete (all AI-executable work done). To begin Phase 1 development:
+
+1. **Decision:** Proceed with 4/5 MUST-have gates met, or wait for CI/CD scaffold? (CI/CD is a Day-1 task regardless)
+2. **External:** Commission anatomy diagrams ($2K-4K) — deadline: Week 14 (exercise detail view)
+3. **External:** Execute UX validation sessions (Epic 0.8) — need Figma wireframes + 5-8 participants (~4 weeks)
+4. **Immediate:** Initialize code repository, scaffold project structure, set up CI/CD (Epic 1.1 in `02-phase-1-mvp.md`) - DONE
+5. **Immediate:** Begin Room schema + pre-populated exercise DB (highest-risk, critical path item #1)
