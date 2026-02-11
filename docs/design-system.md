@@ -1,7 +1,9 @@
 # Deep Reps -- Design System
 
-Version 1.0 | Pre-development Specification
+Version 1.1 | Pre-development Specification
 Owned by: Senior UI/UX Designer (Role #4)
+
+**CRITICAL: Deep Reps is a FREE app.** No subscription UI, no paywall screens, no Pro tier gating, no trial prompts. All features are available to all users.
 
 ---
 
@@ -290,12 +292,12 @@ Container for all sets of a single exercise during active workout.
 | Upcoming | `surface-low` background, full opacity, collapsed (only header visible) |
 | Active (current exercise) | `surface-medium` background, expanded showing all sets, `accent-primary` left border (3dp) |
 | Completed | `surface-low` background, 70% opacity, collapsed with summary line ("4/4 sets, 320kg volume") |
-| Superset member | `accent-secondary` left border (3dp), connected to sibling by a vertical bracket line |
+| Superset member **(Phase 2)** | `accent-secondary` left border (3dp), connected to sibling by a vertical bracket line |
 
 **Header details:**
 - Exercise name: `headline-large` (22sp, SemiBold)
 - Equipment tag: `label-medium` chip with `surface-highest` background
-- Overflow menu (...): 48dp touch target, contains Reorder, Skip Exercise, Add to Superset, View Detail
+- Overflow menu (...): 48dp touch target, contains Reorder, Skip Exercise, Add to Superset **(Phase 2)**, View Detail
 - Planned summary: `body-medium`, `on-surface-secondary`
 
 ### 3.3 MuscleGroupSelector
@@ -687,10 +689,10 @@ This is the most important screen in the app. Every design decision here priorit
 - Vertical scroll, the current (active) exercise is auto-scrolled to top
 - Auto-advance: when all sets of current exercise are marked done, the next exercise auto-expands and scrolls into view
 - ExerciseCard components as defined in 3.2
-- Superset groups are visually bracketed with `accent-secondary` left bar spanning all grouped exercises
+- **(Phase 2)** Superset groups are visually bracketed with `accent-secondary` left bar spanning all grouped exercises
 
 **Floating action:**
-- [+ Add Exercise] FAB: 56dp diameter, `accent-primary` fill, positioned 16dp from right edge, 16dp above bottom nav (or above rest timer when active)
+- **(Phase 2)** [+ Add Exercise] FAB: 56dp diameter, `accent-primary` fill, positioned 16dp from right edge, 16dp above bottom nav (or above rest timer when active)
 - When rest timer is active, FAB repositions to 16dp above the rest timer sheet
 
 **Critical UX details:**
@@ -803,7 +805,9 @@ Post-workout. Detailed in component 3.6 (WorkoutSummary).
 - Each settings group: `headline-small` title, `surface-low` card background, `radius-md`
 - Each setting item: 56dp min height, label left (`body-large`), control right
 
-### 4.13 Superset Creation Screen
+### 4.13 Superset Creation Screen **(Phase 2)**
+
+**NOTE:** Supersets are deferred to Phase 2 per product-strategy.md Section 5.2. This screen is included for design continuity but will not be built in MVP.
 
 **Presented as:** Dialog/bottom sheet overlay on Active Workout screen.
 
@@ -832,7 +836,7 @@ Post-workout. Detailed in component 3.6 (WorkoutSummary).
 
 ### 5.1 Drag-and-Drop Reordering
 
-**Used in:** Workout Plan Review (4.6), Active Workout (4.7), Superset Creation (4.13), Template editing.
+**Used in:** Workout Plan Review (4.6), Active Workout (4.7), Superset Creation (4.13, Phase 2), Template editing.
 
 **Initiation:** Long-press on drag handle icon (300ms hold duration). Haptic feedback (light vibrate, 50ms) on activation.
 

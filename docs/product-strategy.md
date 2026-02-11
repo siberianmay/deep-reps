@@ -11,7 +11,7 @@
 1. [Executive Summary](#1-executive-summary)
 2. [Competitive Analysis](#2-competitive-analysis)
 3. [Target Audience Segmentation](#3-target-audience-segmentation)
-4. [Monetization Model](#4-monetization-model)
+4. [Business Model](#4-business-model)
 5. [MVP Scope Definition](#5-mvp-scope-definition)
 6. [KPI Framework](#6-kpi-framework)
 7. [Risk Assessment](#7-risk-assessment)
@@ -143,7 +143,7 @@ Deep Reps targets the upper-right quadrant: high intelligence, plan-forward but 
 | Exercise science credibility | Most libraries are crowdsourced or developer-assembled | CSCS-curated and validated library with biomechanics data |
 | Plan transparency | Fitbod's algorithm is a black box | Plan is a visible suggestion. User sees what the AI proposed and can modify freely. AI learns from actuals. |
 | Offline reliability | Most AI features require connectivity | Offline-first architecture. Cached plans and experience-level baselines as fallback. |
-| Free tier that converts | Strong's free tier is too restrictive; Hevy's is too generous | Calibrated free tier (see Section 4) |
+| 100% free app | Strong locks features after 3 workouts; Fitbod charges $96/year | Everything free, no restrictions (see Section 4) |
 
 ---
 
@@ -156,8 +156,8 @@ Deep Reps targets the upper-right quadrant: high intelligence, plan-forward but 
 | **Demographics** | Age 22-35, male-skewing (65/35 M/F), urban/suburban, employed, $40K-$80K income. Android user (by platform choice or cost). |
 | **Psychographics** | Trains 3-5x/week consistently. Has been lifting 6-24 months. Understands the basics (progressive overload, compound movements) but doesn't program their own training. Follows fitness content on YouTube/Instagram. Values efficiency -- wants to get in, train smart, get out. |
 | **Pain points** | Currently uses spreadsheets, notes apps, or Strong's free tier. Knows they should be progressing but doesn't have a structured plan. Finds existing apps either too simple (just a logger) or too expensive/opaque (Fitbod). Wants guidance without giving up control. |
-| **Willingness to pay** | $5-8/month or $40-60/year. Will pay for AI plans and progress tracking if the free tier proves the app's value first. Price-sensitive compared to Fitbod's audience but will convert if ROI is clear. |
-| **Size estimate** | ~40% of total addressable users. This is the conversion engine. |
+| **Value driver** | Wants structured progression and AI-driven plans. Currently uses spreadsheets or Strong's limited free tier. Deep Reps gives them everything for free — AI plans, templates, progress tracking — with no paywall. |
+| **Size estimate** | ~40% of total addressable users. This is the core growth engine. |
 
 ### Segment 2: "The Structured Beginner" (Secondary)
 
@@ -166,8 +166,8 @@ Deep Reps targets the upper-right quadrant: high intelligence, plan-forward but 
 | **Demographics** | Age 18-28, fairly even gender split (55/45 M/F), students and early-career professionals. Android user (often by budget). First or second year of gym membership. |
 | **Psychographics** | Motivated but overwhelmed. Watches form videos but doesn't know how to structure a workout. May have tried Gymshark Training or generic YouTube programs. Wants to "do it right" and avoid injury. Cares about learning, not just logging. |
 | **Pain points** | Doesn't know what weight to start with. Doesn't know how many sets to do. Afraid of doing exercises wrong. Existing apps assume you already know what you're doing. Fitbod would solve this but costs $96/year -- too much for a beginner unsure if they'll stick with it. |
-| **Willingness to pay** | $3-5/month initially. May upgrade after 2-3 months once the habit is established. High churn risk in first 30 days but high LTV if retained past 90 days. |
-| **Size estimate** | ~35% of total addressable users. High volume, lower conversion rate, but the pipeline for Segment 1. |
+| **Value driver** | AI-generated plans with guardrails remove the "what should I do?" paralysis. Deep Reps gives beginners the same plan quality Fitbod charges $96/year for — completely free. High churn risk in first 30 days but high retention value if kept past 90 days. |
+| **Size estimate** | ~35% of total addressable users. High volume, lower initial engagement, but the pipeline for Segment 1. |
 
 ### Segment 3: "The Self-Coached Advanced Lifter" (Tertiary)
 
@@ -176,77 +176,41 @@ Deep Reps targets the upper-right quadrant: high intelligence, plan-forward but 
 | **Demographics** | Age 25-40, heavily male (80/20 M/F), higher income ($60K-$120K). May own both iOS and Android devices. 2+ years of consistent training. |
 | **Psychographics** | Programs their own training or follows a coach. Knows exactly what they're doing. Uses a workout tracker primarily as a data repository -- logging, progress charts, 1RM tracking, volume analytics. May export data to spreadsheets. Values data integrity above all else. |
 | **Pain points** | Strong is the closest fit but feels stale. JEFIT is bloated. Wants deep analytics (estimated 1RM trends, weekly volume per muscle group, training frequency heatmaps) without the noise. Doesn't need AI to tell them what to do but may appreciate AI as a "second opinion" or for deload week suggestions. |
-| **Willingness to pay** | $8-12/month or $70-100/year. Will pay premium for advanced analytics, data export, and reliability. Lowest price sensitivity of all segments. |
-| **Size estimate** | ~25% of total addressable users. Smallest segment but highest ARPU and strongest word-of-mouth influence. |
+| **Value driver** | Deep analytics (1RM trends, volume tracking, frequency heatmaps) and data integrity. These users evaluate tools on data quality, not price. Deep Reps earns their loyalty by being the best free data tool in the space. |
+| **Size estimate** | ~25% of total addressable users. Smallest segment but strongest word-of-mouth influence and highest engagement per user. |
 
 ---
 
-## 4. Monetization Model
+## 4. Business Model
 
-### 4.1 Recommendation: Freemium with Subscription
+**Deep Reps is a 100% free app.** No subscriptions, no ads, no paywalls, no freemium tiers, no in-app purchases.
 
-**Model:** Free tier with meaningful functionality + Pro subscription for AI features and advanced analytics.
+Every feature — AI plan generation, full exercise library, unlimited templates, progress analytics, personal records — is available to every user from day one.
 
-**Rationale:**
-- Pure subscription with hard paywall (like Fitbod) limits top-of-funnel growth on Android, where users are more price-sensitive than iOS.
-- A generous free tier (like Hevy) builds volume but cannibalizes revenue -- Hevy's $500K/month on 10M users is $0.05/user/month.
-- The sweet spot: free tier that's genuinely useful as a logger (competes with Strong's free tier), with AI plan generation and advanced analytics as the clear upgrade path.
+### 4.1 Rationale
 
-### 4.2 Pricing Tiers
+- **Removes conversion friction.** No paywall means no drop-off at the paywall. Every install gets the full product. This maximizes retention and word-of-mouth.
+- **Competitive positioning.** Fitbod charges $96/year. Strong locks features after 3 workouts. JEFIT shows ads. Deep Reps is the serious, free alternative. "Free" is itself a differentiator in a market where every competitor monetizes aggressively.
+- **Passion project.** This is a founder-funded tool, not a revenue business at launch. The goal is product-market fit and a loyal user base, not immediate revenue.
+- **No ads, ever.** Ads in a workout logging app are a UX disaster. Sweaty hands, focus on the workout, time between sets — an interstitial ad destroys trust.
 
-#### Free Tier
+### 4.2 Sustainability
 
-| Feature | Included |
-|---------|----------|
-| Full exercise library (browse, detail views, muscle diagrams) | Yes |
-| Workout logging (unlimited workouts, unlimited exercises) | Yes |
-| Basic progress tracking (weight progression per exercise, session history) | Yes |
-| Workout templates (save and load) | Up to 3 templates |
-| Rest timer | Yes |
-| Supersets/circuits | Yes |
-| Per-exercise notes | Yes |
-| Offline functionality | Yes |
-| Unit preference (kg/lbs) | Yes |
-| Data export | No |
+Operating costs scale with usage (primarily Gemini API):
+- 1K DAU: ~$150/month
+- 10K DAU: ~$940/month (Gemini API: ~$600)
+- 100K DAU: ~$8,340/month (Gemini API: ~$6,000)
 
-#### Pro Tier -- $6.99/month or $49.99/year ($4.17/month effective)
+The founder must commit to funding operating costs through product-market fit validation. If the app achieves strong retention (D30 > 15%) and meaningful scale (50K+ DAU), monetization options to explore at 12+ months include: sponsorships, equipment brand partnerships, optional premium analytics, or B2B licensing.
 
-| Feature | Included |
-|---------|----------|
-| Everything in Free | Yes |
-| AI-powered session plans (Gemini) | Unlimited |
-| Advanced progress analytics (1RM trends, volume load charts, weekly volume per group, training frequency) | Yes |
-| Personal records dashboard (weight PR, rep PR, estimated 1RM PR, volume PR) | Yes |
-| Workout templates | Unlimited |
-| Workout complete summary with comparisons | Full (free tier gets basic summary) |
-| Strength milestones (relative to experience level) | Yes |
-| Data export (CSV) | Yes |
-| Priority support | Yes |
+### 4.3 What This Changes
 
-### 4.3 Pricing Rationale
-
-| Factor | Decision |
-|--------|----------|
-| **Monthly price ($6.99)** | Below Fitbod ($15.99), below JEFIT Elite ($12.99), competitive with Hevy Pro ($8.99). Targets the Segment 1 willingness-to-pay sweet spot ($5-8/month). |
-| **Annual price ($49.99)** | 40% discount vs. monthly. Below Strong ($29.99 -- but Strong Pro offers less). Below Fitbod ($95.99). Yearly subscriptions dominate health/fitness apps (67% of subscriptions are annual). |
-| **No lifetime tier at launch** | Lifetime tiers cannibalize recurring revenue and attract deal-hunters, not loyal users. Revisit at 12 months post-launch if churn is lower than projected. |
-| **No ads, ever** | Ads in a workout logging app are a UX disaster. Sweaty hands, focus on the workout, time between sets -- an interstitial ad destroys trust. Zero ad revenue in the model. |
-
-### 4.4 Trial Strategy
-
-- **7-day free trial of Pro** for all new users. No credit card required.
-- Trial starts automatically after onboarding. User experiences AI plan generation in their first workout.
-- At trial expiration: soft paywall. User keeps Free tier functionality. AI plans become locked. Clear messaging: "Your first 3 workouts used AI plans. Upgrade to keep getting them."
-- **Post-trial nudge cadence:** Day 8 (trial ended), Day 14 (missed it?), Day 30 (one-time 20% discount on annual). Then silence. No spam.
-
-### 4.5 Paywall Placement
-
-The paywall appears at two natural decision points:
-
-1. **Plan generation step.** After exercise selection, when the user taps "Generate Plan" -- if trial has expired and user is on Free, show upgrade prompt. Free users can still proceed with manual entry or last-used plan (if cached).
-2. **Progress analytics.** When the user navigates to advanced charts or PR dashboard -- show a preview (blurred charts with real data shape visible) and upgrade prompt.
-
-The paywall never interrupts an active workout. Never. Mid-workout interruptions are a trust-destroying anti-pattern.
+- No paywall screens in the app
+- No trial/subscription logic in the codebase
+- No billing infrastructure needed
+- No conversion funnel analytics (subscription events removed from analytics plan)
+- Marketing emphasizes "free" as a key differentiator
+- All features available to all users — no feature gating
 
 ---
 
@@ -300,7 +264,7 @@ Scale: Reach (users/quarter), Impact (0.25 minimal, 0.5 low, 1 medium, 2 high, 3
 8. Rest timer (configurable, notification on expire)
 9. Per-exercise notes
 10. Workout complete summary (duration, volume, tonnage)
-11. Workout templates (save/load, up to 3 free / unlimited Pro)
+11. Workout templates (save/load, unlimited)
 12. Basic progress tracking (weight progression chart per exercise, session history list)
 13. Data persistence with crash recovery (auto-save per completed set)
 14. Offline fallback (cached plan, baseline plan, manual entry)
@@ -337,7 +301,7 @@ The critical insight: AI plan generation is MVP, not Phase 2. Without it, Deep R
 
 **Workouts completed per week per active user.**
 
-Not DAU. Not downloads. Not revenue. A completed workout means the user went through the full loop: selected exercises, received (or skipped) a plan, logged at least one set, and hit "finish." This metric directly correlates with retention, willingness to pay, and word-of-mouth.
+Not DAU. Not downloads. Not revenue. A completed workout means the user went through the full loop: selected exercises, received (or skipped) a plan, logged at least one set, and hit "finish." This metric directly correlates with retention, perceived value, and word-of-mouth.
 
 **Target:** 2.5 workouts/week/active user at steady state (12 months).
 
@@ -358,7 +322,7 @@ Not DAU. Not downloads. Not revenue. A completed workout means the user went thr
 |--------|--------|----------|----------|-----------|
 | Onboarding completion rate | 60% | 70% | 75% | 80% |
 | First workout completed (within 48h of install) | 30% | 40% | 45% | 50% |
-| Trial start rate (% of installs) | 50% | 55% | 60% | 65% |
+| First AI plan generated (within 48h) | 25% | 35% | 40% | 45% |
 
 #### Retention
 
@@ -370,27 +334,17 @@ Not DAU. Not downloads. Not revenue. A completed workout means the user went thr
 | Weekly active users (WAU) | 1,500 | 8,000 | 25,000 | 80,000 |
 | Workouts/week/active user | 1.5 | 2.0 | 2.3 | 2.5 |
 
-Industry context: Average D1 retention for fitness apps is 20-25%. Average D30 is 4-6%. The 12-month targets above represent top-quartile performance, which is the threshold for a viable subscription business.
+Industry context: Average D1 retention for fitness apps is 20-25%. Average D30 is 4-6%. The 12-month targets above represent top-quartile performance.
 
-#### Revenue
-
-| Metric | Launch | 3 Months | 6 Months | 12 Months |
-|--------|--------|----------|----------|-----------|
-| Trial-to-paid conversion | 8% | 12% | 15% | 18% |
-| Free-to-paid conversion (overall) | 3% | 5% | 7% | 9% |
-| Monthly recurring revenue (MRR) | $500 | $5,000 | $25,000 | $100,000 |
-| Annual recurring revenue (ARR) | $6,000 | $60,000 | $300,000 | $1,200,000 |
-| ARPU (monthly, all users) | $0.10 | $0.30 | $0.50 | $0.80 |
-| ARPU (monthly, paying users) | $5.50 | $5.80 | $6.00 | $6.20 |
-| Estimated LTV (paying user) | -- | $35 | $50 | $65 |
-| LTV:CAC ratio | -- | 3:1 | 4:1 | 5:1 |
-
-#### Churn
+#### Engagement Quality
 
 | Metric | Launch | 3 Months | 6 Months | 12 Months |
 |--------|--------|----------|----------|-----------|
-| Monthly subscriber churn | 15% | 12% | 9% | 7% |
-| Annual subscriber churn (at renewal) | -- | -- | 35% | 25% |
+| AI plan usage rate (% of workouts) | 40% | 55% | 65% | 70% |
+| Plans modified before starting | 50% | 40% | 35% | 30% |
+| Sets logged per workout (avg) | 12 | 14 | 16 | 16 |
+| Template save rate | 10% | 20% | 25% | 30% |
+| App store rating (rolling 30-day) | 4.0 | 4.2 | 4.3 | 4.5 |
 
 ### 6.3 Leading Indicators (Weekly Dashboard)
 
@@ -414,12 +368,12 @@ These are monitored weekly to catch problems before they manifest in lagging met
 | # | Risk | Probability | Impact | Severity | Mitigation |
 |---|------|-------------|--------|----------|------------|
 | 1 | **Gemini API quality degrades or pricing changes unfavorably** | Medium (40%) | High | Critical | Provider interface abstraction (already planned). Pre-negotiate API pricing tiers. Maintain working integration with at least one fallback LLM (e.g., Claude, GPT-4o-mini). Budget 15% above projected API costs. |
-| 2 | **D30 retention below 5% after 3 months** | Medium (45%) | High | Critical | Invest in onboarding optimization from day one. Implement push notification re-engagement (post-rest-day reminders, PR celebrations). Run retention cohort analysis weekly. Be prepared to pivot the free tier boundary if the core loop isn't retaining. |
+| 2 | **D30 retention below 5% after 3 months** | Medium (45%) | High | Critical | Invest in onboarding optimization from day one. Implement push notification re-engagement (post-rest-day reminders, PR celebrations). Run retention cohort analysis weekly. If the core loop isn't retaining, investigate AI plan quality, onboarding friction, and workout UX before assuming the product concept is wrong. |
 | 3 | **AI-generated plans are inaccurate or unsafe** | Medium (35%) | Very High | Critical | CSCS validates all prompt templates and reviews sample outputs before launch. Implement guardrails: max weight jump per session (e.g., no more than 10% increase), mandatory warm-up sets, volume ceiling per muscle group. Automated testing of plan outputs against safety rules. |
 | 4 | **Hevy or Strong ships AI plan generation** | High (60%) | Medium | High | Speed to market matters. Deep Reps must launch with AI plans before incumbents add them. If they do ship AI, our CSCS-validated quality and Android-native UX are the moats, not the AI itself. Incumbents bolting on AI to an existing app will likely compromise UX. |
 | 5 | **Android fragmentation causes device-specific bugs** | High (55%) | Medium | High | Firebase Test Lab for automated testing across 20+ device/OS combinations. Define a support floor (Android 10+, covering ~95% of active devices). QA engineer runs manual tests on 5 representative devices (budget, mid-range, flagship, Samsung, Pixel). |
-| 6 | **Free tier is too generous, killing conversion** | Medium (40%) | High | High | Instrument paywall touchpoints from day one. A/B test free tier boundaries (e.g., 3 templates vs. 5, basic vs. no progress charts). Monitor free-to-paid conversion weekly. Be willing to tighten the free tier at month 3 if conversion is below 4%. |
-| 7 | **Free tier is too restrictive, killing growth** | Medium (35%) | Medium | Medium | Monitor D7 retention and app store reviews for "too limited" complaints. A/B test free tier boundaries in the other direction. Compare organic install growth rate against competitors. |
+| 6 | **Gemini API costs exceed budget at scale** | Medium (40%) | High | High | Monitor cost-per-plan-generation weekly. If costs exceed $0.01/plan, investigate prompt optimization, response caching, or switching to a smaller model for simple plans. Set hard spending caps per month. At 100K DAU, API costs could reach $6K/month — founder must budget accordingly. |
+| 7 | **Users don't engage with AI plans (prefer manual logging)** | Medium (35%) | Medium | Medium | Monitor AI plan usage rate. If <30% of workouts use AI plans at month 3, investigate: are plans inaccurate? Are users unaware? Is the UX friction too high? A/B test plan presentation (inline vs. separate screen). |
 | 8 | **CSCS hire is delayed or poor fit** | Low (20%) | Very High | High | Begin recruiting immediately. The CSCS is a blocker for the exercise library, which is a blocker for everything else. Have a shortlist of 3 candidates. Consider contract engagement if full-time hire takes too long. |
 | 9 | **Gemini API latency makes plan generation feel slow** | Medium (40%) | Medium | Medium | Show loading state with exercise-specific tips during generation. Cache plans aggressively -- if the user runs the same exercises as last time, serve modified cached plan instantly. Target <3 second plan generation P95. If Gemini can't hit this, switch to a faster model for plan generation specifically. |
 | 10 | **Google Play Store ranking is invisible at launch** | High (65%) | Medium | Medium | ASO strategy from day one: keyword research (workout tracker, gym log, strength training, AI workout), screenshot A/B testing, localized listing. Seed 50+ legitimate reviews from beta testers before public launch. Budget for Google Ads App Campaigns at $3K/month from launch. |
@@ -478,7 +432,7 @@ Low Prob.   |             |                 | #8           |
 | 24-26 | ASO preparation: store listing, screenshots, video, keyword optimization | Growth & Content Marketing |
 | 25-27 | Critical bug fixes from beta feedback | Dev team |
 | 26-28 | Open beta (Google Play open testing track, target 500-1,000 testers) | Growth & Content Marketing |
-| 27-28 | Paywall implementation and trial flow | Lead Android Dev |
+| 27-28 | Final polish, accessibility pass, and performance optimization | Lead Android Dev |
 | 28 | **Gate: Launch readiness review. App store rating >= 4.0, crash-free rate >= 99.5%, core loop completion rate >= 60%.** | CEO |
 
 ### Phase 3: Public Launch (Week 29)
@@ -497,8 +451,8 @@ Low Prob.   |             |                 | #8           |
 |-----------|-------|-------------|
 | **Month 1 (Weeks 30-33)** | Stabilize and fix | Fix launch bugs. Respond to every app store review. Monitor D1/D7 retention. Optimize onboarding based on funnel data. |
 | **Month 2 (Weeks 34-37)** | Retention push | Ship Phase 2 features: personal records detection, advanced analytics (1RM trends). A/B test push notification re-engagement. Optimize AI plan quality based on logged actual-vs-plan data. |
-| **Month 3 (Weeks 38-42)** | Conversion optimization | A/B test paywall placement and messaging. A/B test free tier boundaries. Ship supersets/circuits. Ship data export. First cohort analysis of trial-to-paid conversion. |
-| **Months 4-6 (Weeks 43-52)** | Scale | Increase paid acquisition budget to $8K/month (if LTV:CAC > 3:1). Ship strength milestones, bodyweight tracking. Begin cloud sync architecture. Evaluate iOS port feasibility based on product-market fit signals. Hire UX Researcher for retention deep-dive. |
+| **Month 3 (Weeks 38-42)** | Feature expansion | Ship supersets/circuits. Ship data export. Deep retention cohort analysis. A/B test onboarding variants. Optimize AI plan quality based on actual-vs-plan data from 3 months of usage. |
+| **Months 4-6 (Weeks 43-52)** | Scale | Increase organic acquisition efforts (content marketing, community). Ship strength milestones, bodyweight tracking. Begin cloud sync architecture. Evaluate iOS port feasibility based on product-market fit signals (D30 > 15%, 50K+ DAU). Hire UX Researcher for retention deep-dive. |
 
 ### Key Dates Summary
 
@@ -511,7 +465,7 @@ Low Prob.   |             |                 | #8           |
 | Open beta | Week 26 | August 2026 |
 | Public launch | Week 29 | September 2026 |
 | 10K cumulative installs | Week 35 | October 2026 |
-| $5K MRR | Week 41 | December 2026 |
+| D30 retention > 10% | Week 41 | December 2026 |
 | 100K cumulative installs | Week 52 | March 2027 |
 
 ---

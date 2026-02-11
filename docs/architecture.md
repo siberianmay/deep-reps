@@ -485,15 +485,21 @@ data class MuscleGroupEntity(
 )
 data class ExerciseEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    @ColumnInfo(name = "stable_id") val stableId: String, // CSCS-defined string ID (e.g., "legs_barbell_squat"). Used in AI prompts, stable across app versions. Unique index.
     @ColumnInfo(name = "name") val name: String,
     @ColumnInfo(name = "description") val description: String,
-    @ColumnInfo(name = "equipment") val equipment: String, // "barbell", "dumbbell", "cable", "machine", "bodyweight"
-    @ColumnInfo(name = "isolation_level") val isolationLevel: String, // "compound", "isolation"
+    @ColumnInfo(name = "equipment") val equipment: String, // "barbell", "dumbbell", "cable", "machine", "bodyweight", "kettlebell", "band", "ez_bar", "trap_bar" (9 types per exercise-science spec)
+    @ColumnInfo(name = "movement_type") val movementType: String, // "compound" or "isolation" (renamed from isolationLevel per CSCS review)
+    @ColumnInfo(name = "difficulty") val difficulty: String, // "beginner", "intermediate", "advanced" — CRITICAL: used for safety guardrails, auto-ordering, AI prompt
     @ColumnInfo(name = "primary_group_id") val primaryGroupId: Long,
+    @ColumnInfo(name = "secondary_muscles") val secondaryMuscles: String, // JSON array of sub-muscle name strings (e.g., ["Glutes", "lower back", "core"]) — sub-muscle level, not group level
     @ColumnInfo(name = "tips") val tips: String, // stored as JSON array of strings
     @ColumnInfo(name = "pros") val pros: String, // stored as JSON array of strings
     @ColumnInfo(name = "anatomy_asset_path") val anatomyAssetPath: String,
-    @ColumnInfo(name = "display_order") val displayOrder: Int,
+    @ColumnInfo(name = "display_order") val displayOrder: Int, // ordering in exercise library browsing
+    @ColumnInfo(name = "order_priority") val orderPriority: Int, // CSCS-defined priority for auto-ordering algorithm (lower = earlier in workout). Distinct from displayOrder.
+    @ColumnInfo(name = "superset_tags") val supersetTags: String, // JSON array of compatibility tags per exercise-science Section 6.3.1
+    @ColumnInfo(name = "auto_program_min_level") val autoProgramMinLevel: Int = 1, // Min experience level for AI auto-inclusion (1/2/3, 99=manual only)
 )
 
 @Entity(
@@ -877,17 +883,13 @@ interface AiPlanProvider {
     suspend fun generatePlan(request: PlanRequest): Result<GeneratedPlan>
 }
 
-data class PlanRequest(
-    val exercises: List<PlanExercise>,
-    val userProfile: UserPlanProfile,
-    val trainingHistory: List<ExerciseHistory>,
-)
-
 data class PlanExercise(
     val exerciseId: Long,
+    val stableId: String, // CSCS stable ID for AI prompt
     val name: String,
     val equipment: String,
-    val isolationLevel: String,
+    val movementType: String, // "compound" or "isolation" (renamed from isolationLevel)
+    val difficulty: String, // "beginner", "intermediate", "advanced"
 )
 
 data class UserPlanProfile(
@@ -916,18 +918,29 @@ data class HistoricalSet(
 
 data class GeneratedPlan(
     val exercisePlans: List<ExercisePlan>,
+    val sessionSummary: SessionSummary? = null,
+    val promptVersion: String = GeminiPromptBuilder.PROMPT_VERSION,
 )
 
 data class ExercisePlan(
-    val exerciseId: Long,
+    val exerciseId: Long, // Room PK for internal use
+    val stableExerciseId: String, // CSCS stable ID used in AI prompts (e.g., "chest_barbell_bench_press")
     val warmupSets: List<PlannedSet>,
     val workingSets: List<PlannedSet>,
+    val restSeconds: Int, // per-exercise rest timer from AI plan or CSCS defaults
+    val notes: String? = null, // AI rationale for weight/rep selection (e.g., "Based on last session: 80kg x 8. +2.5kg progressive overload.")
 )
 
 data class PlannedSet(
     val weight: Double,
     val reps: Int,
     val setNumber: Int,
+)
+
+data class SessionSummary(
+    val totalWorkingSets: Int,
+    val estimatedDurationMinutes: Int,
+    val volumeCheck: String, // "ok" or warning message if ceilings approached
 )
 ```
 
@@ -985,30 +998,51 @@ class GeminiPlanProvider @Inject constructor(
 
 ### 4.3 Prompt Construction
 
-The `GeminiPromptBuilder` constructs a prompt from training history and user context. The CSCS reviews and approves the prompt template. The developer implements the data injection.
+The `GeminiPromptBuilder` constructs a prompt from training history, user context, and CSCS-approved safety constraints. The prompt template MUST match `docs/exercise-science.md` Section 5.4 — the CSCS-approved canonical prompt. The developer implements the data injection.
+
+**PROMPT_VERSION** must be tracked as a constant and stored with every generated plan (see `CachedAiPlanEntity`).
 
 ```kotlin
-class GeminiPromptBuilder @Inject constructor() {
+class GeminiPromptBuilder @Inject constructor(
+    private val overlapDetector: CrossGroupOverlapDetector,
+) {
+    companion object {
+        const val PROMPT_VERSION = "v2.0"
+    }
 
     fun build(request: PlanRequest): String = buildString {
-        appendLine("You are a strength training coach. Generate a workout plan as JSON.")
+        appendLine("You are a certified strength & conditioning specialist. Generate a structured workout plan as JSON.")
         appendLine()
+        // --- USER PROFILE ---
         appendLine("## User Profile")
         appendLine("- Experience level: ${experienceLevelLabel(request.userProfile.experienceLevel)}")
         request.userProfile.bodyWeightKg?.let { appendLine("- Body weight: ${it}kg") }
         request.userProfile.age?.let { appendLine("- Age: $it") }
         request.userProfile.gender?.let { appendLine("- Gender: $it") }
         appendLine()
+
+        // --- PROGRESSION CONTEXT (per exercise-science Section 5.1) ---
+        appendLine("## Progression Context")
+        appendLine("- Periodization model: ${request.periodizationModel}") // "linear", "dup", "block"
+        request.performanceTrend?.let { appendLine("- Performance trend: $it") } // "improving", "stalled", "regressing"
+        request.weeksSinceDeload?.let { appendLine("- Weeks since last deload: $it") }
+        if (request.deloadRecommended) appendLine("- ⚠️ DELOAD RECOMMENDED — reduce volume by 40-60%, reduce intensity by 10-15%")
+        request.currentBlockPhase?.let { appendLine("- Current block phase: $it (week ${request.currentBlockWeek})") }
+        appendLine()
+
+        // --- EXERCISES ---
         appendLine("## Exercises (in order)")
         request.exercises.forEachIndexed { index, exercise ->
-            appendLine("${index + 1}. ${exercise.name} (${exercise.equipment}, ${exercise.isolationLevel})")
+            appendLine("${index + 1}. ${exercise.name} [stable_id: ${exercise.stableId}] (${exercise.equipment}, ${exercise.movementType}, difficulty: ${exercise.difficulty})")
         }
         appendLine()
+
+        // --- TRAINING HISTORY ---
         if (request.trainingHistory.isNotEmpty()) {
-            appendLine("## Recent Training History")
+            appendLine("## Recent Training History (last 3-5 sessions per exercise)")
             request.trainingHistory.forEach { history ->
                 appendLine("### ${history.exerciseName}")
-                history.sessions.takeLast(3).forEach { session ->
+                history.sessions.takeLast(5).forEach { session ->
                     appendLine("  Session (${formatDate(session.date)}):")
                     session.sets.forEach { set ->
                         appendLine("    ${set.weight}kg x ${set.reps} (${set.setType})")
@@ -1017,25 +1051,67 @@ class GeminiPromptBuilder @Inject constructor() {
             }
             appendLine()
         }
-        appendLine("## Instructions")
-        appendLine("For each exercise, provide warm-up sets and working sets.")
-        appendLine("Base recommendations on the training history when available.")
-        appendLine("Apply progressive overload: slight weight or rep increases from last session.")
-        appendLine("If no history exists, use conservative starting weights for the experience level.")
+
+        // --- SAFETY CONSTRAINTS (CRITICAL — per exercise-science Section 5.2) ---
+        appendLine("## SAFETY CONSTRAINTS (NON-NEGOTIABLE)")
+        appendLine("1. Max weight increase: 10% above the last working weight for any exercise. Never exceed 10kg absolute jump for barbells, 5kg for dumbbells.")
+        appendLine("2. MRV ceiling: Do not exceed ${getMrvCeiling(request.userProfile.experienceLevel)} total working sets per muscle group per session.")
+        appendLine("3. Total session volume: Maximum 30 working sets per session, maximum 6 working sets per exercise, maximum 12 exercises per session.")
+        appendLine("4. Advanced exercise gating: Only include exercises with difficulty level <= user experience level. Never include advanced exercises for beginners.")
+        appendLine("5. Warm-up sets: Heavy barbell compounds require 3 warm-up sets (empty bar, 50%, 75%). Moderate compounds require 2. Isolations require 1 or 0 (bodyweight).")
+        appendLine("6. Max RPE 9-10 exercises: At most 2 exercises per session at near-max effort.")
+        // Age-adjusted modifiers (per exercise-science Section 8.6)
+        request.userProfile.age?.let { age ->
+            when {
+                age < 18 -> appendLine("7. AGE MODIFIER (under 18): Cap intensity at 85% 1RM. No singles (1-rep sets). Focus on movement quality.")
+                age in 51..60 -> appendLine("7. AGE MODIFIER (51-60): Reduce max intensity by 5%. Add 1 extra warm-up set per compound. Increase rest by 15s. Reduce weekly volume by 10%.")
+                age > 60 -> appendLine("7. AGE MODIFIER (60+): Reduce max intensity by 10%. Add 2 extra warm-up sets. Prefer machine exercises over free weights. Increase rest by 30s.")
+                else -> {} // No age modifier needed
+            }
+        }
+        appendLine("8. Weight rounding: Round all weights DOWN to nearest increment (barbell: 2.5kg, dumbbell: 2.5kg, cable/machine: 5kg).")
+        appendLine("9. When no training history exists, use baseline tables from exercise-science Section 4 (body weight ratios by experience level).")
         appendLine()
+
+        // --- CROSS-GROUP FATIGUE (per exercise-science Section 2.2) ---
+        val overlaps = overlapDetector.detect(request.exercises)
+        if (overlaps.isNotEmpty()) {
+            appendLine("## CROSS-GROUP FATIGUE WARNING")
+            overlaps.forEach { overlap ->
+                appendLine("- ${overlap.description}")
+            }
+            appendLine("Reduce isolation volume for overlapping muscles accordingly.")
+            appendLine()
+        }
+
+        // --- OUTPUT FORMAT (aligned with exercise-science Section 5.3) ---
         appendLine("## Output Format")
         appendLine("Respond ONLY with valid JSON matching this schema:")
         appendLine("""
         {
           "exercise_plans": [
             {
-              "exercise_id": <number>,
+              "exercise_id": "<stable_id string>",
               "warmup_sets": [{"weight": <number>, "reps": <number>, "set_number": <number>}],
-              "working_sets": [{"weight": <number>, "reps": <number>, "set_number": <number>}]
+              "working_sets": [{"weight": <number>, "reps": <number>, "set_number": <number>}],
+              "rest_seconds": <number>,
+              "notes": "<brief rationale for weight/rep selection>"
             }
-          ]
+          ],
+          "session_summary": {
+            "total_working_sets": <number>,
+            "estimated_duration_minutes": <number>,
+            "volume_check": "<ok or warning message>"
+          }
         }
         """.trimIndent())
+    }
+
+    private fun getMrvCeiling(experienceLevel: Int): Int = when (experienceLevel) {
+        1 -> 12 // beginner
+        2 -> 16 // intermediate
+        3 -> 20 // advanced
+        else -> 12
     }
 
     private fun experienceLevelLabel(level: Int): String = when (level) {
@@ -1045,6 +1121,22 @@ class GeminiPromptBuilder @Inject constructor() {
         else -> "Unknown"
     }
 }
+```
+
+**`PlanRequest` data class** (extended with progression context per CSCS review Issue 3.2):
+
+```kotlin
+data class PlanRequest(
+    val userProfile: UserPlanProfile,
+    val exercises: List<ExerciseForPlan>,
+    val trainingHistory: List<ExerciseHistory>,
+    val periodizationModel: String, // "linear", "dup", "block" — determined by DetermineSessionDayTypeUseCase
+    val performanceTrend: String?, // "improving", "stalled", "regressing"
+    val weeksSinceDeload: Int?,
+    val deloadRecommended: Boolean,
+    val currentBlockPhase: String?, // "accumulation", "intensification", "realization", "deload" (advanced only)
+    val currentBlockWeek: Int?, // week within current block
+)
 ```
 
 ### 4.4 Token Limit Management
@@ -1125,6 +1217,33 @@ abstract class AiProviderModule {
     // To swap: change GeminiPlanProvider to OpenAiPlanProvider
 }
 ```
+
+### 4.7 Missing Domain Use Cases (Added per CSCS + PO Cross-Reviews)
+
+The following use cases are required in `:core:domain` and were identified as gaps by the CSCS, Product Owner, and Lead Dev cross-reviews.
+
+**`OrderExercisesUseCase`** — Implements the auto-ordering algorithm from `exercise-science.md` Section 6. Pure Kotlin function. Rules: (1) compounds before isolations, (2) larger groups before smaller within compounds, (3) same order within isolations, (4) difficulty descending within same group/type, (5) core exercises always last.
+
+**`ValidatePlanSafetyUseCase`** — Runs after AI plan parsing, before presenting to user. Validates: (a) weight jumps within 10% of last session per exercise, (b) volume ceilings not exceeded (30 total sets, 16/group, 6/exercise), (c) age-based intensity caps respected, (d) advanced exercises not included for beginners. Rejects non-compliant plans, triggers retry or adjusts weights downward.
+
+**`DetectDeloadNeedUseCase`** — Checks: (a) weeks since last deload (scheduled: beginner 6wk, intermediate 4wk, advanced 5wk), (b) regression patterns (2+ consecutive sessions with weight/rep decrease), (c) user-requested flag. Returns `DeloadStatus` (not_needed / proactive_recommended / reactive_recommended / user_requested). Fed into `PlanRequest`.
+
+**`DetermineSessionDayTypeUseCase`** — For intermediate users (DUP): examines last N sessions for selected muscle groups, determines next day type in rotation (hypertrophy / strength / power). For advanced users (block): computes current block phase from training history or explicit tracking. Result feeds into `PlanRequest.periodizationModel`.
+
+**`DetectOvertrainingWarningsUseCase`** — Checks 5 trigger conditions from `exercise-science.md` Section 8.3: (1) MRV exceeded 2+ consecutive weeks, (2) performance regression 3+ sessions, (3) frequency > 6x/week for 2+ weeks, (4) same group 4+ times in 7 days, (5) session duration > 120 minutes. Returns list of warnings with severity and dismissal state.
+
+**`BaselinePlanGenerator`** — Specified implementation: (a) look up user experience level and body weight, (b) apply BW ratio tables from `exercise-science.md` Sections 4.1-4.3, (c) calculate working weights with proper rounding (Section 8.7), (d) generate warm-up sets per protocol (Section 8.5), (e) apply gender fallback (male ratios - 15% when gender unknown), (f) apply age modifiers (Section 8.6). Returns a `GeneratedPlan`.
+
+**`CrossGroupOverlapDetector`** — Analyzes selected exercise groups against the Cross-Group Activation Map (`exercise-science.md` Section 2.2). Detects when overlapping groups are selected (e.g., Chest + Arms shares triceps). Returns overlap descriptions for inclusion in AI prompt's CROSS-GROUP FATIGUE block.
+
+### 4.8 Exercise Library Migration Strategy
+
+The exercise library ships as a pre-populated `.db` file. Updates are delivered via Room migrations:
+
+- **Exercise additions:** Standard Room migration that INSERTs new rows by `stableId`.
+- **Metadata updates:** Migration UPDATEs specific rows by `stableId` (corrected tips, secondary muscles, etc.).
+- **Exercise removal:** NEVER delete. Add `@ColumnInfo(name = "deprecated") val deprecated: Boolean = false` to `ExerciseEntity`. Deprecated exercises do not appear in the exercise picker but remain valid in historical workout data (preserves foreign key integrity).
+- **Version tracking:** An `exercise_library_version` constant in `:core:data` is checked at database open. If the DB version is behind, the migration runs.
 
 ---
 

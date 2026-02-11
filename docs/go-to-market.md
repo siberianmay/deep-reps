@@ -2,7 +2,7 @@
 
 ## Document Purpose
 
-This is the operational go-to-market plan for Deep Reps, covering market analysis through 12-month targets. All numbers assume Android-only launch in a single market (English-speaking, US-primary with global English reach). Monetization model is TBD per CLAUDE.md -- this document presents strategies that work across freemium, subscription, and one-time purchase models. Where a specific model assumption is required, it is called out.
+This is the operational go-to-market plan for Deep Reps, covering market analysis through 12-month targets. All numbers assume Android-only launch in a single market (English-speaking, US-primary with global English reach). **Deep Reps is a 100% free app** (see product-strategy.md Section 4). Marketing strategy emphasizes "free" as a core differentiator against paid competitors.
 
 ---
 
@@ -59,7 +59,7 @@ The gym/strength tracking niche is a subset of the broader fitness app market. K
 | CSCS-validated exercise science | Yes (credentialed specialist) | No | No | Unclear |
 | Offline-first architecture | Full (except AI generation) | Partial | Partial | No |
 | Android-native quality | Primary platform | Port | Good | Port |
-| Superset/circuit support | Yes | Yes | Yes | Limited |
+| Superset/circuit support | Phase 2 | Yes | Yes | Limited |
 | Exercise detail (anatomy, cues) | 2D anatomy + CSCS cues | Basic | Basic | Yes |
 | Cold-start experience profiles | 3 tiers (beginner/inter/adv) | Manual | Manual | Yes |
 | Price | TBD | $4.99/mo or $74.99 lifetime | Free (premium TBD) | $12.99/mo |
@@ -206,7 +206,7 @@ Produce at 1080x1920 (portrait, Play Store spec). No voiceover -- text overlays 
 
 **Beta incentives:**
 - "Founding Member" badge in the app (visible in profile, permanent)
-- Free premium access for 12 months post-launch
+- Founding Member early access and priority feature requests
 - Direct Slack/Discord channel with the development team
 
 #### Waitlist and Social (T-8 to T-0)
@@ -255,7 +255,7 @@ Produce at 1080x1920 (portrait, Play Store spec). No voiceover -- text overlays 
 - **Growth:** Monitor organic acquisition sources. Optimize Play Store listing based on search term data from Google Play Console.
 - **Retention:** Analyze D1/D7 retention cohorts. Identify the biggest drop-off point in the user funnel.
 - **Content:** 4 blog posts (exercise guides targeting SEO keywords). 12 social media posts per week.
-- **Target:** 15,000 cumulative downloads. D1 retention > 40%. D7 retention > 20%.
+- **Target:** 15,000 cumulative downloads. D1 retention > 30%. D7 retention > 16%.
 
 #### Month 2 (Days 31-60): Optimize and Experiment
 
@@ -263,15 +263,15 @@ Produce at 1080x1920 (portrait, Play Store spec). No voiceover -- text overlays 
 - **Growth:** Launch initial paid campaigns (Google Ads App Campaigns). Test 3 creative variants. Begin ASO A/B tests (screenshots, short description).
 - **Retention:** Implement push notification sequences (see Section 5). Launch first in-app challenge/milestone system.
 - **Content:** 4 blog posts. Begin YouTube exercise tutorial series. 15 social posts per week.
-- **Target:** 35,000 cumulative downloads. D7 retention > 25%. Paid CAC < $2.50.
+- **Target:** 35,000 cumulative downloads. D7 retention > 18%. Paid CAC < $2.50.
 
 #### Month 3 (Days 61-90): Scale What Works
 
-- **Product:** Ship features that drive retention (identified from Month 1-2 data). Begin A/B testing monetization if applicable.
+- **Product:** Ship features that drive retention (identified from Month 1-2 data). Begin A/B testing onboarding and AI plan presentation variants.
 - **Growth:** Scale winning paid channels by 2x. Expand influencer partnerships. Submit for "Editor's Choice" consideration on Google Play.
 - **Retention:** Analyze D30 cohort. Refine push notification strategy based on engagement data. Launch re-engagement campaign for churned users.
 - **Content:** 4 blog posts. Launch email newsletter (weekly). 15 social posts per week.
-- **Target:** 60,000 cumulative downloads. D30 retention > 12%. 4.3+ average rating.
+- **Target:** 60,000 cumulative downloads. D30 retention > 8%. 4.3+ average rating.
 
 ---
 
@@ -346,7 +346,7 @@ Assumes total marketing budget of $50,000 for first 6 months.
 | Month 6 | 50% | 50% |
 | Month 12 | 60% | 40% |
 
-The long-term goal is 60/40 organic/paid. SEO, ASO, and word-of-mouth compound over time, reducing dependence on paid channels. If organic exceeds 60% at month 12, reallocate paid budget to retention and monetization experiments.
+The long-term goal is 60/40 organic/paid. SEO, ASO, and word-of-mouth compound over time, reducing dependence on paid channels. If organic exceeds 60% at month 12, reallocate paid budget to retention experiments and content marketing.
 
 ---
 
@@ -522,7 +522,7 @@ The exercise library is the app's content foundation. Every exercise needs visua
 
 | Tier | Follower Range | Count to Partner | Purpose | Budget per Partnership |
 |------|---------------|------------------|---------|----------------------|
-| **Nano** | 1K-10K | 15-20 | Authentic gym-goer endorsements, high engagement rates | Free premium access + $50-$150 per post |
+| **Nano** | 1K-10K | 15-20 | Authentic gym-goer endorsements, high engagement rates | Early access + Founding Member badge + $50-$150 per post |
 | **Micro** | 10K-100K | 5-8 | Credible fitness content creators, niche audiences | $200-$500 per post/video |
 | **Mid-tier** | 100K-500K | 2-3 | Broader reach, category authority | $1,000-$3,000 per video integration |
 | **Macro** | 500K+ | 0-1 (opportunistic) | Mass awareness, only if ROI-positive | $5,000-$10,000 per integration |
@@ -602,7 +602,7 @@ The exercise library is the app's content foundation. Every exercise needs visua
 **CAC guardrails:**
 - If any channel exceeds 2x target CAC for 2 consecutive weeks, pause and diagnose
 - If blended paid CAC exceeds $3.50, reduce spend and shift budget to best-performing channel
-- CAC must remain below estimated LTV at all times (LTV calculation requires monetization model -- flag this as a dependency)
+- CAC must remain below the cost threshold where paid acquisition is sustainable given founder budget (see product-strategy.md Section 4.2 for operating cost tiers)
 
 ### 8.3 Organic/Paid Split Targets
 
@@ -617,13 +617,13 @@ The exercise library is the app's content foundation. Every exercise needs visua
 
 | Metric | Month 1 Target | Month 3 Target | Month 6 Target | Month 12 Target |
 |--------|---------------|----------------|----------------|-----------------|
-| D1 retention | 40% | 45% | 48% | 50% |
-| D7 retention | 20% | 25% | 28% | 30% |
-| D30 retention | 10% | 12% | 15% | 18% |
+| D1 retention | 25% | 30% | 35% | 40% |
+| D7 retention | 12% | 16% | 20% | 22% |
+| D30 retention | 5% | 8% | 10% | 12% |
 | D90 retention | -- | -- | 8% | 10% |
 | WAU/MAU ratio | 0.25 | 0.30 | 0.35 | 0.40 |
 
-**Context:** Industry benchmarks for Health & Fitness apps are approximately D1: 25-30%, D7: 12-15%, D30: 6-8%. The targets above assume Deep Reps' AI personalization and offline reliability provide above-average retention. If D7 retention falls below 15% in Month 2, treat as a product problem (not a marketing problem) and escalate to Product Owner.
+**Context:** Industry benchmarks for Health & Fitness apps are approximately D1: 20-25%, D7: 12-15%, D30: 4-6%. Launch targets are at industry average; 12-month targets represent top-quartile performance. Targets aligned with product-strategy.md Section 6.2. If D7 retention falls below 12% in Month 2, treat as a product problem (not a marketing problem) and escalate to Product Owner.
 
 ### 8.5 App Store Rating Target
 
@@ -669,7 +669,7 @@ This metric captures the intersection of acquisition (they installed), activatio
 
 This strategy has several dependencies on decisions documented as TBD in CLAUDE.md and FEATURES.md:
 
-1. **Monetization model** -- CAC targets only matter in relation to LTV. Without a defined pricing model (subscription, freemium, one-time purchase), ROI calculations are incomplete. The GTM budget of $50K over 6 months assumes positive unit economics will be validated by Month 4.
+1. **Operating budget** -- Deep Reps is a free app (product-strategy.md Section 4). CAC targets are bounded by the founder's operating budget, not LTV. The GTM budget assumes the founder commits to funding user acquisition through product-market fit validation (D30 > 15%, 50K+ DAU).
 
 2. **Cloud sync vs. local-only** -- If data stays local-only, there is no email/account system, which eliminates email marketing as a channel and limits cross-device retention. Cloud sync enables richer retention marketing.
 

@@ -28,10 +28,10 @@ Every exercise in the app is assigned to exactly one primary muscle group. No du
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `id` | string | Unique identifier (e.g., `legs_barbell_squat`) |
+| `id` | string | Unique stable identifier (e.g., `legs_barbell_squat`). In the database, this maps to a `stableId` column alongside the auto-incrementing Long PK. All AI prompts and external references use this stable string ID. |
 | `name` | string | Display name |
 | `primary_group` | enum | One of the 7 muscle groups |
-| `secondary_muscles` | string[] | Muscles significantly recruited but not the prime mover |
+| `secondary_muscles` | string[] | Sub-muscle names significantly recruited but not the prime mover (e.g., "Glutes, lower back, core" — NOT the 7 primary group names). Architecture must support free-text sub-muscle strings. |
 | `equipment` | enum | `barbell`, `dumbbell`, `cable`, `machine`, `bodyweight`, `kettlebell`, `band`, `ez_bar`, `trap_bar` |
 | `movement_type` | enum | `compound` or `isolation` |
 | `difficulty` | enum | `beginner`, `intermediate`, `advanced` |
@@ -39,7 +39,8 @@ Every exercise in the app is assigned to exactly one primary muscle group. No du
 | `tips` | string[] | Form cues (max 4) |
 | `pros` | string[] | Key benefits (max 3) |
 | `order_priority` | int | Used by auto-ordering algorithm (lower = earlier in workout) |
-| `superset_tags` | string[] | Compatibility tags for superset suggestions |
+| `superset_tags` | string[] | Compatibility tags for superset suggestions (see Section 6.3.1) |
+| `auto_program_min_level` | int | Minimum experience level for AI auto-inclusion (1=beginner, 2=intermediate, 3=advanced, 99=never auto-program, user must manually select) |
 
 ### 1.1 Legs
 
@@ -356,7 +357,7 @@ This table shows significant secondary activation across groups. The AI uses thi
 | Stall protocol | If weight is unchanged for 3 consecutive sessions, reduce by 10% and rebuild |
 | Rep range | 8-12 for compounds, 10-15 for isolation |
 | Working sets | 3 sets per exercise |
-| Deload trigger | After 4-6 consecutive weeks without a stall (proactive) or after 2 stalls on the same exercise (reactive) |
+| Deload trigger | See Section 3.4 for unified deload timing rules |
 
 **Example progression (Barbell Bench Press, beginner):**
 ```
@@ -417,11 +418,19 @@ Thursday (Strength):    120 kg x 5, 5, 5, 4, 4    (5 sets)
 
 A deload is a planned reduction in training stress to allow recovery and prevent overtraining.
 
-| Trigger | Protocol |
-|---------|----------|
-| **Scheduled (proactive)** | Every 4th week for intermediates, every 4th-6th week for advanced, every 6-8 weeks for beginners |
-| **Performance-triggered (reactive)** | 2+ consecutive sessions with regression (fewer reps or lower weight than previous session at same exercise) |
-| **User-requested** | User can manually request a deload week at any time |
+#### Deload Triggers (Unified)
+
+| Trigger Type | Beginner (0-6 mo) | Intermediate (6-18 mo) | Advanced (18+ mo) |
+|--------------|-------------------|------------------------|-------------------|
+| **Scheduled (proactive)** | Every 6th week | Every 4th week | Every 4th-5th week |
+| **Performance-triggered (reactive)** | 2 stalls on same exercise within a 6-week period | 2+ consecutive sessions with regression | 2+ consecutive sessions with regression on 2+ exercises |
+| **User-requested** | Any time | Any time | Any time |
+
+**Precedence:** If multiple triggers occur simultaneously, the first detected trigger activates the deload. Scheduled deloads reset the week counter to zero.
+
+**Stall definition (for beginners):** A stall is when the same working weight is used for 3 consecutive sessions without completing all target reps. Two stalls on the same exercise within a 6-week period trigger a reactive deload.
+
+**Regression definition (for intermediates/advanced):** Regression is when the estimated 1RM (Epley formula, Section 7.1) for a given exercise decreases across consecutive sessions.
 
 **Deload parameters:**
 
@@ -448,11 +457,83 @@ Progressive overload is the fundamental driver of adaptation. The app tracks and
 
 The AI should prefer load-based overload for compounds and rep-based overload for isolation exercises.
 
+### 3.6 Bodyweight Exercise Progression
+
+Bodyweight exercises (Push-Up, Pull-Up, Chin-Up, Dips, Plank, Dead Bug, etc.) cannot use traditional load-based progression. Five vectors are available, in priority order:
+
+#### 3.6.1 Rep Progression (Primary Vector)
+
+Increase reps within a target range until the upper threshold is reached.
+
+| Experience Level | Rep Ceiling |
+|------------------|-------------|
+| Beginner | 15 |
+| Intermediate | 20 |
+| Advanced | 25 |
+
+**Protocol:** Add 1-2 reps per session when all sets at target are completed. When the rep ceiling is reached consistently across all sets for 2+ consecutive sessions, transition to the next progression vector.
+
+#### 3.6.2 Tempo Manipulation
+
+Slow the eccentric and concentric phases to increase time under tension.
+
+| Tempo Notation | Description |
+|----------------|-------------|
+| 2-1-1 (normal) | 2s eccentric, 1s pause, 1s concentric |
+| 3-1-1 | 3s eccentric, 1s pause, 1s concentric |
+| 4-2-1 | 4s eccentric, 2s pause, 1s concentric |
+
+Progression: Normal → 3-1-1 → 4-2-1. Each tempo change resets the rep target. Most effective for isometric exercises (Plank, Side Plank) and Push-Up variations.
+
+**Implementation note:** Tempo tracking requires a `tempo` field in the exercise log schema. For v1, if omitted, default to rep-only progression and surface manual recommendations in plan notes.
+
+#### 3.6.3 Range-of-Motion Progression
+
+Increase difficulty by expanding ROM or changing leverage. These are NOT separate exercise entries — the `tips` field contains progression cues, and the AI references them when rep counts plateau.
+
+**Pull-Up/Chin-Up ladder:** Dead Hang → Negative (eccentric 5s) → Band-Assisted → Standard → Weighted → Archer (advanced).
+
+**Push-Up ladder:** Wall → Incline (hands elevated) → Standard → Decline (feet elevated) → Archer → One-Arm (`auto_program_min_level = 99`).
+
+**Plank ladder:** Incline → Standard → Decline → Single-Leg → Shoulder Tap → RKC Plank (advanced).
+
+#### 3.6.4 Added-Weight Progression
+
+Once rep ceilings are reached at advanced variations, external load is added.
+
+| Exercise | Equipment | Load Increment |
+|----------|-----------|----------------|
+| Pull-Up, Chin-Up | Dip belt | 2.5 kg per session |
+| Dips | Dip belt | 2.5 kg per session |
+| Push-Up | Weighted vest | 5 kg per session |
+
+Once added weight exceeds 20% of body weight, the exercise follows standard load-based progression rules (Section 3.1/3.2/3.3).
+
+**AI prompt constraint:** Added weight is logged separately from bodyweight. Example: `"weight_kg": 10, "note": "Bodyweight (75 kg) + 10 kg belt"`.
+
+#### 3.6.5 Regression Options for Beginners
+
+| Exercise | Regression | Advance Threshold |
+|----------|------------|-------------------|
+| Pull-Up | Band-assisted Pull-Up | 8+ reps with band |
+| Pull-Up | Negative Pull-Up (5s lower) | 5+ negatives with control |
+| Dips | Band-assisted Dips | 8+ reps with band |
+| Push-Up | Incline Push-Up (preferred over knee push-up) | 12+ reps at 45-degree incline |
+| Plank | Incline Plank | 30s hold at 45-degree incline |
+
+**Regression detection:** If user logs <3 reps on a bodyweight exercise for 2+ consecutive sessions, the AI suggests a regression in the next plan notes (not automatic substitution — user consent required).
+
 ---
 
 ## 4. Baseline Plans by Experience Level
 
 These tables provide the starting point for AI plan generation when no training history exists. All weights are expressed as multipliers of body weight (BW). The AI uses these ratios to calculate absolute weights based on the user's profile.
+
+**Gender-based baseline ratios:** All tables below provide separate multipliers for male and female users. When gender is not provided:
+- Use the male ratios reduced by 15%
+- This is an imperfect heuristic — the app should prompt for gender as an optional profile field to improve accuracy
+- Example: Male beginner squat = 0.50 x BW. Gender unknown = 0.425 x BW (0.50 * 0.85)
+- This fallback applies to ALL experience levels (beginner, intermediate, and advanced), not just beginner.
 
 ### 4.1 Beginner (Level 1: 0-6 months)
 
@@ -593,8 +674,8 @@ SAFETY CONSTRAINTS (non-negotiable):
 4. For exercises marked "advanced" difficulty, only include them if user experience level >= 2.
 5. Always include at least 1 warm-up set for every compound exercise.
 6. Never program more than 2 exercises at RPE 9-10 in a single session.
-7. If user age > 50, reduce max intensity by 5% and increase warm-up sets by 1.
-8. Round all weights to the nearest 2.5 kg (or 5 lbs).
+7. Apply age-adjusted safety modifiers per Section 8.6 (under 18: cap at 85% 1RM; 41-50: -2.5% intensity; 51-60: -5% intensity, +1 warm-up, +30s rest, -10% volume; 60+: -10% intensity, +2 warm-ups, +45s rest, -20% volume).
+8. Round all weights to the nearest 2.5 kg (or 5 lbs). Always round DOWN (Section 8.7).
 ```
 
 ### 5.3 Required JSON Output Structure
@@ -693,9 +774,9 @@ SAFETY CONSTRAINTS (non-negotiable):
 4. Only include "advanced" exercises if experience level >= 2.
 5. Include at least 1 warm-up set per compound.
 6. Max 2 exercises at RPE 9-10 per session.
-7. Round weights to nearest 2.5 kg.
-{{#if age_over_50}}
-8. User is over 50: reduce max intensity by 5%, add 1 extra warm-up set.
+7. Round weights to nearest 2.5 kg (always round DOWN).
+{{#if age_modifier}}
+8. Age modifier active (see Section 8.6): {{age_modifier_description}}
 {{/if}}
 
 OUTPUT FORMAT:
@@ -808,6 +889,63 @@ Two exercises can be suggested as a superset if:
 - Two heavy compounds (e.g., squat + deadlift) — systemic fatigue makes this dangerous and counterproductive.
 - Any exercise paired with a heavy deadlift or squat variation.
 
+### 6.3.1 Superset Tag Specification
+
+Each exercise's `superset_tags` array uses the following tag categories:
+
+**Muscle Group Tags:**
+
+| Tag | Description | Example Exercises |
+|-----|-------------|-------------------|
+| `push_horizontal` | Chest pressing | Bench Press, Dumbbell Press, Push-Up |
+| `push_vertical` | Shoulder pressing | Overhead Press, Dumbbell Shoulder Press |
+| `pull_horizontal` | Rowing | Barbell Row, Cable Row, Dumbbell Row |
+| `pull_vertical` | Pulldowns/pull-ups | Pull-Up, Lat Pulldown, Chin-Up |
+| `quad_dominant` | Quad-focused | Squat, Leg Press, Leg Extension |
+| `hip_hinge` | Hip-dominant | Deadlift, RDL, Lying Leg Curl |
+| `arm_push` | Tricep exercises | Tricep Pushdown, Skull Crusher |
+| `arm_pull` | Bicep exercises | Barbell Curl, Hammer Curl |
+| `delt_lateral` | Lateral delt | Lateral Raise, Cable Lateral Raise |
+| `delt_rear` | Rear delt | Face Pull, Reverse Fly |
+| `core_flexion` | Spinal flexion | Cable Crunch, Hanging Leg Raise |
+| `core_anti_flexion` | Anti-extension | Plank, Dead Bug, Ab Wheel |
+| `core_rotation` | Anti-rotational | Russian Twist, Pallof Press |
+| `calf` | Calf isolation | Standing Calf Raise, Seated Calf Raise |
+| `forearm` | Forearm isolation | Wrist Curl |
+
+**Intensity Tags:**
+
+| Tag | Description | Superset Eligible? |
+|-----|-------------|--------------------|
+| `heavy_compound` | High systemic fatigue (Squat, Deadlift, Bench, OHP, Barbell Row) | **Never** |
+| `moderate_compound` | Can be superseted with caution (Lunges, Leg Press, Dumbbell Press) | Yes |
+| `isolation` | Single-joint exercises | Yes |
+
+**Pairing Rules:**
+
+1. Neither exercise is tagged `heavy_compound`.
+2. They do NOT share a primary muscle group tag. Exceptions: `push_horizontal` + `delt_rear` (chest/rear delt antagonist) and `pull_horizontal` + `delt_lateral` (back/lateral delt unrelated).
+3. Never pair: `hip_hinge` + `quad_dominant` (overlapping stabilizers), `pull_vertical` + `pull_horizontal` (overlapping lats).
+
+**Tag Assignment Examples:**
+
+| Exercise | superset_tags |
+|----------|---------------|
+| Barbell Back Squat | `["quad_dominant", "heavy_compound", "barbell"]` |
+| Conventional Deadlift | `["hip_hinge", "heavy_compound", "barbell"]` |
+| Barbell Bench Press | `["push_horizontal", "heavy_compound", "barbell"]` |
+| Dumbbell Bench Press | `["push_horizontal", "moderate_compound", "dumbbell"]` |
+| Barbell Curl | `["arm_pull", "isolation", "barbell"]` |
+| Tricep Pushdown | `["arm_push", "isolation", "cable"]` |
+| Lateral Raise | `["delt_lateral", "isolation", "dumbbell"]` |
+| Face Pull | `["delt_rear", "isolation", "cable"]` |
+| Leg Extension | `["quad_dominant", "isolation", "machine"]` |
+| Lying Leg Curl | `["hip_hinge", "isolation", "machine"]` |
+| Plank | `["core_anti_flexion", "isolation", "bodyweight"]` |
+| Standing Calf Raise | `["calf", "isolation", "machine"]` |
+
+The `superset_tags` field is CSCS-defined and not user-editable.
+
 ---
 
 ## 7. 1RM Estimation Formulas
@@ -858,6 +996,33 @@ For a 100 kg lift:
 - Only use working sets for 1RM calculation. Warm-up sets are excluded.
 - Display estimated 1RM with a confidence indicator: "high" (1-5 reps), "moderate" (6-10 reps), "low" (11+ reps, shown but flagged).
 
+#### 7.4.1 Input Validation Rules
+
+| Condition | Action |
+|-----------|--------|
+| Reps > 10 | Calculate but flag "low confidence." Do not use for PR detection. |
+| Reps > 20 | Do not calculate. Display "N/A — endurance set." Track "Max Reps at Weight" PR instead. |
+| Reps = 0 | Exclude from all calculations. |
+| Weight = 0 (bodyweight exercise) | Use `user_bodyweight_kg` from profile. If bodyweight not set, exclude and prompt user. |
+| Set type = warm-up | Exclude from 1RM and PR detection. |
+| Partial reps / incomplete set | Exclude from 1RM and PR detection. |
+| Multiple sets same session | Use **highest** estimated 1RM from all working sets (do not average). |
+
+**Set type distinction:** Warm-up = explicitly tagged or weight <75% of session's heaviest set. Working = target weight at RPE 6-10. Failure sets are still valid 1RM data.
+
+#### 7.4.2 Confidence Levels
+
+| Reps | Confidence | UI Badge | Use for PR Detection? |
+|------|------------|----------|----------------------|
+| 1-5 | High | Green | Yes |
+| 6-10 | Moderate | Yellow | Yes |
+| 11-20 | Low | Orange | No (display with warning) |
+| 21+ | Invalid | Gray ("N/A") | No |
+
+#### 7.4.3 Bodyweight Exercise 1RM
+
+For exercises tagged `bodyweight`: `weight = user_bodyweight_kg + added_weight_kg`. Example: 75 kg user doing Pull-Ups with no added weight → `1RM = 75 * (1 + 8/30) = 95 kg`.
+
 ### 7.5 PR Detection Logic
 
 A new Personal Record (PR) is detected when any of the following conditions are met:
@@ -882,10 +1047,13 @@ WHERE exercise_id = current_set.exercise_id
 AND current_set.reps <= 10  // only count reliable estimates
 ```
 
-**Volume PR (per session, per muscle group):**
+**Volume-Load PR (per session, per muscle group):**
+
+Also called "Tonnage PR." Measures total weight moved, not just rep count. The database field is `volume_load_pr`. The UI displays "Tonnage PR" for user-friendliness.
+
 ```
 sum(weight * reps for all working_sets in current_session WHERE primary_group = G)
-  > max(session_volumes for all previous sessions WHERE primary_group = G)
+  > max(session_volume_loads for all previous sessions WHERE primary_group = G)
 ```
 
 **PR notification rules:**
@@ -961,13 +1129,15 @@ Certain exercises carry elevated injury risk under specific conditions. The AI p
 
 ### 8.5 Warm-Up Set Requirements
 
-| Exercise Type | Minimum Warm-Up Sets | Protocol |
-|--------------|---------------------|----------|
-| Heavy compound (squat, deadlift, bench, OHP) | 3 | Empty bar x 10-12, 50% working weight x 6-8, 75% working weight x 3-4 |
-| Moderate compound (row, leg press, lunges) | 2 | 50% working weight x 8-10, 75% working weight x 4-6 |
-| Light compound (push-up, dips, pull-up) | 1 | Bodyweight x 8-10 (or band-assisted) |
-| Isolation | 1 | 50% working weight x 10-12 |
-| Bodyweight isolation (plank, side plank) | 0 | Not required |
+| Exercise Type | Min Sets | Protocol (Standard) | Protocol (Age 50+) |
+|--------------|----------|--------------------|--------------------|
+| Heavy compound (squat, deadlift, bench, OHP) | 3 | Empty bar × 10-12, 50% × 6-8, 75% × 3-4 | Empty bar × 10-12, 40% × 8-10, 60% × 6-8, 80% × 3-4 |
+| Moderate compound (row, leg press, lunges) | 2 | 50% × 8-10, 75% × 4-6 | 40% × 8-10, 60% × 6-8, 80% × 3-4 |
+| Light compound (push-up, dips, pull-up) | 1 | Bodyweight × 8-10 (or band-assisted) | Bodyweight × 8-10, Bodyweight × 5-6 at 75% effort |
+| Isolation | 1 | 50% × 10-12 | 40% × 10-12, 70% × 6-8 |
+| Bodyweight isolation (plank, side plank) | 0 | Not required | 50% target duration hold |
+
+**Age 50+ additional set:** The extra warm-up set (Section 8.6) is inserted at 60% working weight for heavy compounds, creating a 4-step ramp: empty bar → 40% → 60% → 80%. This prevents a large intensity jump between warm-up sets, reducing injury risk from tendon/ligament stiffness.
 
 **The AI must never generate a plan with zero warm-up sets for any compound exercise.** This is a hard constraint in the prompt.
 
@@ -1012,6 +1182,32 @@ Examples:
 - `lower_back_barbell_conventional_deadlift`
 
 IDs must be stable across app versions. Once assigned, an exercise ID is never changed or reused.
+
+## 8.8 Default Rest Timer Values (Canonical Source)
+
+All other documents (design-system, architecture, FEATURES.md) reference this table for rest timer defaults. When ranges exist in Sections 4.1-4.3, these single values are the midpoints to use as programmatic defaults.
+
+| Exercise Type | Experience Level | Default Rest (seconds) |
+|---------------|------------------|------------------------|
+| Heavy compound (squat, deadlift, bench, OHP, row) | Beginner | 90 |
+| Heavy compound | Intermediate | 120 |
+| Heavy compound | Advanced | 180 |
+| Moderate compound (lunges, leg press, dips, pull-ups) | Beginner | 75 |
+| Moderate compound | Intermediate | 105 |
+| Moderate compound | Advanced | 120 |
+| Isolation (all) | Beginner | 60 |
+| Isolation | Intermediate | 75 |
+| Isolation | Advanced | 75 |
+| Core (all) | All levels | 60 |
+| Warm-up sets (all) | All levels | 60 |
+
+**Rest timer priority chain (highest precedence first):**
+1. AI plan's `rest_seconds` per exercise (if AI-generated plan)
+2. User per-exercise override (if user has customized)
+3. This table's defaults (based on experience level + exercise type)
+4. User global setting from Settings screen (fallback only)
+
+---
 
 ## Appendix B: Unit Conversion Reference
 

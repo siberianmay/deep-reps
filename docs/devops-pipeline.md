@@ -8,21 +8,51 @@
 
 ## Table of Contents
 
-1. [CI/CD Pipeline Design](#1-cicd-pipeline-design)
-2. [Build Configuration](#2-build-configuration)
-3. [Environment Management](#3-environment-management)
-4. [Play Store Deployment](#4-play-store-deployment)
-5. [Monitoring & Observability](#5-monitoring--observability)
-6. [Infrastructure](#6-infrastructure)
+1. [MVP Scope vs Future Backend](#1-mvp-scope-vs-future-backend)
+2. [CI/CD Pipeline Design](#2-cicd-pipeline-design)
+3. [Build Configuration](#3-build-configuration)
+4. [Environment Management](#4-environment-management)
+5. [Play Store Deployment](#5-play-store-deployment)
+6. [Monitoring & Observability](#6-monitoring--observability)
 7. [Security](#7-security)
 8. [Disaster Recovery](#8-disaster-recovery)
-9. [Cost Management](#9-cost-management)
+9. [Future: Backend Infrastructure](#9-future-backend-infrastructure)
 
 ---
 
-## 1. CI/CD Pipeline Design
+## 1. MVP Scope vs Future Backend
 
-### 1.1 Pipeline Philosophy
+### 1.1 What Is In MVP Scope
+
+**Deep Reps MVP is a FREE Android app with NO backend.** All infrastructure in this section is built for MVP:
+
+- **Android app build pipeline:** CI/CD for debug, staging, and release builds
+- **Play Store deployment:** Internal testing, closed beta, staged production rollout
+- **App signing:** Play App Signing with upload key management
+- **Monitoring:** Firebase Crashlytics and Performance Monitoring for crash tracking, ANR detection, performance metrics
+- **Gemini API integration:** Direct device-to-Gemini API calls (API key embedded in APK via BuildConfig)
+- **Local data persistence:** Room database, offline-first, no cloud sync
+
+**What is NOT in MVP:**
+
+- No Firebase Firestore, Cloud Functions, Authentication, or Cloud Storage
+- No backend proxy for API key security
+- No user accounts or cloud data sync
+- No subscription infrastructure
+- No payment processing
+- No monetization analytics
+
+### 1.2 Post-MVP Backend Phase (Speculative)
+
+If product-market fit is achieved and a backend becomes necessary (cloud sync, API proxy for key security, user accounts), the backend architecture is described in Section 9. That infrastructure does NOT exist at launch and is NOT budgeted for MVP.
+
+**Trigger for backend phase:** Product Owner explicitly approves backend scope after validating PMF and securing budget for ongoing operational costs.
+
+---
+
+## 2. CI/CD Pipeline Design
+
+### 2.1 Pipeline Philosophy
 
 **Speed is non-negotiable.** A slow CI pipeline kills developer velocity. Every pipeline stage must be optimized for execution time through aggressive caching and parallelization. Target: PR pipeline completes in under 5 minutes, full release pipeline under 15 minutes.
 
@@ -30,7 +60,7 @@
 
 **Reproducible builds.** Every build must be reproducible from commit SHA alone. No "works on my machine" issues.
 
-### 1.2 Branch Strategy
+### 2.2 Branch Strategy
 
 ```
 main (production)
@@ -50,9 +80,11 @@ feature/* (work branches)
   └─ Runs PR pipeline on every push
 ```
 
+**Branch flow:** `feature/* → develop → main`
+
 **No long-lived feature branches.** Features exceeding 3 days of work must be broken down or feature-flagged. Merge to develop frequently.
 
-### 1.3 PR Pipeline (feature/* → develop)
+### 2.3 PR Pipeline (feature/* → develop)
 
 Runs on every push to a PR branch. Optimized for speed and early failure detection.
 
@@ -72,8 +104,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '17'
+          distribution: 'zulu'
+          java-version: '21'
       - name: Restore Gradle cache
         uses: actions/cache@v4
         with:
@@ -84,8 +116,6 @@ jobs:
           restore-keys: ${{ runner.os }}-gradle-
       - name: Ktlint check
         run: ./gradlew ktlintCheck --no-daemon
-      - name: Detekt static analysis
-        run: ./gradlew detekt --no-daemon
 
   unit-tests:
     runs-on: ubuntu-latest
@@ -94,8 +124,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '17'
+          distribution: 'zulu'
+          java-version: '21'
       - name: Restore Gradle cache
         uses: actions/cache@v4
         with:
@@ -122,8 +152,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '17'
+          distribution: 'zulu'
+          java-version: '21'
       - name: Restore Gradle cache
         uses: actions/cache@v4
         with:
@@ -152,8 +182,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '17'
+          distribution: 'zulu'
+          java-version: '21'
       - name: Enable KVM (for faster emulator)
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
@@ -209,9 +239,9 @@ jobs:
 - Coverage drops below 80% → Fail CI (enforced via Codecov threshold)
 - Instrumentation test fail → Fix before merge (no flaky test tolerance)
 
-### 1.4 Merge Pipeline (develop → main or merge to develop)
+### 2.4 Merge Pipeline (develop → main or merge to develop)
 
-Runs on successful merge to `develop`. Full test suite + staging deployment.
+Runs on successful merge to `develop`. Full test suite + internal track deployment.
 
 ```yaml
 # .github/workflows/develop-merge.yml
@@ -229,8 +259,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '17'
+          distribution: 'zulu'
+          java-version: '21'
       - name: Gradle cache
         uses: actions/cache@v4
         with:
@@ -250,15 +280,15 @@ jobs:
             exit 1
           fi
 
-  build-staging:
+  build-debug:
     runs-on: ubuntu-latest
     needs: full-test-suite
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '17'
+          distribution: 'zulu'
+          java-version: '21'
       - name: Gradle cache
         uses: actions/cache@v4
         with:
@@ -269,19 +299,17 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}
       - name: Decode keystore
         run: |
-          echo "${{ secrets.STAGING_KEYSTORE_BASE64 }}" | base64 -d > app/staging.keystore
-      - name: Build staging bundle
-        run: ./gradlew bundleStaging --no-daemon
+          echo "${{ secrets.DEBUG_KEYSTORE_BASE64 }}" | base64 -d > app/debug.keystore
+      - name: Build debug bundle
+        run: ./gradlew bundleDebug --no-daemon
         env:
-          KEYSTORE_PASSWORD: ${{ secrets.STAGING_KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.STAGING_KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.STAGING_KEY_PASSWORD }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_DEV_API_KEY }}
       - name: Upload to Play Store internal track
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
           packageName: com.deepreps.app
-          releaseFiles: app/build/outputs/bundle/staging/app-staging.aab
+          releaseFiles: app/build/outputs/bundle/debug/app-debug.aab
           track: internal
           status: completed
 
@@ -304,9 +332,9 @@ jobs:
 - Dependency vulnerability scan (fail on high/critical vulnerabilities)
 - Build and deploy to Play Store internal track (for QA testing)
 
-### 1.5 Release Pipeline (tag → production)
+### 2.5 Release Pipeline (tag → production)
 
-Triggered by creating a release tag (e.g., `v1.0.0`). Builds signed production bundle and deploys to Play Store with staged rollout.
+Triggered by creating a release tag (e.g., `v1.0.0`). Builds signed production bundle and deploys to Play Store closed testing track for manual promotion.
 
 ```yaml
 # .github/workflows/release.yml
@@ -325,8 +353,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '17'
+          distribution: 'zulu'
+          java-version: '21'
       - name: Gradle cache
         uses: actions/cache@v4
         with:
@@ -347,6 +375,7 @@ jobs:
           KEYSTORE_PASSWORD: ${{ secrets.UPLOAD_KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.UPLOAD_KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.UPLOAD_KEY_PASSWORD }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_PROD_API_KEY }}
       - name: Sign bundle
         run: |
           jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 \
@@ -440,11 +469,11 @@ jobs:
           status: inProgress
 ```
 
-### 1.6 Pipeline Optimization Targets
+### 2.6 Pipeline Optimization Targets
 
 | Stage | Target Time | Optimization Strategy |
 |-------|-------------|----------------------|
-| Lint | <1 min | Ktlint + Detekt with parallel execution |
+| Lint | <1 min | Ktlint with parallel execution |
 | Unit Tests | <3 min | Parallel test execution, Gradle test caching |
 | Build (debug) | <2 min | Gradle build cache, configuration cache, dependency caching |
 | Instrumentation Tests | <10 min | AVD caching, KVM acceleration, matrix only min/max SDK |
@@ -462,11 +491,11 @@ jobs:
 
 ---
 
-## 2. Build Configuration
+## 3. Build Configuration
 
-### 2.1 Build Variants
+### 3.1 Build Variants
 
-Three build types:
+Two build types for MVP:
 
 ```gradle
 // app/build.gradle.kts
@@ -479,29 +508,9 @@ android {
             isMinifyEnabled = false
 
             // Debug-specific config
-            buildConfigField("String", "API_BASE_URL", "\"https://dev-api.deepreps.com\"")
-            buildConfigField("String", "GEMINI_API_KEY", "\"${System.getenv("GEMINI_DEV_API_KEY")}\"")
+            buildConfigField("String", "GEMINI_API_KEY", "\"${System.getenv("GEMINI_API_KEY") ?: ""}\"")
             buildConfigField("boolean", "ENABLE_LOGGING", "true")
             buildConfigField("boolean", "ENABLE_STRICT_MODE", "true")
-        }
-
-        staging {
-            applicationIdSuffix = ".staging"
-            versionNameSuffix = "-STAGING"
-            isDebuggable = false
-            isMinifyEnabled = true
-            isShrinkResources = true
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
-
-            signingConfig = signingConfigs.getByName("staging")
-
-            buildConfigField("String", "API_BASE_URL", "\"https://staging-api.deepreps.com\"")
-            buildConfigField("String", "GEMINI_API_KEY", "\"${System.getenv("GEMINI_STAGING_API_KEY")}\"")
-            buildConfigField("boolean", "ENABLE_LOGGING", "true")
-            buildConfigField("boolean", "ENABLE_STRICT_MODE", "false")
         }
 
         release {
@@ -515,8 +524,7 @@ android {
 
             signingConfig = signingConfigs.getByName("release")
 
-            buildConfigField("String", "API_BASE_URL", "\"https://api.deepreps.com\"")
-            buildConfigField("String", "GEMINI_API_KEY", "\"${System.getenv("GEMINI_PROD_API_KEY")}\"")
+            buildConfigField("String", "GEMINI_API_KEY", "\"${System.getenv("GEMINI_API_KEY") ?: ""}\"")
             buildConfigField("boolean", "ENABLE_LOGGING", "false")
             buildConfigField("boolean", "ENABLE_STRICT_MODE", "false")
         }
@@ -524,34 +532,9 @@ android {
 }
 ```
 
-### 2.2 Product Flavors (Future: Free vs Premium)
+**MVP has no staging build type.** Debug for development, release for production. If staging is needed post-MVP, it will be added to align with backend environments.
 
-If a freemium model is chosen, use product flavors:
-
-```gradle
-productFlavors {
-    create("free") {
-        dimension = "tier"
-        applicationIdSuffix = ".free"
-
-        buildConfigField("boolean", "IS_PREMIUM", "false")
-        buildConfigField("int", "MAX_TEMPLATES", "3")
-        buildConfigField("boolean", "AI_PLAN_GENERATION_ENABLED", "false")
-    }
-
-    create("premium") {
-        dimension = "tier"
-
-        buildConfigField("boolean", "IS_PREMIUM", "true")
-        buildConfigField("int", "MAX_TEMPLATES", "999")
-        buildConfigField("boolean", "AI_PLAN_GENERATION_ENABLED", "true")
-    }
-}
-```
-
-This generates builds like `freeDebug`, `premiumRelease`, etc. Deferred until monetization model is decided.
-
-### 2.3 Signing Configuration
+### 3.2 Signing Configuration
 
 **Never commit keystores or passwords to version control.** Use environment variables in CI and local `keystore.properties` file (gitignored) for local builds.
 
@@ -565,13 +548,6 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     signingConfigs {
-        create("staging") {
-            storeFile = file(keystoreProperties["stagingStoreFile"] ?: System.getenv("STAGING_KEYSTORE_PATH") ?: "staging.keystore")
-            storePassword = keystoreProperties["stagingStorePassword"] as String? ?: System.getenv("STAGING_KEYSTORE_PASSWORD")
-            keyAlias = keystoreProperties["stagingKeyAlias"] as String? ?: System.getenv("STAGING_KEY_ALIAS")
-            keyPassword = keystoreProperties["stagingKeyPassword"] as String? ?: System.getenv("STAGING_KEY_PASSWORD")
-        }
-
         create("release") {
             storeFile = file(keystoreProperties["uploadStoreFile"] ?: System.getenv("UPLOAD_KEYSTORE_PATH") ?: "upload.keystore")
             storePassword = keystoreProperties["uploadStorePassword"] as String? ?: System.getenv("UPLOAD_KEYSTORE_PASSWORD")
@@ -585,11 +561,6 @@ android {
 **keystore.properties (gitignored, local development only):**
 
 ```properties
-stagingStoreFile=../keystores/staging.keystore
-stagingStorePassword=REDACTED
-stagingKeyAlias=staging
-stagingKeyPassword=REDACTED
-
 uploadStoreFile=../keystores/upload.keystore
 uploadStorePassword=REDACTED
 uploadKeyAlias=upload
@@ -598,16 +569,12 @@ uploadKeyPassword=REDACTED
 
 **CI environment uses GitHub Secrets:**
 
-- `STAGING_KEYSTORE_BASE64` (base64-encoded keystore file)
-- `STAGING_KEYSTORE_PASSWORD`
-- `STAGING_KEY_ALIAS`
-- `STAGING_KEY_PASSWORD`
-- `UPLOAD_KEYSTORE_BASE64`
+- `UPLOAD_KEYSTORE_BASE64` (base64-encoded keystore file)
 - `UPLOAD_KEYSTORE_PASSWORD`
 - `UPLOAD_KEY_ALIAS`
 - `UPLOAD_KEY_PASSWORD`
 
-### 2.4 Build Time Optimization
+### 3.3 Build Time Optimization
 
 Android builds are slow. Target: clean build under 90 seconds, incremental build under 10 seconds.
 
@@ -667,7 +634,7 @@ dependencyLocking {
 
 Run `./gradlew dependencies --write-locks` to generate lock files. Commit these to version control.
 
-### 2.5 Dependency Vulnerability Scanning
+### 3.4 Dependency Vulnerability Scanning
 
 **Dependabot (GitHub native):**
 
@@ -694,7 +661,7 @@ updates:
 
 **Snyk (deeper vulnerability detection):**
 
-Integrated in CI pipeline (see 1.4). Runs on every merge to `develop`. Fails build on high/critical vulnerabilities.
+Integrated in CI pipeline (see 2.4). Runs on every merge to `develop`. Fails build on high/critical vulnerabilities.
 
 **Manual scan command (run weekly):**
 
@@ -704,19 +671,20 @@ Integrated in CI pipeline (see 1.4). Runs on every merge to `develop`. Fails bui
 
 ---
 
-## 3. Environment Management
+## 4. Environment Management
 
-### 3.1 Environment Definitions
+### 4.1 Environment Definitions (MVP)
 
-| Environment | Purpose | Backend URL | Data Isolation | Deployment Target |
-|-------------|---------|-------------|----------------|------------------|
-| **Development** | Local dev work | `localhost:8080` or dev backend | Local SQLite + Firebase emulator | Developer machines |
-| **Staging** | QA and beta testing | `staging-api.deepreps.com` | Staging Firebase project | Play Store internal track |
-| **Production** | Live users | `api.deepreps.com` | Production Firebase project | Play Store production track |
+| Environment | Purpose | Data Isolation | Deployment Target |
+|-------------|---------|----------------|------------------|
+| **Development** | Local dev work | Local Room database only | Developer machines |
+| **Production** | Live users | Local Room database only | Play Store production track |
 
-### 3.2 Environment-Specific Configuration
+**MVP has NO staging environment.** Debug builds for local development, release builds for production. No remote data, no backend, no environment-specific URLs beyond the Gemini API endpoint (which is the same for all environments).
 
-All environment config is injected via `BuildConfig` at compile time (see 2.1). No runtime environment detection.
+### 4.2 Environment-Specific Configuration
+
+All environment config is injected via `BuildConfig` at compile time.
 
 **Example usage in code:**
 
@@ -726,7 +694,6 @@ class GeminiApiClient(
     private val httpClient: HttpClient
 ) {
     private val apiKey = BuildConfig.GEMINI_API_KEY
-    private val baseUrl = BuildConfig.API_BASE_URL
 
     suspend fun generatePlan(request: PlanRequest): PlanResponse {
         // ...
@@ -734,49 +701,16 @@ class GeminiApiClient(
 }
 ```
 
-### 3.3 Feature Flags (Optional, Recommended)
-
-Use Firebase Remote Config for runtime feature toggling without redeploying:
-
-```kotlin
-// domain/config/FeatureFlags.kt
-object FeatureFlags {
-    var enableSupersets: Boolean = false
-    var enableWearOsSync: Boolean = false
-    var maxTemplatesForFreeUsers: Int = 3
-
-    suspend fun refresh() {
-        val remoteConfig = Firebase.remoteConfig
-        remoteConfig.fetchAndActivate().await()
-
-        enableSupersets = remoteConfig.getBoolean("enable_supersets")
-        enableWearOsSync = remoteConfig.getBoolean("enable_wear_os_sync")
-        maxTemplatesForFreeUsers = remoteConfig.getLong("max_templates_free_users").toInt()
-    }
-}
-```
-
-Benefits:
-
-- Kill switch for buggy features without redeploying
-- A/B test feature rollout
-- Gradual feature rollout (enable for 10% of users, monitor, expand to 100%)
-
-### 3.4 Secret Management
+### 4.3 Secret Management
 
 **GitHub Secrets (CI/CD):**
 
 All secrets stored in GitHub repository settings → Secrets and variables → Actions.
 
-Required secrets:
+Required secrets for MVP:
 
-- `GEMINI_DEV_API_KEY`
-- `GEMINI_STAGING_API_KEY`
-- `GEMINI_PROD_API_KEY`
-- `STAGING_KEYSTORE_BASE64`
-- `STAGING_KEYSTORE_PASSWORD`
-- `STAGING_KEY_ALIAS`
-- `STAGING_KEY_PASSWORD`
+- `GEMINI_DEV_API_KEY` (for debug builds)
+- `GEMINI_PROD_API_KEY` (for release builds)
 - `UPLOAD_KEYSTORE_BASE64`
 - `UPLOAD_KEYSTORE_PASSWORD`
 - `UPLOAD_KEY_ALIAS`
@@ -785,94 +719,23 @@ Required secrets:
 - `SLACK_WEBHOOK_URL`
 - `SNYK_TOKEN`
 
-**Google Secret Manager (Backend, if needed):**
-
-If backend services are deployed (Cloud Run, Cloud Functions), use Secret Manager:
-
-```bash
-# Store Gemini API key
-gcloud secrets create gemini-api-key --data-file=- <<< "$GEMINI_API_KEY"
-
-# Grant Cloud Run service account access
-gcloud secrets add-iam-policy-binding gemini-api-key \
-  --member="serviceAccount:backend@deepreps-prod.iam.gserviceaccount.com" \
-  --role="roles/secretmanager.secretAccessor"
-```
-
-Access in Cloud Run:
-
-```yaml
-# cloud-run-service.yaml
-apiVersion: serving.knative.dev/v1
-kind: Service
-metadata:
-  name: deepreps-api
-spec:
-  template:
-    spec:
-      containers:
-      - image: gcr.io/deepreps-prod/api:latest
-        env:
-        - name: GEMINI_API_KEY
-          valueFrom:
-            secretKeyRef:
-              name: gemini-api-key
-              key: latest
-```
-
-### 3.5 Local Development Setup
+### 4.4 Local Development Setup
 
 **Reproducible environment setup (documented in `docs/setup.md`):**
 
 1. Install Android Studio (latest stable)
-2. Install Java 17 (Temurin distribution)
+2. Install Java 21 (Zulu distribution)
 3. Clone repository
-4. Copy `keystore.properties.template` to `keystore.properties` and fill in staging keystore details (shared via 1Password or similar secure method)
+4. Copy `keystore.properties.template` to `keystore.properties` and fill in upload keystore details (shared via 1Password or similar secure method)
 5. Create `local.properties` with `sdk.dir=/path/to/android-sdk`
-6. Run `./gradlew assembleDebug` to verify setup
-7. (Optional) Install Firebase CLI and run `firebase emulators:start` for local backend
-
-**Firebase Emulator setup (optional for offline dev):**
-
-```json
-// firebase.json
-{
-  "emulators": {
-    "auth": {
-      "port": 9099
-    },
-    "firestore": {
-      "port": 8080
-    },
-    "functions": {
-      "port": 5001
-    },
-    "storage": {
-      "port": 9199
-    },
-    "ui": {
-      "enabled": true,
-      "port": 4000
-    }
-  }
-}
-```
-
-Connect app to emulator in debug builds:
-
-```kotlin
-// App initialization (debug builds only)
-if (BuildConfig.DEBUG) {
-    Firebase.firestore.useEmulator("10.0.2.2", 8080) // 10.0.2.2 = localhost from Android emulator
-    Firebase.auth.useEmulator("10.0.2.2", 9099)
-}
-```
+6. Set `GEMINI_API_KEY` environment variable for local builds
+7. Run `./gradlew assembleDebug` to verify setup
 
 ---
 
-## 4. Play Store Deployment
+## 5. Play Store Deployment
 
-### 4.1 App Signing Strategy
+### 5.1 App Signing Strategy
 
 **Use Play App Signing.** Google manages the app signing key, you manage the upload key. Benefits:
 
@@ -897,16 +760,16 @@ base64 upload.keystore > upload.keystore.base64
 cat upload.keystore.base64 | pbcopy # Paste into GitHub Secrets
 ```
 
-### 4.2 Release Tracks
+### 5.2 Release Tracks
 
 | Track | Purpose | Audience | Update Strategy |
 |-------|---------|----------|----------------|
 | **Internal** | CI builds from `develop` branch | Team only (QA, devs, PM) | Auto-deployed on every merge |
 | **Closed Testing** | Beta releases | Opted-in beta testers (100-500 users) | Manual promotion from internal after QA pass |
 | **Open Testing** | Public beta | Anyone who opts in | Manual promotion from closed after 48h of monitoring |
-| **Production** | Live release | All users | Staged rollout (see 4.3) |
+| **Production** | Live release | All users | Staged rollout (see 5.3) |
 
-### 4.3 Staged Rollout Strategy
+### 5.3 Staged Rollout Strategy
 
 Never go 0→100% in production. Crash rate variability across devices/OS versions is high.
 
@@ -935,7 +798,7 @@ Never go 0→100% in production. Crash rate variability across devices/OS versio
 3. Deploy hotfix to internal → closed → production (restart staged rollout)
 4. Post-mortem: document root cause and prevention measures
 
-### 4.4 Version Naming Convention
+### 5.4 Version Naming Convention
 
 **Semantic versioning + build number:**
 
@@ -955,7 +818,7 @@ android {
 **Versioning rules:**
 
 - **MAJOR:** Breaking changes (e.g., complete UI redesign, data migration)
-- **MINOR:** New features (e.g., superset support, Wear OS sync)
+- **MINOR:** New features (e.g., superset support)
 - **PATCH:** Bug fixes, performance improvements
 
 **Automated version bumping (optional):**
@@ -980,9 +843,9 @@ fun String.execute(): String {
 }
 ```
 
-### 4.5 Release Notes Automation
+### 5.5 Release Notes Automation
 
-Generate release notes from git commit messages (see 1.5). Use conventional commits for structured notes:
+Generate release notes from git commit messages (see 2.5). Use conventional commits for structured notes:
 
 ```
 feat: add superset support
@@ -1011,7 +874,7 @@ What's new in v1.1.0:
 Full changelog: https://github.com/deepreps/deep-reps/releases/tag/v1.1.0
 ```
 
-### 4.6 App Bundle Configuration
+### 5.6 App Bundle Configuration
 
 Use Android App Bundles (AAB) for all production builds. Reduces download size by 15-30% compared to universal APK.
 
@@ -1042,11 +905,29 @@ Output: `app/build/outputs/bundle/release/app-release.aab`
 
 ---
 
-## 5. Monitoring & Observability
+## 6. Monitoring & Observability
 
-### 5.1 Crash Reporting: Firebase Crashlytics
+### 6.1 Crash Reporting: Firebase Crashlytics
 
 **Setup:**
+
+Add Firebase dependencies to version catalog (`gradle/libs.versions.toml`):
+
+```toml
+[versions]
+firebase-bom = "33.7.0"
+
+[libraries]
+firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebase-bom" }
+firebase-crashlytics = { group = "com.google.firebase", name = "firebase-crashlytics-ktx" }
+firebase-analytics = { group = "com.google.firebase", name = "firebase-analytics-ktx" }
+firebase-perf = { group = "com.google.firebase", name = "firebase-perf-ktx" }
+
+[plugins]
+google-services = { id = "com.google.gms.google-services", version = "4.4.2" }
+firebase-crashlytics = { id = "com.google.firebase.crashlytics", version = "3.0.2" }
+firebase-perf = { id = "com.google.firebase.firebase-perf", version = "1.4.2" }
+```
 
 ```gradle
 // app/build.gradle.kts
@@ -1056,9 +937,9 @@ plugins {
 }
 
 dependencies {
-    implementation(platform("com.google.firebase:firebase-bom:32.7.0"))
-    implementation("com.google.firebase:firebase-crashlytics-ktx")
-    implementation("com.google.firebase:firebase-analytics-ktx")
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.crashlytics)
+    implementation(libs.firebase.analytics)
 }
 ```
 
@@ -1075,7 +956,7 @@ class DeepRepsApp : Application() {
 
         // Set custom keys for better crash context
         FirebaseCrashlytics.getInstance().apply {
-            setUserId(getCurrentUserId()) // Anonymized user ID
+            setUserId(getAnonymousUserId()) // Anonymized user ID
             setCustomKey("app_version", BuildConfig.VERSION_NAME)
             setCustomKey("build_type", BuildConfig.BUILD_TYPE)
         }
@@ -1103,7 +984,7 @@ try {
 | Regressed crash | Previously fixed crash reappears | Slack + email (engineer who fixed it) |
 | ANR spike | ANR rate >0.3% | Slack + email (lead dev) |
 
-### 5.2 Performance Monitoring: Firebase Performance Monitoring
+### 6.2 Performance Monitoring: Firebase Performance Monitoring
 
 **Setup:**
 
@@ -1114,7 +995,7 @@ plugins {
 }
 
 dependencies {
-    implementation("com.google.firebase:firebase-perf-ktx")
+    implementation(libs.firebase.perf)
 }
 ```
 
@@ -1150,7 +1031,7 @@ try {
 - Screen transition time (target: <300ms)
 - Database query time (target: <50ms for reads, <100ms for writes)
 - AI plan generation time (target: <3s)
-- Network request latency (P50, P90, P99)
+- Gemini API request latency (P50, P90, P99)
 
 **Alerting:**
 
@@ -1160,7 +1041,7 @@ try {
 | Plan generation (P90) | >5s | Check Gemini API latency, optimize prompt |
 | Database write (P90) | >150ms | Review query optimization |
 
-### 5.3 ANR Detection
+### 6.3 ANR Detection
 
 Crashlytics automatically detects ANRs. Additional monitoring via StrictMode in debug builds:
 
@@ -1190,7 +1071,7 @@ if (BuildConfig.DEBUG && BuildConfig.ENABLE_STRICT_MODE) {
 - Image loading blocking UI (use Coil with proper threading)
 - Heavy JSON parsing on main thread (move to background)
 
-### 5.4 Custom Metrics: Firebase Analytics
+### 6.4 Custom Metrics: Firebase Analytics
 
 Track business-critical events:
 
@@ -1229,9 +1110,9 @@ Firebase.analytics.logEvent("template_used") {
 - `exercise_detail_viewed`
 - `pr_achieved`
 
-### 5.5 Dashboard Design
+### 6.5 Dashboard Design
 
-**Grafana dashboard (if backend exists) or Firebase Console:**
+**Firebase Console provides built-in dashboards for MVP:**
 
 **Panel 1: Health Overview**
 
@@ -1243,7 +1124,7 @@ Firebase.analytics.logEvent("template_used") {
 
 - App startup time (P50, P90, P99)
 - Plan generation latency (P50, P90, P99)
-- API error rate
+- Gemini API error rate
 
 **Panel 3: Engagement**
 
@@ -1259,10 +1140,10 @@ Firebase.analytics.logEvent("template_used") {
 
 **Access control:**
 
-- Entire team has read access
-- DevOps + lead dev have write access (dashboard editing)
+- Entire team has read access to Firebase Console
+- DevOps + lead dev have admin access
 
-### 5.6 Alerting Thresholds & Escalation
+### 6.6 Alerting Thresholds & Escalation
 
 **Severity levels:**
 
@@ -1283,9 +1164,244 @@ Use PagerDuty or Opsgenie for on-call scheduling.
 
 ---
 
-## 6. Infrastructure
+## 7. Security
 
-### 6.1 Backend Hosting Decision
+### 7.1 App Signing Key Management
+
+**Play App Signing is mandatory.** Google holds the app signing key, you hold the upload key.
+
+**Upload key security:**
+
+- Generate with 2048-bit RSA, validity 10,000 days
+- Store keystore file in 1Password or similar vault (NOT in version control)
+- Base64-encode for GitHub Secrets
+- Rotate upload key every 2 years (reset via Play Console)
+
+**Disaster recovery:**
+
+- Backup keystore file to 3 locations: 1Password, offline USB drive, encrypted cloud storage
+- Document upload key password in secure vault accessible to 2+ team members
+
+### 7.2 API Key Security (Gemini)
+
+**MVP approach (acknowledged security limitation):**
+
+The Gemini API key is embedded in the APK via `BuildConfig`. This is extractable by a determined attacker using reverse engineering tools (apktool, jadx). This approach is used for MVP to avoid backend infrastructure costs.
+
+**Mitigation for MVP:**
+
+- Use rate limiting on Gemini API key (set in Google AI Studio)
+- Monitor API usage daily for anomalies
+- Rotate key every 6 months
+
+**Post-MVP backend proxy (when budget allows):**
+
+The mobile app calls a backend endpoint that proxies requests to Gemini. The API key lives server-side only. The mobile app authenticates to the backend. This is the only secure approach but requires backend infrastructure (see Section 9).
+
+### 7.3 Dependency Vulnerability Scanning
+
+**Schedule:**
+
+- **Automated:** Snyk runs on every merge to `develop` (see 2.4)
+- **Manual audit:** Monthly review of dependency versions and CVEs
+
+**Action on vulnerability:**
+
+- **Critical/High:** Fix within 48 hours, hotfix release if actively exploited
+- **Medium:** Fix within 2 weeks, include in next release
+- **Low:** Fix within 1 month or defer
+
+### 7.4 SAST Tools
+
+**Static Analysis:**
+
+- **ktlint:** Kotlin code style enforcement (runs in CI, see 2.3)
+- **Android Lint:** Built-in Android checks
+
+```gradle
+// app/build.gradle.kts
+android {
+    lint {
+        warningsAsErrors = true
+        abortOnError = true
+        checkDependencies = true
+
+        disable += listOf("ObsoleteLintCustomCheck")
+
+        // Security-critical checks
+        enable += listOf(
+            "HardcodedDebugMode",
+            "HardcodedText",
+            "UnusedResources",
+            "SetJavaScriptEnabled"
+        )
+    }
+}
+```
+
+**Instrumentation security tests:**
+
+```kotlin
+// Security test: Ensure no sensitive data in logs
+@Test
+fun testNoSensitiveDataInLogs() {
+    val logcatOutput = getLogcatOutput()
+    assertFalse(logcatOutput.contains("password"))
+    assertFalse(logcatOutput.contains("api_key"))
+}
+```
+
+### 7.5 Code Signing & Supply Chain Integrity
+
+**Verify GitHub Actions workflows use pinned versions (not `@latest`):**
+
+```yaml
+# BAD: Unpinned version
+- uses: actions/checkout@v4
+
+# GOOD: Pinned to specific commit
+- uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+```
+
+**Dependabot monitors action versions:**
+
+```yaml
+# .github/dependabot.yml
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+```
+
+**Sign commits (optional but recommended):**
+
+```bash
+# Generate GPG key
+gpg --full-generate-key
+
+# Configure Git
+git config --global user.signingkey YOUR_KEY_ID
+git config --global commit.gpgsign true
+```
+
+---
+
+## 8. Disaster Recovery
+
+### 8.1 Backup Strategy
+
+**User data (MVP — local only):**
+
+User data lives in Room database on device. No cloud backup for MVP. Users are responsible for device backups (Android Auto Backup backs up app data to Google Drive by default).
+
+**Code and configuration:**
+
+- Git is the backup (GitHub as remote)
+- Mirror repository to GitLab or Bitbucket (disaster recovery if GitHub is unavailable)
+
+**Signing keys:**
+
+- See 7.1 (backup to 1Password, offline USB, encrypted cloud storage)
+
+### 8.2 Recovery Procedures
+
+**Scenario 1: Catastrophic app signing key loss (upload key)**
+
+1. Verify backup locations (1Password, USB, cloud)
+2. If all backups lost, reset upload key via Play Console (requires account verification)
+3. Generate new upload key, update CI/CD secrets
+4. Deploy new build with new key
+
+**Scenario 2: GitHub Actions outage**
+
+1. Download latest commit from GitHub
+2. Build locally:
+
+```bash
+./gradlew assembleRelease
+```
+
+3. Manually upload AAB to Play Console
+4. Resume CI/CD when GitHub Actions recovers
+
+### 8.3 Incident Response Playbook
+
+**Incident classification:**
+
+- **P0:** Data loss, security breach, crash rate >5%
+- **P1:** Crash rate 2-5%, ANR spike, API downtime
+- **P2:** New crash type, performance degradation
+- **P3:** Minor bug, cosmetic issue
+
+**P0 Incident Response (Data Loss Example):**
+
+1. **Detect:** Alert fires (Crashlytics, monitoring dashboard)
+2. **Assess:** On-call engineer investigates scope (how many users affected, what data lost)
+3. **Contain:** Halt Play Store rollout, revert to previous version if possible
+4. **Communicate:** Post in Slack #incidents channel, notify Product Owner
+5. **Fix:** Emergency hotfix, test locally, fast-track through CI
+6. **Deploy:** Hotfix to internal → closed → production (accelerated rollout)
+7. **Monitor:** Watch crash rate, validate fix effectiveness
+8. **Post-mortem:** Within 48 hours, document root cause and prevention measures
+
+**Post-mortem template:**
+
+```markdown
+# Incident Post-Mortem: [Title]
+
+**Date:** YYYY-MM-DD
+**Severity:** P0/P1/P2/P3
+**Duration:** X hours
+**Impact:** X users affected, Y% crash rate
+
+## Timeline
+- HH:MM - Incident detected
+- HH:MM - Root cause identified
+- HH:MM - Fix deployed
+- HH:MM - Incident resolved
+
+## Root Cause
+[Technical explanation]
+
+## Resolution
+[What was done to fix]
+
+## Prevention
+[Actionable items to prevent recurrence]
+
+## Action Items
+- [ ] Task 1 (owner: Name, due: Date)
+- [ ] Task 2 (owner: Name, due: Date)
+```
+
+### 8.4 SLA Definitions
+
+**MVP SLAs (app-side only, no backend):**
+
+**Performance SLA:**
+
+- App startup (P90): <2.5s
+- Plan generation (P90): <5s (dependent on Gemini API)
+- Database queries (P90): <100ms
+
+**Crash rate SLA:**
+
+- Crash-free users: >99.5%
+- ANR rate: <0.3%
+
+**Data recovery SLA:**
+
+- Recovery Point Objective (RPO): Device backup interval (user-controlled)
+- Recovery Time Objective (RTO): N/A (local data only)
+
+---
+
+## 9. Future: Backend Infrastructure
+
+**This section is SPECULATIVE. None of this infrastructure exists at MVP launch. It is documented here for reference if post-MVP backend work is approved.**
+
+### 9.1 Backend Hosting Decision
 
 **Three options:**
 
@@ -1295,27 +1411,26 @@ Use PagerDuty or Opsgenie for on-call scheduling.
 | **Google Cloud Run** | Full Docker flexibility, near-zero cold start, better pricing at scale | Requires container management, more setup | ~$10/mo | ~$150/mo |
 | **AWS Lambda + DynamoDB** | Mature ecosystem, excellent scaling | Steeper learning curve, cold starts, more expensive | ~$15/mo | ~$250/mo |
 
-**Recommendation: Firebase for MVP, migrate to Cloud Run if needed post-PMF.**
+**Recommendation: Firebase for post-MVP, migrate to Cloud Run if needed after growth.**
 
 **Rationale:**
 
-- Firebase free tier (Spark plan) covers development and early launch (up to ~5K MAU)
-- Cloud Functions handle AI plan generation API (Gemini API calls) without managing servers
+- Firebase free tier (Spark plan) covers development and early backend testing
+- Cloud Functions handle AI plan generation API proxy (Gemini API calls server-side)
 - Firestore handles user data sync (workout logs, templates, profile) with offline support
 - Firebase Authentication integrates seamlessly
 - If AI plan generation becomes a bottleneck or costs spike, migrate only that service to Cloud Run (hybrid architecture)
 
 **Migration trigger:** If Firebase costs exceed $500/mo OR plan generation latency P90 exceeds 5s consistently.
 
-### 6.2 Firebase Architecture (Recommended MVP Setup)
+### 9.2 Firebase Architecture (Post-MVP)
 
 **Services used:**
 
 - **Firestore:** User profiles, workout logs, templates, exercise library (read-only)
-- **Cloud Functions:** AI plan generation endpoint, data aggregation jobs
-- **Authentication:** Email/password, Google Sign-In (optional)
+- **Cloud Functions:** AI plan generation endpoint (proxies Gemini API), data aggregation jobs
+- **Authentication:** Email/password, Google Sign-In
 - **Cloud Storage:** Exercise images/animations (future)
-- **Hosting:** (Not needed — native app only)
 
 **Firestore data model (simplified):**
 
@@ -1382,7 +1497,7 @@ export const generatePlan = functions.https.onCall(async (data, context) => {
 firebase deploy --only functions
 ```
 
-### 6.3 API Gateway & Rate Limiting
+### 9.3 API Gateway & Rate Limiting
 
 **Firebase Cloud Functions has built-in rate limiting** (per-project quotas). For per-user rate limiting, implement in function:
 
@@ -1417,24 +1532,7 @@ export async function checkRateLimit(userId: string): Promise<boolean> {
 }
 ```
 
-### 6.4 CDN for Static Assets
-
-**Exercise images/animations:** Store in Firebase Cloud Storage or Google Cloud Storage with CDN enabled.
-
-```bash
-# Enable Cloud CDN for GCS bucket
-gsutil mb -c STANDARD -l us-central1 gs://deepreps-exercise-media
-gsutil iam ch allUsers:objectViewer gs://deepreps-exercise-media
-gcloud compute backend-buckets create deepreps-media-backend --gcs-bucket-name=deepreps-exercise-media --enable-cdn
-```
-
-**Image optimization:**
-
-- Serve WebP format (80% smaller than JPEG)
-- Generate multiple resolutions (1x, 2x, 3x) for different screen densities
-- Use Coil image loader in app with disk caching
-
-### 6.5 Infrastructure as Code (IaC)
+### 9.4 Infrastructure as Code (Post-MVP)
 
 **Terraform for GCP resources (if using Cloud Run or GCS):**
 
@@ -1506,283 +1604,7 @@ terraform plan
 terraform apply
 ```
 
----
-
-## 7. Security
-
-### 7.1 App Signing Key Management
-
-**Play App Signing is mandatory.** Google holds the app signing key, you hold the upload key.
-
-**Upload key security:**
-
-- Generate with 2048-bit RSA, validity 10,000 days
-- Store keystore file in 1Password or similar vault (NOT in version control)
-- Base64-encode for GitHub Secrets
-- Rotate upload key every 2 years (reset via Play Console)
-
-**Disaster recovery:**
-
-- Backup keystore file to 3 locations: 1Password, offline USB drive, encrypted cloud storage
-- Document upload key password in secure vault accessible to 2+ team members
-
-### 7.2 API Key Rotation Strategy
-
-**Gemini API key rotation (every 6 months):**
-
-1. Generate new API key in Google AI Studio
-2. Update GitHub Secrets (`GEMINI_STAGING_API_KEY`, `GEMINI_PROD_API_KEY`)
-3. Deploy new build with updated key
-4. Wait 7 days (grace period for users on old app versions)
-5. Revoke old API key
-
-**Automated rotation (future):**
-
-Use Google Secret Manager with automatic rotation enabled.
-
-### 7.3 Dependency Vulnerability Scanning
-
-**Schedule:**
-
-- **Automated:** Snyk runs on every merge to `develop` (see 1.4)
-- **Manual audit:** Monthly review of dependency versions and CVEs
-
-**Action on vulnerability:**
-
-- **Critical/High:** Fix within 48 hours, hotfix release if actively exploited
-- **Medium:** Fix within 2 weeks, include in next release
-- **Low:** Fix within 1 month or defer
-
-### 7.4 SAST/DAST Tools
-
-**Static Analysis (SAST):**
-
-- **Detekt:** Kotlin static analysis (runs in CI, see 1.3)
-- **Android Lint:** Built-in Android checks
-
-```gradle
-// app/build.gradle.kts
-android {
-    lint {
-        warningsAsErrors = true
-        abortOnError = true
-        checkDependencies = true
-
-        disable += listOf("ObsoleteLintCustomCheck")
-
-        // Security-critical checks
-        enable += listOf(
-            "HardcodedDebugMode",
-            "HardcodedText",
-            "UnusedResources",
-            "SetJavaScriptEnabled"
-        )
-    }
-}
-```
-
-**Dynamic Analysis (DAST):**
-
-Not applicable for native Android apps (DAST is for web apps). Equivalent: **instrumentation tests with security test cases**.
-
-```kotlin
-// Security test: Ensure no sensitive data in logs
-@Test
-fun testNoSensitiveDataInLogs() {
-    val logcatOutput = getLogcatOutput()
-    assertFalse(logcatOutput.contains("password"))
-    assertFalse(logcatOutput.contains("api_key"))
-}
-```
-
-### 7.5 Code Signing & Supply Chain Integrity
-
-**Verify GitHub Actions workflows use pinned versions (not `@latest`):**
-
-```yaml
-# BAD: Unpinned version
-- uses: actions/checkout@v4
-
-# GOOD: Pinned to specific commit
-- uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-```
-
-**Dependabot monitors action versions:**
-
-```yaml
-# .github/dependabot.yml
-updates:
-  - package-ecosystem: "github-actions"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-```
-
-**Sign commits (optional but recommended):**
-
-```bash
-# Generate GPG key
-gpg --full-generate-key
-
-# Configure Git
-git config --global user.signingkey YOUR_KEY_ID
-git config --global commit.gpgsign true
-```
-
----
-
-## 8. Disaster Recovery
-
-### 8.1 Backup Strategy
-
-**User data (Firestore):**
-
-- **Automatic backups:** Firebase Blaze plan includes automated daily backups (retained for 30 days)
-- **Export schedule:** Weekly exports to Google Cloud Storage using Cloud Scheduler
-
-```bash
-# Cloud Scheduler job (weekly Firestore export)
-gcloud scheduler jobs create http firestore-backup \
-  --schedule="0 2 * * 0" \
-  --uri="https://firestore.googleapis.com/v1/projects/deepreps-prod/databases/(default):exportDocuments" \
-  --message-body='{\"outputUriPrefix\":\"gs://deepreps-backups/firestore\"}' \
-  --oauth-service-account-email=firebase-adminsdk@deepreps-prod.iam.gserviceaccount.com
-```
-
-**Code and configuration:**
-
-- Git is the backup (GitHub as remote)
-- Mirror repository to GitLab or Bitbucket (disaster recovery if GitHub is unavailable)
-
-**Signing keys:**
-
-- See 7.1 (backup to 1Password, offline USB, encrypted cloud storage)
-
-### 8.2 Recovery Procedures
-
-**Scenario 1: Firestore data corruption**
-
-1. Identify corruption timestamp
-2. Restore from nearest automated backup before corruption:
-
-```bash
-gcloud firestore import gs://deepreps-backups/firestore/[BACKUP_ID]
-```
-
-3. Notify users of data restoration (last X hours of data may be lost)
-
-**Scenario 2: Catastrophic app signing key loss (upload key)**
-
-1. Verify backup locations (1Password, USB, cloud)
-2. If all backups lost, reset upload key via Play Console (requires account verification)
-3. Generate new upload key, update CI/CD secrets
-4. Deploy new build with new key
-
-**Scenario 3: GitHub Actions outage**
-
-1. Download latest commit from GitHub
-2. Build locally:
-
-```bash
-./gradlew assembleRelease
-```
-
-3. Manually upload AAB to Play Console
-4. Resume CI/CD when GitHub Actions recovers
-
-### 8.3 Incident Response Playbook
-
-**Incident classification:**
-
-- **P0:** Data loss, security breach, crash rate >5%
-- **P1:** Crash rate 2-5%, ANR spike, API downtime
-- **P2:** New crash type, performance degradation
-- **P3:** Minor bug, cosmetic issue
-
-**P0 Incident Response (Data Loss Example):**
-
-1. **Detect:** Alert fires (Crashlytics, monitoring dashboard)
-2. **Assess:** On-call engineer investigates scope (how many users affected, what data lost)
-3. **Contain:** Halt Play Store rollout, revert to previous version if possible
-4. **Communicate:** Post in Slack #incidents channel, notify Product Owner
-5. **Fix:** Emergency hotfix, test locally, fast-track through CI
-6. **Deploy:** Hotfix to internal → closed → production (accelerated rollout)
-7. **Monitor:** Watch crash rate, validate fix effectiveness
-8. **Post-mortem:** Within 48 hours, document root cause and prevention measures
-
-**Post-mortem template:**
-
-```markdown
-# Incident Post-Mortem: [Title]
-
-**Date:** YYYY-MM-DD
-**Severity:** P0/P1/P2/P3
-**Duration:** X hours
-**Impact:** X users affected, Y% crash rate
-
-## Timeline
-- HH:MM - Incident detected
-- HH:MM - Root cause identified
-- HH:MM - Fix deployed
-- HH:MM - Incident resolved
-
-## Root Cause
-[Technical explanation]
-
-## Resolution
-[What was done to fix]
-
-## Prevention
-[Actionable items to prevent recurrence]
-
-## Action Items
-- [ ] Task 1 (owner: Name, due: Date)
-- [ ] Task 2 (owner: Name, due: Date)
-```
-
-### 8.4 SLA Definitions
-
-**Availability SLA (production backend):**
-
-- **Target:** 99.5% uptime (43.8 minutes downtime per month)
-- **Measurement:** Firebase uptime + API endpoint health checks
-
-**Performance SLA:**
-
-- App startup (P90): <2.5s
-- Plan generation (P90): <5s
-- Database queries (P90): <100ms
-
-**Crash rate SLA:**
-
-- Crash-free users: >99.5%
-- ANR rate: <0.3%
-
-**Data recovery SLA:**
-
-- Recovery Point Objective (RPO): <24 hours (max data loss in disaster)
-- Recovery Time Objective (RTO): <4 hours (time to restore service)
-
----
-
-## 9. Cost Management
-
-### 9.1 Firebase Free Tier Limits (Spark Plan)
-
-| Service | Free Tier Limit | Overage Cost |
-|---------|----------------|-------------|
-| Firestore | 50K reads/day, 20K writes/day, 1GB storage | $0.06 per 100K reads, $0.18 per 100K writes |
-| Cloud Functions | 2M invocations/month, 400K GB-sec compute | $0.40 per 1M invocations, $0.0000025 per GB-sec |
-| Cloud Storage | 5GB storage, 1GB downloads/day | $0.026 per GB/month, $0.12 per GB egress |
-| Authentication | Unlimited (free) | Free |
-
-**Exceeded when:**
-
-- ~5K MAU (assuming 10 workouts/month per user → 500K Firestore writes/month)
-
-**Mitigation:** Batch writes, cache aggressively, reduce unnecessary reads.
-
-### 9.2 Cost Estimation at Scale
+### 9.5 Cost Estimation at Scale (Post-MVP Backend)
 
 **Assumptions:**
 
@@ -1798,7 +1620,7 @@ gcloud firestore import gs://deepreps-backups/firestore/[BACKUP_ID]
 | Firestore writes | 300K/month | Free (under 600K/month) |
 | Firestore reads | 100K/month | Free (under 1.5M/month) |
 | Cloud Functions | 2K invocations/month | Free (under 2M/month) |
-| Gemini API | 2K requests/month | ~$2 (free tier + $0.001/request) |
+| Gemini API | 2K requests/month | ~$2 (estimate) |
 | **Total** | | **~$2/month** (Spark plan) |
 
 **10K MAU:**
@@ -1825,48 +1647,6 @@ gcloud firestore import gs://deepreps-backups/firestore/[BACKUP_ID]
 
 **Cost spike trigger:** If monthly Firebase bill exceeds $500, evaluate migration to Cloud Run for backend API.
 
-### 9.3 Cost Optimization Strategies
-
-**Firestore optimization:**
-
-- **Batch writes:** Group set logs, write once per exercise instead of per set
-- **Cache aggressively:** Use Room database for local-first architecture, sync to Firestore only on WiFi
-- **Denormalize data:** Reduce reads by embedding related data (e.g., store exercise name in workout log, not just ID)
-
-**Cloud Functions optimization:**
-
-- **Increase memory allocation:** Higher memory = faster execution = lower GB-sec cost (counterintuitive but true)
-- **Use HTTP functions instead of callable functions** when possible (lower overhead)
-
-**Gemini API optimization:**
-
-- **Prompt compression:** Minimize token count in prompt (exclude redundant history)
-- **Cache plans client-side:** Reuse last plan if user runs identical workout within 7 days
-- **Fallback to baseline plans:** If API fails, use experience-level baseline (no API cost)
-
-**Cloud Storage optimization:**
-
-- **Lifecycle policies:** Delete old backups after 90 days
-- **Compress media:** WebP for images, H.265 for videos
-
-### 9.4 Budget Alerts
-
-**Google Cloud Billing alerts:**
-
-1. Go to Cloud Console → Billing → Budgets & alerts
-2. Create budget with thresholds:
-   - 50% of budget → Email to DevOps + Product Owner
-   - 80% of budget → Email + Slack alert
-   - 100% of budget → Email + Slack @channel + pause non-critical Cloud Functions
-
-**Budget per environment:**
-
-- **Development:** $10/month
-- **Staging:** $25/month
-- **Production:** $100/month initially, scale with MAU
-
-**Review cadence:** Monthly finance review with Product Owner and DevOps to assess cost trends.
-
 ---
 
 ## Appendix: Quick Reference
@@ -1892,12 +1672,6 @@ gcloud firestore import gs://deepreps-backups/firestore/[BACKUP_ID]
 # Lint check
 ./gradlew ktlintCheck
 
-# Deploy Firebase Functions
-firebase deploy --only functions
-
-# Terraform apply infrastructure
-cd terraform && terraform apply
-
 # Manual Play Store upload (emergency)
 # Go to Play Console → Deep Reps → Release → Production → Create new release → Upload AAB
 ```
@@ -1907,7 +1681,7 @@ cd terraform && terraform apply
 - Crash-free users (last 24h)
 - ANR rate (last 24h)
 - Active users (DAU)
-- API error rate
+- Gemini API error rate
 - App startup time (P90)
 
 ### Rollback Checklist
@@ -1924,4 +1698,4 @@ cd terraform && terraform apply
 
 **End of DevOps & Infrastructure Blueprint**
 
-This document is version-controlled and must be updated with every major infrastructure or pipeline change. All pipeline configurations (GitHub Actions workflows, Terraform scripts) referenced here must be committed to the repository.
+This document is version-controlled and must be updated with every major infrastructure or pipeline change. All pipeline configurations (GitHub Actions workflows) referenced here must be committed to the repository.

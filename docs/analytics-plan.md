@@ -66,9 +66,9 @@ All events follow `object_action` format in `snake_case`. Properties use `snake_
 | 25 | `set_edited` | User modifies a completed set | `exercise_name`, `set_number`, `field_changed` (`weight`, `reps`, `set_type`) | `{ "event": "set_edited", "exercise_name": "squat", "set_number": 2, "field_changed": "weight" }` |
 | 26 | `set_added` | User adds an extra set beyond plan | `exercise_name`, `total_sets_for_exercise` | `{ "event": "set_added", "exercise_name": "bench_press", "total_sets_for_exercise": 6 }` |
 | 27 | `set_deleted` | User deletes/skips a set | `exercise_name`, `set_number`, `set_type` | `{ "event": "set_deleted", "exercise_name": "lateral_raise", "set_number": 4, "set_type": "working" }` |
-| 28 | `exercise_added_midworkout` | User adds an exercise during workout | `exercise_name`, `muscle_group` | `{ "event": "exercise_added_midworkout", "exercise_name": "face_pull", "muscle_group": "shoulders" }` |
-| 29 | `exercise_removed_midworkout` | User removes/skips an exercise | `exercise_name`, `muscle_group`, `sets_completed_before_skip` | `{ "event": "exercise_removed_midworkout", "exercise_name": "leg_curl", "muscle_group": "legs", "sets_completed_before_skip": 0 }` |
-| 30 | `superset_created` | User groups exercises into superset/circuit | `exercise_names` (array), `group_size` | `{ "event": "superset_created", "exercise_names": ["bicep_curl", "tricep_pushdown"], "group_size": 2 }` |
+| 28 | `exercise_added_midworkout` | **(Phase 2)** User adds an exercise during workout | `exercise_name`, `muscle_group` | `{ "event": "exercise_added_midworkout", "exercise_name": "face_pull", "muscle_group": "shoulders" }` |
+| 29 | `exercise_removed_midworkout` | **(Phase 2)** User removes/skips an exercise | `exercise_name`, `muscle_group`, `sets_completed_before_skip` | `{ "event": "exercise_removed_midworkout", "exercise_name": "leg_curl", "muscle_group": "legs", "sets_completed_before_skip": 0 }` |
+| 30 | `superset_created` | **(Phase 2)** User groups exercises into superset/circuit | `exercise_names` (array), `group_size` | `{ "event": "superset_created", "exercise_names": ["bicep_curl", "tricep_pushdown"], "group_size": 2 }` |
 | 31 | `rest_timer_started` | Rest timer begins | `exercise_name`, `duration_seconds`, `set_type` | `{ "event": "rest_timer_started", "exercise_name": "squat", "duration_seconds": 120, "set_type": "working" }` |
 | 32 | `rest_timer_skipped` | User skips rest timer | `exercise_name`, `time_remaining_seconds` | `{ "event": "rest_timer_skipped", "exercise_name": "squat", "time_remaining_seconds": 45 }` |
 | 33 | `rest_timer_completed` | Timer expires naturally | `exercise_name`, `duration_seconds` | `{ "event": "rest_timer_completed", "exercise_name": "squat", "duration_seconds": 120 }` |
@@ -148,34 +148,23 @@ All events follow `object_action` format in `snake_case`. Properties use `snake_
 
 | Metric | Definition | Data Source | Target |
 |--------|-----------|-------------|--------|
-| **D1 Retention** | Users returning on day 1 after install / installs on day 0 | Analytics | > 45% |
-| **D7 Retention** | Users returning on day 7 after install / installs on day 0 | Analytics | > 25% |
-| **D30 Retention** | Users returning on day 30 after install / installs on day 0 | Analytics | > 15% |
-| **D90 Retention** | Users returning on day 90 after install / installs on day 0 | Analytics | > 10% |
+| **D1 Retention** | Users returning on day 1 after install / installs on day 0 | Analytics | > 25% (launch), > 40% (12mo) |
+| **D7 Retention** | Users returning on day 7 after install / installs on day 0 | Analytics | > 12% (launch), > 22% (12mo) |
+| **D30 Retention** | Users returning on day 30 after install / installs on day 0 | Analytics | > 5% (launch), > 12% (12mo) |
+| **D90 Retention** | Users returning on day 90 after install / installs on day 0 | Analytics | > 3% (launch), > 8% (12mo) |
 | **Weekly Retention (Rolling)** | Users active in week N who are also active in week N+1 | Analytics | > 65% |
 | **Workout Streak** | Consecutive weeks with at least 1 `workout_completed` | Analytics | Median > 4 weeks |
 | **Resurrection Rate** | Previously churned users (inactive 30+ days) who return / total churned | Analytics | Track trend |
 
-### 2.5 Revenue Metrics (Post-Monetization)
+### 2.5 Feature Adoption Metrics
 
-| Metric | Definition | Data Source | Target |
-|--------|-----------|-------------|--------|
-| **Trial Start Rate** | Users who start free trial / eligible users shown paywall | Analytics + Billing | > 15% |
-| **Trial-to-Paid Conversion** | Users who convert after trial / users who started trial | Billing | > 40% |
-| **MRR** | Monthly recurring revenue | Billing | Track trend |
-| **ARPU** | Revenue / MAU | Billing + Analytics | Track trend |
-| **ARPPU** | Revenue / paying users | Billing | Track trend |
-| **LTV (180-day)** | Projected revenue per user over 180 days | Billing + Analytics | > 3x CPI |
-| **Churn Rate (Monthly)** | Subscribers who cancel in month N / subscribers at start of month N | Billing | < 8% |
-| **Refund Rate** | Refund requests / total transactions | Google Play Console | < 5% |
-
-### 2.6 Feature Adoption Metrics
+> **Note:** Deep Reps is a free app. There are no revenue, subscription, or monetization metrics.
 
 | Metric | Definition | Data Source | Target |
 |--------|-----------|-------------|--------|
 | **AI Plan Usage Rate** | Workouts using AI plan (`plan_source` = `ai`) / total workouts | Analytics | > 70% |
 | **Template Usage Rate** | Workouts started via template (`entry_method` = `template`) / total workouts | Analytics | > 30% after 30 days |
-| **Superset Usage Rate** | Workouts with at least one `superset_created` / total workouts | Analytics | Track trend |
+| **Superset Usage Rate** | **(Phase 2)** Workouts with at least one `superset_created` / total workouts | Analytics | Track trend |
 | **Rest Timer Usage** | Workouts with at least one `rest_timer_started` / total workouts | Analytics | > 50% |
 | **Notes Usage Rate** | Workouts with at least one `exercise_note_added` / total workouts | Analytics | Track trend |
 | **Progress Screen Views/Week** | `progress_viewed` events per user per week | Analytics | > 1.5 |
@@ -312,17 +301,7 @@ Move to a dedicated experimentation platform when test velocity exceeds 5 concur
 | **Secondary Metrics** | Workout abandonment rate, total exercises per workout |
 | **Sample Size** | ~6,400 per arm (5% MDE on 10% baseline addition rate) |
 
-#### Experiment 10: Paywall Timing
-
-| Field | Value |
-|-------|-------|
-| **Hypothesis** | Showing the paywall after the 3rd completed workout (instead of the 5th) will increase trial start rate without harming D30 retention. |
-| **Control** | Paywall shown after 5th workout |
-| **Variant** | Paywall shown after 3rd workout |
-| **Primary Metric** | Trial start rate |
-| **Guardrail Metric** | D30 retention (must not decrease by > 2%) |
-| **Secondary Metrics** | Trial-to-paid conversion, uninstall rate within 48h of paywall |
-| **Sample Size** | ~4,400 per arm (5% MDE on 15% trial start baseline) |
+<!-- Experiment 10 (Paywall Timing) removed — Deep Reps is a free app. No paywall. -->
 
 ---
 
@@ -348,7 +327,7 @@ Move to a dedicated experimentation platform when test velocity exceeds 5 concur
 | Beginner vs Intermediate vs Advanced retention | Segmented retention curves | Identify if a specific experience level churns faster; inform onboarding/plan calibration |
 | AI-plan users vs Manual users | Matched cohort comparison (control for experience level) | Quantify the retention lift from AI plan usage |
 | Template adopters vs Non-adopters | Survival analysis from first template event | Measure whether templates are a leading indicator of retention or just a power-user signal |
-| Paid channel vs Organic cohorts | LTV curves segmented by channel | Determine true channel ROI beyond CPI |
+| Paid channel vs Organic cohorts | Retention curves segmented by channel | Determine true channel quality beyond CPI |
 
 ### 4.3 Churn Prediction Model
 
@@ -478,7 +457,7 @@ Phase 1 (launch): **Looker Studio**
 Phase 2 (post-traction): **Metabase (self-hosted on Cloud Run)**
 - Open-source, richer interactivity
 - SQL-native, supports parameterized queries
-- Embedding, alerting, and subscriptions
+- Embedding, alerting, and scheduled reports
 - Self-hosted cost: ~$30-50/month on Cloud Run
 
 **Dashboard structure:**
@@ -486,7 +465,7 @@ Phase 2 (post-traction): **Metabase (self-hosted on Cloud Run)**
 2. **Acquisition Dashboard** -- Install sources, CPI, organic ratio, Play Store metrics (Looker Studio)
 3. **Engagement Dashboard** -- Workouts/user/week, session duration, feature adoption (Metabase)
 4. **Retention Dashboard** -- Cohort heatmaps, D1/D7/D30/D90, churn prediction scores (Metabase)
-5. **Revenue Dashboard** -- MRR, ARPU, trial conversion, LTV (Metabase)
+5. **Safety Dashboard** -- Weight jump warnings, volume ceiling alerts, plan validation failures (Metabase)
 6. **Experiment Dashboard** -- Active experiments, results, guardrail metrics (Firebase console + Metabase)
 
 ### 5.5 Alerting
@@ -497,7 +476,7 @@ Phase 2 (post-traction): **Metabase (self-hosted on Cloud Run)**
 | Crash spike | Crash-free rate drops below 99% | Slack + PagerDuty | Lead Dev, DevOps |
 | AI plan failure rate | `ai_plan_failed` > 10% of `ai_plan_requested` in 1-hour window | Slack | Lead Dev |
 | Workout abandonment spike | Abandonment rate > 20% over 24h | Slack | Product Owner, Data Analyst |
-| Trial conversion drop | Trial-to-paid conversion drops > 20% week-over-week | Email | Product Owner, Growth Marketing |
+| Safety warning spike | Safety warnings (weight jump, volume ceiling) exceed 25% of generated plans in 24h | Slack | CSCS, Lead Dev |
 
 ---
 
@@ -602,7 +581,7 @@ Format: Single Slack message with inline numbers. No charts. Designed to scan in
 - **Activation:** Onboarding completion rate, first-workout completion rate (7-day window), time to first workout (median)
 - **Engagement:** Workouts/user/week, avg workout duration, avg sets/workout, feature adoption rates (AI plan, templates, rest timer, progress views)
 - **Retention:** D1/D7 retention for last week's install cohort, weekly rolling retention, resurrection count
-- **Revenue (post-monetization):** Weekly MRR, trial starts, trial-to-paid conversion, refund count
+- **Safety:** Weight jump warnings triggered, volume ceiling warnings, plan validation failures
 - **Product health:** Crash-free rate, AI plan latency (p50/p95), top 3 crash signatures
 - **Experiment status:** Active experiments with interim results (directional only, no decisions)
 - **Top insight:** One actionable finding from the week's data, with recommended action
@@ -619,7 +598,7 @@ Format: Single Slack message with inline numbers. No charts. Designed to scan in
 - **Engagement trends:** 4-week rolling averages for all engagement KPIs, feature adoption changes
 - **Churn analysis:** Churn rate by segment, top churn predictors from model, intervention effectiveness
 - **Experiment results:** Completed experiments with statistical results and shipping recommendations
-- **Revenue analysis (post-monetization):** MRR growth, LTV by cohort, ARPU trend, paywall funnel analysis
+- **Safety analysis:** Safety warning frequency trends, plan rejection rates, common validation failures
 - **Segmentation update:** Segment sizes, migration between segments, notable movements
 - **Next month priorities:** Data-informed recommendations for product and growth teams
 
@@ -631,8 +610,8 @@ Format: Single Slack message with inline numbers. No charts. Designed to scan in
 
 - **Quarter summary:** Key metrics vs. targets set at quarter start
 - **Retention deep-dive:** 90-day retention curves for the quarter's cohorts, comparison to industry benchmarks (fitness app median D30 retention ~12-15%)
-- **LTV analysis:** Updated LTV model with actuals vs. projections
-- **Channel efficiency:** Full-funnel unit economics by acquisition channel (CPI -> activation rate -> LTV)
+- **Cost efficiency:** CPI by channel, cost per retained user (D30), organic growth rate trend
+- **Channel efficiency:** Full-funnel unit economics by acquisition channel (CPI -> activation rate -> D30 retention)
 - **Product-market fit signals:** DAU/MAU trend, NPS (if collected), qualitative user feedback themes
 - **Experimentation review:** All experiments run, win rate, cumulative metric impact
 - **Churn deep-dive:** Root cause analysis of top churn drivers with user research correlation

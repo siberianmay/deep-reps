@@ -254,8 +254,140 @@ Volume = sets x reps x weight. Per-exercise, per-muscle-group, per-session.
 | 6 | Prompt omits history section when empty | No prior sessions | No "Recent Training History" section |
 | 7 | Prompt truncates history if exceeding token budget | 10 sessions of history, budget allows 3 | Only last 3 sessions included |
 | 8 | Output format JSON schema present | Any input | JSON schema block present in prompt |
+| 9 | Prompt includes safety constraint: max weight jump | Any input | Prompt contains "Never suggest a working weight more than 10%" |
+| 10 | Prompt includes safety constraint: MRV ceiling | Any input | Prompt contains MRV ceiling reference |
+| 11 | Prompt includes safety constraint: advanced exercise gating | Beginner user | Prompt contains "Only include 'advanced' exercises if experience level >= 2" |
+| 12 | Prompt includes safety constraint: warm-up requirement | Any input | Prompt contains "at least 1 warm-up set per compound" |
+| 13 | Prompt includes age modifier for user over 50 | Age = 55 | Prompt contains age-adjusted safety modifier from Section 8.6 |
+| 14 | Prompt includes cross-group fatigue warning | Chest + Shoulders + Arms selected | Prompt contains overlap warning for shared muscles |
 
-### 2.8 Data Layer -- Repository Mapper Tests
+### 2.8 Domain Layer -- Safety Guardrails (exercise-science.md Section 8)
+
+**Classes under test:** `ValidatePlanSafetyUseCase`, `WeightJumpValidator`, `VolumeCeilingValidator`, `AgeModifierCalculator`, `WeightRounder`
+
+#### 2.8.1 Maximum Weight Jump Per Session (Section 8.1)
+
+| # | Test Case | Input | Expected Output |
+|---|-----------|-------|-----------------|
+| 1 | Barbell compound within 10% limit | Last session: 100kg, AI suggests: 107.5kg | Valid (7.5% increase) |
+| 2 | Barbell compound exceeds 10% relative limit | Last session: 100kg, AI suggests: 112.5kg | Rejected (12.5% > 10%) |
+| 3 | Barbell compound exceeds 10kg absolute limit | Last session: 80kg, AI suggests: 92.5kg | Rejected (12.5kg > 10kg) |
+| 4 | Dumbbell compound within 5kg absolute limit | Last session: 20kg, AI suggests: 25kg | Valid (5kg = limit) |
+| 5 | Dumbbell compound exceeds 5kg absolute limit | Last session: 20kg, AI suggests: 27.5kg | Rejected (7.5kg > 5kg) |
+| 6 | Isolation within 15% relative limit | Last session: 30kg, AI suggests: 34kg | Valid (13.3% < 15%) |
+| 7 | Isolation exceeds 5kg absolute limit | Last session: 15kg, AI suggests: 22.5kg | Rejected (7.5kg > 5kg) |
+| 8 | Cold start exception — no history | No previous sessions, baseline weight | Not rejected (cold start bypass) |
+| 9 | Whichever limit reached first applies | Last session: 40kg, AI suggests: 47.5kg | Rejected (absolute 7.5kg > 5kg for isolation, even though relative 18.75% > 15%) |
+| 10 | Machine compound within 15% relative limit | Last session: 60kg, AI suggests: 67.5kg | Valid (12.5% < 15%) |
+
+#### 2.8.2 Volume Ceilings Per Session (Section 8.2)
+
+| # | Test Case | Input | Expected Output |
+|---|-----------|-------|-----------------|
+| 1 | Beginner within total set range | 14 total working sets | Valid |
+| 2 | Beginner exceeds total set ceiling | 17 total working sets | Warning (exceeds 16 beginner ceiling) |
+| 3 | Hard maximum exceeded (all levels) | 31 total working sets | Warning (exceeds 30 hard max) |
+| 4 | Per-group ceiling for intermediate | 13 sets for chest (intermediate) | Warning (exceeds 12 per-group ceiling) |
+| 5 | Per-exercise ceiling for beginner | 4 sets for one exercise (beginner) | Warning (exceeds 3 per-exercise ceiling) |
+| 6 | Total exercises exceed ceiling | 13 exercises (any level) | Warning (exceeds 12 hard max) |
+| 7 | Advanced within range | 23 total sets, 12 per group, 5 per exercise | Valid |
+
+#### 2.8.3 Age-Adjusted Safety Modifiers (Section 8.6)
+
+| # | Test Case | Input | Expected Output |
+|---|-----------|-------|-----------------|
+| 1 | Under 18: cap at 85% 1RM | Age 16, est 1RM = 100kg | Max suggested weight = 85kg |
+| 2 | Under 18: no singles | Age 17, AI suggests 1-rep set | Rejected (min reps = 2) |
+| 3 | Under 18: extra warm-up | Age 16 | Warm-up count = standard + 1 |
+| 4 | 18-40: no modification | Age 25 | Standard protocols unchanged |
+| 5 | 41-50: intensity reduction | Age 45, max intensity 90% | Adjusted to 87.5% (90% - 2.5%) |
+| 6 | 51-60: full modifier set | Age 55 | Intensity -5%, +1 warm-up, +30s rest, -10% weekly volume |
+| 7 | 60+: full modifier set | Age 65 | Intensity -10%, +2 warm-ups, +45s rest, -20% volume, prefer machines |
+| 8 | Age modifier attenuates with performance | Age 55, advanced-level strength standards | Modifiers reduced based on demonstrated capacity |
+
+#### 2.8.4 Advanced Exercise Gating
+
+| # | Test Case | Input | Expected Output |
+|---|-----------|-------|-----------------|
+| 1 | Advanced exercise excluded for beginner | Beginner, Good Morning in plan | Rejected |
+| 2 | Advanced exercise allowed for intermediate | Intermediate, Good Morning in plan | Allowed |
+| 3 | Dragon Flag excluded from auto-program | Any level, auto-generated plan | Dragon Flag never appears (auto_program_min_level = 99) |
+| 4 | Dragon Flag allowed if manually selected | Advanced, user manually adds Dragon Flag | Allowed |
+| 5 | Deficit Deadlift requires good conventional history | No conventional deadlift history | Excluded |
+
+#### 2.8.5 Warm-Up Set Requirements (Section 8.5)
+
+| # | Test Case | Input | Expected Output |
+|---|-----------|-------|-----------------|
+| 1 | Heavy compound gets 3 warm-up sets | Barbell Bench Press | 3 warm-up sets (empty bar, 50%, 75%) |
+| 2 | Moderate compound gets 2 warm-up sets | Leg Press | 2 warm-up sets (50%, 75%) |
+| 3 | Light compound gets 1 warm-up set | Push-Up | 1 warm-up set (bodyweight) |
+| 4 | Isolation gets 1 warm-up set | Barbell Curl | 1 warm-up set (50%) |
+| 5 | Bodyweight isolation gets 0 warm-up | Plank | 0 warm-up sets |
+| 6 | Age 50+: heavy compound gets 4 warm-up sets | Age 55, Squat | 4 warm-ups (empty bar, 40%, 60%, 80%) |
+| 7 | Zero warm-up for compound always rejected | Any compound, AI returns 0 warm-ups | Plan rejected |
+
+#### 2.8.6 Weight Rounding (Section 8.7)
+
+| # | Test Case | Input | Expected Output |
+|---|-----------|-------|-----------------|
+| 1 | Barbell rounds to 2.5kg | Calculated: 67.3kg | Rounded: 65kg (down to nearest 2.5) |
+| 2 | Cable/machine rounds to 5kg | Calculated: 33.7kg | Rounded: 30kg (down to nearest 5) |
+| 3 | Always round DOWN | Calculated: 67.4kg barbell | Rounded: 65kg (not 67.5) |
+| 4 | Imperial: barbell rounds to 5lbs | Calculated: 147lbs | Rounded: 145lbs |
+| 5 | Imperial: machine rounds to 10lbs | Calculated: 73lbs | Rounded: 70lbs |
+| 6 | Zero weight preserved | Bodyweight exercise, 0kg added | Returns 0 (not rounded to 2.5) |
+
+### 2.9 Domain Layer -- Baseline Plan Generator (exercise-science.md Section 4)
+
+**Class under test:** `BaselinePlanGenerator`
+
+| # | Test Case | Input | Expected Output |
+|---|-----------|-------|-----------------|
+| 1 | Beginner male baseline weight | Male, 80kg BW, Bench Press | Working weight: 32.5kg (0.40 x 80, rounded to 2.5) |
+| 2 | Beginner female baseline weight | Female, 60kg BW, Squat | Working weight: 21kg (0.35 x 60, rounded down) |
+| 3 | Gender unknown fallback | Unknown, 80kg BW, Bench Press | Working weight: 27.5kg (0.40 x 80 x 0.85, rounded down) |
+| 4 | Intermediate male baseline | Male, 85kg BW, Deadlift | Working weight: 106.25kg → 105kg (1.25 x 85, rounded) |
+| 5 | Advanced female baseline | Female, 65kg BW, OHP | Working weight: 25kg (0.40 x 65, rounded down) |
+| 6 | Beginner set count | Beginner, any exercise | 3 working sets |
+| 7 | Intermediate set count | Intermediate compound | 3-4 working sets |
+| 8 | Advanced set count | Advanced compound | 4-5 working sets |
+| 9 | Beginner warm-up sets for compound | Beginner, Squat | 2 warm-up sets (empty bar + 50%) |
+| 10 | Beginner rep range (compound) | Beginner, compound exercise | 10-15 reps |
+| 11 | Intermediate rep range (isolation) | Intermediate, isolation exercise | 10-15 reps |
+| 12 | Gender fallback applies to all levels | Advanced, unknown gender, 90kg BW, Squat | Working weight: 114.75kg → 112.5kg (1.50 x 90 x 0.85, rounded) |
+| 13 | Rest timer defaults from Section 8.8 | Intermediate, heavy compound | Rest = 120s |
+
+### 2.10 Domain Layer -- Overtraining Warning Detection (exercise-science.md Section 8.3)
+
+**Class under test:** `DetectOvertrainingWarningsUseCase`
+
+| # | Test Case | Input | Expected Output |
+|---|-----------|-------|-----------------|
+| 1 | MRV exceeded 2+ weeks | Chest: 22 sets/week for 2 consecutive weeks (intermediate MRV ceiling = 16) | Medium warning: volume exceeded |
+| 2 | MRV exceeded 1 week only | Chest: 22 sets/week for 1 week | No warning (needs 2+ consecutive) |
+| 3 | Performance regression 3+ sessions | Bench Press weight/reps decreased 3 consecutive sessions | High warning: performance regression |
+| 4 | Performance regression 2 sessions | Bench Press decreased 2 sessions | No warning (needs 3+) |
+| 5 | Training frequency > 6x/week for 2+ weeks | 7 sessions/week for 2 weeks | High warning: excessive frequency |
+| 6 | Training frequency > 6x/week for 1 week | 7 sessions in 1 week | No warning (needs 2+ consecutive) |
+| 7 | Same group 4+ times in 7 days | Chest trained 4 times in 7-day window | Medium warning: excessive group frequency |
+| 8 | Same group 3 times in 7 days | Chest trained 3 times | No warning (3x is within range) |
+| 9 | Session duration > 120 min | Workout duration: 130 min | Low warning: cortisol elevation |
+| 10 | Warning dismissal cooldown | User dismisses MRV warning | Same warning suppressed for 7 days |
+| 11 | Multiple warnings simultaneously | MRV exceeded + regression detected | Both warnings returned |
+
+### 2.11 Domain Layer -- Cross-Group Volume Interaction (exercise-science.md Section 2.2)
+
+**Class under test:** `CrossGroupOverlapDetector`
+
+| # | Test Case | Input | Expected Output |
+|---|-----------|-------|-----------------|
+| 1 | Chest + Arms overlap (tricep) | User selects Chest + Arms | Warning: reduce tricep isolation volume (pressing provides tricep stimulus) |
+| 2 | Chest + Shoulders overlap (anterior delt) | User selects Chest + Shoulders | Warning: reduce anterior delt isolation volume |
+| 3 | Back + Arms overlap (bicep) | User selects Back + Arms | Warning: reduce bicep isolation volume (rows provide bicep stimulus) |
+| 4 | Legs + Lower Back overlap | User selects Legs + Lower Back | Warning: flag erector spinae overlap (squats + deadlifts) |
+
+### 2.12 Data Layer -- Repository Mapper Tests
 
 **Classes under test:** `WorkoutSessionMapper`, `ExerciseMapper`, `TemplateMapper`, `UserProfileMapper`
 
@@ -269,7 +401,7 @@ Volume = sets x reps x weight. Per-exercise, per-muscle-group, per-session.
 | 6 | Invalid JSON in muscle groups | `muscleGroupsJson = "invalid"` | Exception or empty list (verify defensive handling) |
 | 7 | Unit conversion in mapper (kg/lbs) | Entity stores kg, user prefers lbs | Mapper converts correctly (1kg = 2.20462lbs) |
 
-### 2.9 ViewModel Tests
+### 2.13 ViewModel Tests
 
 **Classes under test:** All ViewModels across feature modules.
 
