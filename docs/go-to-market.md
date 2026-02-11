@@ -650,7 +650,9 @@ The exercise library is the app's content foundation. Every exercise needs visua
 | Template usage rate | 20% of sessions | 30% | 40% |
 | PR detection engagement | 50% view their PRs | 60% | 70% |
 
-### 8.7 North Star Metric
+### 8.7 Primary Growth Metric
+
+> **Note:** The product-level North Star is "Workouts completed per week per active user" (target: 2.5 at steady state), defined in `product-strategy.md` Section 6.1. The metric below is the GTM operational growth metric, not the North Star.
 
 **Weekly Active Users (WAU) who complete at least 2 workouts per week.**
 

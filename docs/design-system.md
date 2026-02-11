@@ -265,7 +265,8 @@ Container for all sets of a single exercise during active workout.
 ```
 +------------------------------------------+
 | [Collapse Toggle]  Exercise Name    [...] |
-| Equipment Tag   |   Planned: 4x8 @ 80kg  |
+| Equipment Tag  Difficulty |  Planned: 4x8 @ 80kg |
+| Warm-ups: 3 recommended  |                       |
 |------------------------------------------|
 | SetRow 1                                  |
 | SetRow 2                                  |
@@ -297,6 +298,8 @@ Container for all sets of a single exercise during active workout.
 **Header details:**
 - Exercise name: `headline-large` (22sp, SemiBold)
 - Equipment tag: `label-medium` chip with `surface-highest` background
+- Difficulty tag: `label-small` chip, color-coded — Beginner: `status-success`, Intermediate: `status-warning`, Advanced: `status-error`
+- Warm-up indicator: `label-small`, `on-surface-tertiary` — shows recommended warm-up count per exercise type (e.g., "3 warm-up sets" for heavy compounds, "1 warm-up set" for isolations, "0" for bodyweight isolations). Source: `exercise-science.md` Section 8.5. If any AI-planned warm-up sets are not completed when user starts working sets, show non-blocking confirmation: "You have incomplete warm-up sets. Continue anyway?"
 - Overflow menu (...): 48dp touch target, contains Reorder, Skip Exercise, Add to Superset **(Phase 2)**, View Detail
 - Planned summary: `body-medium`, `on-surface-secondary`
 
@@ -521,7 +524,19 @@ Bottom navigation bar. Persistent across all main screens.
 
 ## 4. Screen Specifications
 
-### 4.1 Onboarding (3 screens)
+### 4.1 Onboarding (4 screens)
+
+#### Screen 0: Privacy & Consent
+
+- Title: "Your Data, Your Choice" -- `display-small` (24sp), 32dp from top
+- Body text: "Deep Reps stores all workout data locally on your device. We collect anonymous usage analytics to improve the app." -- `body-medium`, `on-surface-secondary`
+- Privacy policy link: Underlined `body-medium` text, `accent-primary` color, opens in-app browser
+- Consent toggles (M3 Switch components, each 56dp row):
+  - "Analytics (crash reports & usage data)" -- Default: OFF. `body-large` label, `on-surface-primary`
+  - "Performance monitoring" -- Default: OFF. `body-large` label
+- Subtitle below toggles: "You can change these anytime in Settings" -- `body-small`, `on-surface-tertiary`
+- [Continue] button: Bottom-pinned, 56dp, `accent-primary` fill, always enabled (consent is optional)
+- **Implementation note:** Consent state persisted to `EncryptedSharedPreferences` (not Room) via `ConsentManager` in `:core:data`. Firebase Analytics collection remains disabled until the user toggles consent ON. See `architecture.md` Section 4.9.
 
 #### Screen 1: Welcome
 
@@ -619,10 +634,13 @@ Bottom navigation bar. Persistent across all main screens.
 **Layout:**
 - Drag handle: 32dp x 4dp, centered, `on-surface-tertiary`, 8dp from top
 - Exercise name: `display-small` (24sp), 16dp horizontal padding
-- Equipment + Isolation tags: Row of chips, 8dp below name
+- Tags row: Row of chips, 8dp below name:
+  - Equipment chip: `label-medium`, `surface-highest` background
+  - Movement type chip: "Compound" or "Isolation", `label-medium`, `surface-highest` background
+  - Difficulty chip: `label-medium`, color-coded — Beginner: `status-success` tint, Intermediate: `status-warning` tint, Advanced: `status-error` tint
 - Anatomical diagram: 200dp tall, centered, custom 2D illustration
   - Primary muscles: filled with muscle group color at 80% opacity
-  - Secondary muscles: filled with muscle group color at 30% opacity
+  - Secondary muscles: filled at 30% opacity — driven by `secondaryMuscles` JSON column on `ExerciseEntity` (sub-muscle level, e.g., "Anterior delts, triceps"), not group-level data
   - Body outline: `on-surface-tertiary` stroke, 1.5dp
 - Pros / Key Benefits section:
   - Section title: `headline-small` (18sp)
@@ -715,7 +733,9 @@ Post-workout. Detailed in component 3.6 (WorkoutSummary).
 
 ### 4.9 Progress Dashboard Screen
 
-**Purpose:** Central hub for all training metrics and charts.
+**Purpose:** Central hub for training metrics and charts.
+
+**MVP scope:** Weight-per-exercise chart (ProgressChart component) + session history list. The full advanced dashboard below is the target; items marked **(Phase 2)** are deferred.
 
 **Layout:**
 - Top app bar: "Progress" title, [Filter] icon button for time range
@@ -723,18 +743,18 @@ Post-workout. Detailed in component 3.6 (WorkoutSummary).
 - Overview cards row (horizontal scroll):
   - "Weekly Volume" card: total working sets this week, trend arrow
   - "Training Streak" card: consecutive weeks with 3+ sessions
-  - "PRs This Month" card: count of new PRs
+  - "PRs This Month" card: count of new PRs **(Phase 2 — PR detection is Phase 2)**
   - Each card: 120dp wide, 80dp tall, `surface-low`, `radius-md`
-- Muscle group volume chart: Stacked bar chart, one bar per week, colored by muscle group
+- Muscle group volume chart **(Phase 2)**: Stacked bar chart, one bar per week, colored by muscle group
   - Chart height: 200dp
   - Legend: horizontal row of muscle group color swatches + names below chart
 - Strength progression section:
   - Title: "Strength Trends"
   - Exercise selector: Horizontal scrolling chips (exercise names), `radius-xl`
   - ProgressChart component (3.5) for selected exercise
-  - Default metric: Estimated 1RM
-  - Toggle: Est. 1RM | Top Set | Volume
-- Training consistency heatmap:
+  - Default metric: Top Set weight **(MVP)** / Estimated 1RM **(Phase 2)**
+  - Toggle: Top Set | Volume **(MVP)** | Est. 1RM **(Phase 2)**
+- Training consistency heatmap **(Phase 2)**:
   - GitHub-style contribution grid, 52 weeks (or selected range)
   - Cell size: 12dp x 12dp, 2dp gap
   - Color intensity: 0 sessions = `surface-medium`, 1 = 25% `accent-primary`, 2 = 50%, 3 = 75%, 4+ = 100%
@@ -787,11 +807,12 @@ Post-workout. Detailed in component 3.6 (WorkoutSummary).
   - Experience level: Segmented control (Beginner | Intermediate | Advanced)
   - Weight unit: Toggle (kg | lbs)
   - Optional fields in expandable section: Age, Body weight, Height, Gender
-  - Body weight history: Small inline chart (80dp tall) if multiple entries exist
+  - Body weight history: Small inline chart (80dp tall) if multiple entries exist **(Phase 2)**
 - Settings sections (grouped in M3 list style):
   - **Rest Timer Defaults:**
     - Warm-up rest: Slider, 30s-180s, default 60s, 15s steps
-    - Working set rest: Slider, 30s-300s, default 120s, 15s steps
+    - Working set rest: Slider, 30s-300s, default varies by experience level (Beginner: 90s, Intermediate: 120s, Advanced: 150s), 15s steps
+    - **Note:** The settings screen default adapts to the user's experience level per `exercise-science.md` Section 4. During active workouts, the rest timer priority chain is: (1) AI plan's per-exercise `rest_seconds`, (2) user per-exercise override, (3) this global default, (4) CSCS baseline by experience level + exercise type.
   - **Notifications:**
     - Rest timer notification: Toggle (default on)
     - Rest timer vibration: Toggle (default on)

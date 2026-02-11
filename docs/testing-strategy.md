@@ -188,6 +188,7 @@ PR types: weight PR, rep PR, estimated 1RM PR, volume PR.
 | 8 | Warm-up sets excluded from weight PR | Working set: 80kg, warm-up set: 90kg x 2 (hypothetical) | Weight PR should only consider working sets per business rule |
 | 9 | PR detection after set edit | User edits completed set from 100kg to 95kg | Previous PR at 100kg should be re-evaluated |
 | 10 | PR across different exercises | Bench press PR and squat PR in same session | PRs tracked per-exercise, no cross-contamination |
+| 11 | Estimated 1RM not triggered from high-rep set (>10 reps) | Previous best 1RM: 105kg (from 90kg x 5). New set: 60kg x 15 (Epley: ~90kg). | No 1RM PR — sets over 10 reps are excluded from 1RM estimation per `exercise-science.md` Section 7.5 |
 
 ### 2.4 Domain Layer -- Exercise Ordering
 
@@ -203,6 +204,9 @@ PR types: weight PR, rep PR, estimated 1RM PR, volume PR.
 | 6 | Mixed groups (multi-group workout) | Chest + Arms exercises | Chest compounds first, then arm isolations |
 | 7 | Empty exercise list | [] | [] (no crash) |
 | 8 | Exercises from same group, mixed isolation levels | [Pec fly (iso), Bench press (compound), Incline DB press (compound)] | [Bench, Incline DB, Pec fly] |
+| 9 | Core exercises always last (Rule 5) | [Ab Wheel Rollout (core, compound), Barbell Back Squat (legs, compound)] | [Squat, Ab Wheel Rollout] — core always last regardless of compound/isolation |
+| 10 | Difficulty tiebreaker within same group/type | [DB Shoulder Press (beginner, shoulder, compound), OHP (intermediate, shoulder, compound), Arnold Press (intermediate, shoulder, compound)] | [OHP or Arnold first (intermediate), then DB Shoulder Press (beginner)] |
+| 11 | Full multi-group with core | Chest compounds + Arms compounds + Arms isolations + Core exercises | Chest compounds, Arms compounds, Chest isolations, Arms isolations, Core exercises (all core at end) |
 
 ### 2.5 Domain Layer -- Volume Calculations
 
@@ -387,7 +391,19 @@ Volume = sets x reps x weight. Per-exercise, per-muscle-group, per-session.
 | 3 | Back + Arms overlap (bicep) | User selects Back + Arms | Warning: reduce bicep isolation volume (rows provide bicep stimulus) |
 | 4 | Legs + Lower Back overlap | User selects Legs + Lower Back | Warning: flag erector spinae overlap (squats + deadlifts) |
 
-### 2.12 Data Layer -- Repository Mapper Tests
+### 2.12 Domain Layer -- Superset Compatibility Rules **(Phase 2)** (exercise-science.md Section 6.3)
+
+**Class under test:** `SupersetCompatibilityValidator`
+
+| # | Test Case | Input | Expected Output |
+|---|-----------|-------|-----------------|
+| 1 | Valid antagonist pair | Bicep Curl + Tricep Pushdown | Allowed (antagonist pairing) |
+| 2 | Same-group pair rejected | Barbell Curl + Dumbbell Curl (both Arms isolation) | Rejected: same muscle group |
+| 3 | Two heavy compounds rejected | Barbell Squat + Deadlift | Rejected: never pair heavy compounds |
+| 4 | Heavy compound + any exercise rejected | Barbell Squat + Leg Curl | Rejected: heavy compound cannot be in superset |
+| 5 | Valid unrelated pair | Bench Press + Barbell Row | Allowed (chest + back, unrelated) |
+
+### 2.13 Data Layer -- Repository Mapper Tests
 
 **Classes under test:** `WorkoutSessionMapper`, `ExerciseMapper`, `TemplateMapper`, `UserProfileMapper`
 
@@ -401,7 +417,7 @@ Volume = sets x reps x weight. Per-exercise, per-muscle-group, per-session.
 | 6 | Invalid JSON in muscle groups | `muscleGroupsJson = "invalid"` | Exception or empty list (verify defensive handling) |
 | 7 | Unit conversion in mapper (kg/lbs) | Entity stores kg, user prefers lbs | Mapper converts correctly (1kg = 2.20462lbs) |
 
-### 2.13 ViewModel Tests
+### 2.14 ViewModel Tests
 
 **Classes under test:** All ViewModels across feature modules.
 

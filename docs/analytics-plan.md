@@ -12,7 +12,7 @@ All events follow `object_action` format in `snake_case`. Properties use `snake_
 
 | Property | Type | Description |
 |----------|------|-------------|
-| `user_id` | string | Anonymous hashed identifier |
+| `user_id` | string | Firebase `app_instance_id` (anonymous, auto-generated). **Limitation:** resets on app reinstall — cross-install identity requires Firebase Authentication (post-MVP). |
 | `session_id` | string | App session identifier |
 | `timestamp` | ISO 8601 | UTC event time |
 | `app_version` | string | Semantic version of the app |
@@ -86,6 +86,7 @@ All events follow `object_action` format in `snake_case`. Properties use `snake_
 | 40 | `personal_record_achieved` | System detects a new PR | `exercise_name`, `pr_type` (`weight`, `rep`, `e1rm`, `volume`), `previous_value`, `new_value`, `unit` | `{ "event": "personal_record_achieved", "exercise_name": "bench_press", "pr_type": "weight", "previous_value": 95, "new_value": 100, "unit": "kg" }` |
 | 41 | `workout_summary_viewed` | User views post-workout summary | `duration_on_screen_seconds`, `shared` (bool) | `{ "event": "workout_summary_viewed", "duration_on_screen_seconds": 15, "shared": false }` |
 | 42 | `bodyweight_logged` | User updates body weight in profile | `weight`, `unit`, `previous_weight` | `{ "event": "bodyweight_logged", "weight": 82.5, "unit": "kg", "previous_weight": 83.0 }` |
+| 42b | `personal_record_viewed` | **(Phase 2)** User taps on a PR in workout summary or progress screen | `exercise_name`, `pr_type`, `source_screen` (`summary`, `progress`, `history`) | `{ "event": "personal_record_viewed", "exercise_name": "bench_press", "pr_type": "weight", "source_screen": "summary" }` |
 
 ### 1.7 Profile & Settings Events (43-47)
 
@@ -95,7 +96,9 @@ All events follow `object_action` format in `snake_case`. Properties use `snake_
 | 44 | `settings_changed` | User modifies a setting | `setting_name`, `old_value`, `new_value` | `{ "event": "settings_changed", "setting_name": "default_rest_timer_working", "old_value": 90, "new_value": 120 }` |
 | 45 | `unit_switched` | User changes between kg and lbs | `from_unit`, `to_unit` | `{ "event": "unit_switched", "from_unit": "kg", "to_unit": "lbs" }` |
 | 46 | `rest_timer_default_changed` | User adjusts default rest timer | `set_type`, `old_duration_seconds`, `new_duration_seconds` | `{ "event": "rest_timer_default_changed", "set_type": "working", "old_duration_seconds": 90, "new_duration_seconds": 150 }` |
-| 47 | `data_export_requested` | User requests data export (GDPR) | `format` | `{ "event": "data_export_requested", "format": "json" }` |
+| 47 | `data_export_requested` | User requests data export | `format` | `{ "event": "data_export_requested", "format": "csv" }` |
+
+**Data export formats:** Two formats supported: CSV (human-readable, for spreadsheet users — default) and JSON (GDPR data portability compliance, Art. 20). The `format` property tracks which the user selected.
 
 ### 1.8 App Lifecycle Events (48-50)
 
@@ -170,6 +173,9 @@ All events follow `object_action` format in `snake_case`. Properties use `snake_
 | **Progress Screen Views/Week** | `progress_viewed` events per user per week | Analytics | > 1.5 |
 | **Bodyweight Tracking Adoption** | Users with at least one `bodyweight_logged` / MAU | Analytics | > 20% |
 | **Exercise Detail View Rate** | Users who view at least one `exercise_detail_viewed` per session / total setup sessions | Analytics | > 40% |
+| **Plan Modification Rate** | `ai_plan_accepted` with `was_modified` = true / total `ai_plan_accepted` | Analytics | < 40% (high modification signals AI quality problem — see `product-strategy.md` Section 6.3) |
+| **PR Engagement Rate** | **(Phase 2)** Users who view PRs (`personal_record_viewed` event) / users who earned PRs | Analytics | > 50% |
+| **Core Loop Funnel** | Step-by-step conversion: `workout_setup_started` → `muscle_group_selected` → `exercise_selected` → `ai_plan_requested` → `workout_started` → `workout_completed` | Analytics | Identify worst drop-off step |
 
 ---
 

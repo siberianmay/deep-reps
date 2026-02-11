@@ -30,7 +30,7 @@ This document synthesizes user research findings, competitive analysis, and envi
 | **Training experience** | 2 months. Started going to the gym after a friend invited her. Has no structured program. |
 | **Goals** | Build a consistent gym habit (3x/week), learn proper form, feel less intimidated by the free weight area. |
 | **Frustrations** | Does not know what exercises to do or in what order. Spends 10 minutes between exercises Googling form. Feels embarrassed asking other people at the gym. Existing apps assume she knows what a "superset" is. |
-| **Current app usage** | Tried JEFIT once, was overwhelmed by the exercise library. Currently uses Apple Notes to write down what her friend told her to do. |
+| **Current app usage** | Tried JEFIT once, was overwhelmed by the exercise library. Currently uses Google Keep to write down what her friend told her to do. |
 | **Tech comfort** | High -- uses apps daily for everything, but has zero fitness app literacy. Does not know what "1RM" or "progressive overload" means. |
 | **Quote** | "I just want the app to tell me what to do and show me if I'm getting better." |
 | **Typical session** | Arrives at gym with no plan. Does 3 machine exercises she remembers, 15 min of cardio, leaves. Total time: 35-45 minutes. Does not track weights or reps. |

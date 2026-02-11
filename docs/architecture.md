@@ -348,6 +348,9 @@ Timber for all logging. No `Log.d()` or `println()` anywhere. Timber trees are p
   +-- :core:common
 
 :core:common (no dependencies on other project modules)
+
+:benchmark
+  +-- :app
 ```
 
 ### 2.2 Module Descriptions
@@ -361,13 +364,14 @@ Timber for all logging. No `Log.d()` or `println()` anywhere. Timber trees are p
 | `:feature:profile` | Feature | User profile, settings, unit preferences, body weight entries. |
 | `:feature:ai-plan` | Feature | Plan generation orchestration, plan review/edit screen, fallback logic UI. |
 | `:feature:templates` | Feature | Template creation, listing, loading, editing. |
-| `:feature:onboarding` | Feature | Experience level selection, unit preference, optional profile fields. |
+| `:feature:onboarding` | Feature | Privacy/consent screen (Screen 0), experience level selection, unit preference, optional profile fields. |
 | `:core:domain` | Library | Use cases, repository interfaces, domain models. Pure Kotlin -- zero Android dependencies. |
 | `:core:data` | Library | Repository implementations. Bridges database and network into domain interfaces. |
 | `:core:database` | Library | Room database, DAOs, entities, migrations, TypeConverters. |
 | `:core:network` | Library | Ktor client setup, AI provider interface, Gemini implementation, request/response DTOs. |
 | `:core:ui` | Library | Shared Compose components (buttons, cards, input fields, timer display), theme definition, design tokens. |
 | `:core:common` | Library | Extension functions, constants, date/time utilities, result wrappers. Pure Kotlin. |
+| `:benchmark` | Test | Macrobenchmark tests (startup, frame timing, scrolling). Depends on `:app`. Uses `AndroidBenchmarkConventionPlugin` from `build-logic`. |
 
 ### 2.3 Key Rules
 
@@ -408,21 +412,21 @@ Timber for all logging. No `Log.d()` or `println()` anywhere. Timber trees are p
                          | display_order       |
                          +---------------------+
 
-+---------------------+     +------------------------+     +------------------+
-| workout_sessions    |     | workout_exercises      |     | workout_sets     |
-|---------------------|     |------------------------|     |------------------|
-| id (PK)            |     | id (PK)               |     | id (PK)         |
-| started_at          |     | session_id (FK)        |     | workout_exercise |
-| completed_at        |     | exercise_id (FK)       |     |   _id (FK)      |
-| duration_seconds    |     | order_index            |     | set_index        |
-| status              |     | superset_group_id      |     | set_type         |
-| notes               |     | rest_timer_seconds     |     | planned_weight   |
-| template_id (FK?)   |     | notes                  |     | planned_reps     |
-+---------------------+     +------------------------+     | actual_weight    |
-                                                            | actual_reps      |
-                                                            | is_completed     |
-                                                            | completed_at     |
-                                                            +------------------+
++-------------------------+     +------------------------+     +------------------+
+| workout_sessions        |     | workout_exercises      |     | workout_sets     |
+|-------------------------|     |------------------------|     |------------------|
+| id (PK)                |     | id (PK)               |     | id (PK)         |
+| started_at              |     | session_id (FK)        |     | workout_exercise |
+| completed_at            |     | exercise_id (FK)       |     |   _id (FK)      |
+| duration_seconds        |     | order_index            |     | set_index        |
+| paused_duration_seconds |     | superset_group_id      |     | set_type         |
+| status                  |     | rest_timer_seconds     |     | planned_weight   |
+| notes                   |     | notes                  |     | planned_reps     |
+| template_id (FK?)       |     +------------------------+     | actual_weight    |
++-------------------------+                                    | actual_reps      |
+                                                               | is_completed     |
+                                                               | completed_at     |
+                                                               +------------------+
 
 +------------------+     +------------------+     +---------------------+
 | templates        |     | template_exercises|    | user_profile        |
@@ -439,10 +443,10 @@ Timber for all logging. No `Log.d()` or `println()` anywhere. Timber trees are p
 | personal_records    |     | body_weight_entries  |
 |---------------------|     |---------------------|
 | id (PK)            |     | id (PK)            |
-| exercise_id (FK)    |     | weight_value        |
-| record_type         |     | unit                |
-| weight_value        |     | recorded_at         |
-| reps                |     +---------------------+
+| exercise_id (FK)    |     | weight_value (kg)   |
+| record_type         |     | recorded_at         |
+| weight_value        |     +---------------------+
+| reps                |
 | estimated_1rm       |
 | achieved_at         |
 | session_id (FK)     |
@@ -535,7 +539,15 @@ data class WorkoutSessionEntity(
     @ColumnInfo(name = "started_at") val startedAt: Long, // epoch millis
     @ColumnInfo(name = "completed_at") val completedAt: Long?, // null if in progress
     @ColumnInfo(name = "duration_seconds") val durationSeconds: Long?,
-    @ColumnInfo(name = "status") val status: String, // "active", "paused", "completed", "abandoned"
+    @ColumnInfo(name = "status") val status: String, // "active", "paused", "completed", "discarded", "abandoned", "crashed"
+    // Status semantics:
+    //   "active"    — workout currently in progress
+    //   "paused"    — user explicitly paused
+    //   "completed" — user finished normally
+    //   "discarded" — user explicitly chose to discard the session (UI confirmation required)
+    //   "abandoned" — user never returned; detected after 24-hour timeout by cleanup logic
+    //   "crashed"   — app crashed during session; detected on next startup via active session recovery
+    @ColumnInfo(name = "paused_duration_seconds") val pausedDurationSeconds: Long = 0, // Accumulated pause time in seconds. When paused, pause duration is accumulated. On resume: elapsed = currentTime - startedAt - pausedDurationSeconds. Survives process death because it is persisted to Room.
     @ColumnInfo(name = "notes") val notes: String?,
     @ColumnInfo(name = "template_id") val templateId: Long?,
 )
@@ -646,10 +658,18 @@ data class UserProfileEntity(
 @Entity(tableName = "body_weight_entries")
 data class BodyWeightEntryEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    @ColumnInfo(name = "weight_value") val weightValue: Double,
-    @ColumnInfo(name = "unit") val unit: String,
+    @ColumnInfo(name = "weight_value") val weightValue: Double, // ALWAYS stored in kg. Convert to kg on write, convert to display unit on read. See "Weight Storage Convention" note below.
     @ColumnInfo(name = "recorded_at") val recordedAt: Long,
 )
+
+// --- Weight Storage Convention ---
+// ALL weight values in the database are stored in kilograms (kg).
+// This applies to: body_weight_entries.weight_value, workout_sets.planned_weight,
+// workout_sets.actual_weight, personal_records.weight_value, personal_records.estimated_1rm.
+// Conversion to the user's preferred display unit (kg or lbs) happens at the repository/mapper
+// layer on read. Conversion from display unit to kg happens at the repository layer on write.
+// This eliminates unit ambiguity in queries, AI prompts, and PR calculations.
+// Conversion factor: 1 kg = 2.20462 lbs.
 
 // --- Personal Records ---
 
@@ -742,9 +762,9 @@ interface WorkoutSessionRepository {
     suspend fun createSession(session: WorkoutSession): Long
     suspend fun updateSession(session: WorkoutSession)
     suspend fun completeSet(workoutExerciseId: Long, setIndex: Int, weight: Double, reps: Int)
-    suspend fun addExerciseToSession(sessionId: Long, exerciseId: Long, orderIndex: Int)
-    suspend fun removeExerciseFromSession(workoutExerciseId: Long)
-    suspend fun reorderExercises(sessionId: Long, exerciseOrder: List<Long>)
+    suspend fun addExerciseToSession(sessionId: Long, exerciseId: Long, orderIndex: Int) // (Phase 2) Mid-workout exercise modification
+    suspend fun removeExerciseFromSession(workoutExerciseId: Long) // (Phase 2) Mid-workout exercise modification
+    suspend fun reorderExercises(sessionId: Long, exerciseOrder: List<Long>) // (Phase 2) Mid-workout exercise modification
 }
 ```
 
@@ -864,6 +884,14 @@ Losing a user's workout data is the single worst bug this app can have. The pers
 3. **Active session detection on startup.** If the app starts and finds a `WorkoutSessionEntity` with `status = "active"`, it prompts the user to resume or discard. This handles process death, OS kill, and crashes.
 4. **WAL mode** for concurrent reads/writes. The workout screen reads exercise/set data while the user is completing sets (writes). WAL prevents read-write contention.
 5. **No in-memory-only state for completed sets.** The moment a set is completed, it exists in the database. The ViewModel's in-memory state is a projection of the database state, not the source of truth.
+
+### 3.8 User Identity Strategy
+
+**MVP:** Firebase `app_instance_id` is used as the `user_id` for analytics and crash reporting. This is a device-scoped, auto-generated identifier that requires no authentication flow.
+
+**Limitation:** Reinstalling the app resets the `app_instance_id`. The user's analytics history is split across installs. There is no way to correlate pre-reinstall and post-reinstall data for the same user.
+
+**Post-MVP requirement:** Cross-install identity requires Firebase Authentication (anonymous auth at minimum, or Google Sign-In). This would provide a stable `uid` that survives reinstalls and enables future cloud sync. This is explicitly flagged as a post-MVP decision -- it introduces authentication UI, token management, and backend dependency that are out of scope for the initial launch.
 
 ---
 
@@ -1228,7 +1256,7 @@ The following use cases are required in `:core:domain` and were identified as ga
 
 **`DetectDeloadNeedUseCase`** — Checks: (a) weeks since last deload (scheduled: beginner 6wk, intermediate 4wk, advanced 5wk), (b) regression patterns (2+ consecutive sessions with weight/rep decrease), (c) user-requested flag. Returns `DeloadStatus` (not_needed / proactive_recommended / reactive_recommended / user_requested). Fed into `PlanRequest`.
 
-**`DetermineSessionDayTypeUseCase`** — For intermediate users (DUP): examines last N sessions for selected muscle groups, determines next day type in rotation (hypertrophy / strength / power). For advanced users (block): computes current block phase from training history or explicit tracking. Result feeds into `PlanRequest.periodizationModel`.
+**`DetermineSessionDayTypeUseCase`** — See Section 4.9 (Block Periodization State) for full specification. Handles DUP day-type cycling for intermediate users and block phase inference for advanced users. Result feeds into `PlanRequest.periodizationModel`.
 
 **`DetectOvertrainingWarningsUseCase`** — Checks 5 trigger conditions from `exercise-science.md` Section 8.3: (1) MRV exceeded 2+ consecutive weeks, (2) performance regression 3+ sessions, (3) frequency > 6x/week for 2+ weeks, (4) same group 4+ times in 7 days, (5) session duration > 120 minutes. Returns list of warnings with severity and dismissal state.
 
@@ -1236,7 +1264,152 @@ The following use cases are required in `:core:domain` and were identified as ga
 
 **`CrossGroupOverlapDetector`** — Analyzes selected exercise groups against the Cross-Group Activation Map (`exercise-science.md` Section 2.2). Detects when overlapping groups are selected (e.g., Chest + Arms shares triceps). Returns overlap descriptions for inclusion in AI prompt's CROSS-GROUP FATIGUE block.
 
-### 4.8 Exercise Library Migration Strategy
+**`CompleteOnboardingUseCase`** — Orchestrates onboarding completion: (a) creates the singleton `UserProfileEntity` row with experience level, preferred unit, and optional profile fields, (b) sets an `onboarding_completed` flag in SharedPreferences (not Room — must be readable before database opens to determine start destination). The navigation host in `:app` reads this flag on cold start to decide whether to route to the onboarding flow or the main app.
+
+### 4.9 DUP Day-Type Cycling and Block Periodization State
+
+**DUP day-type cycling (intermediate users):** `DetermineSessionDayTypeUseCase` examines the last N completed sessions for the selected muscle groups, identifies the most recent day type used (hypertrophy / strength / power), and returns the next day type in rotation. Cycling order: hypertrophy -> strength -> power -> hypertrophy. If no history exists, defaults to hypertrophy. Result feeds into `PlanRequest.periodizationModel` and the day-type-specific set/rep ranges.
+
+**Block periodization (advanced users):**
+
+For advanced users, block phase is computed heuristically from training history patterns rather than requiring explicit user tracking. The algorithm examines the last 4-6 weeks of session data: average intensity, volume trends, and rep ranges to infer the current phase (Accumulation, Intensification, Realization, or Deload). If training history is insufficient (fewer than 8 sessions), the phase defaults to Accumulation.
+
+The computed phase and inferred week number within that phase are included in `PlanRequest.currentBlockPhase` and `PlanRequest.currentBlockWeek`. No separate `training_blocks` table is needed for MVP -- the phase is derived, not stored.
+
+### 4.10 AnalyticsTracker Interface
+
+The `AnalyticsTracker` interface lives in `:core:domain`. It defines event categories without coupling to any analytics SDK.
+
+```kotlin
+// :core:domain
+interface AnalyticsTracker {
+    /** Screen view events. Called from Composable (via LaunchedEffect on screen entry). */
+    fun trackScreenView(screenName: String, screenClass: String? = null)
+
+    /** User action events. Called from ViewModel when processing intents. */
+    fun trackUserAction(action: String, params: Map<String, Any> = emptyMap())
+
+    /** System-detected events. Called from use cases (e.g., deload triggered, PR detected). */
+    fun trackSystemEvent(event: String, params: Map<String, Any> = emptyMap())
+
+    /** Lifecycle events. Called from Application class or Activity. */
+    fun trackLifecycleEvent(event: String, params: Map<String, Any> = emptyMap())
+}
+```
+
+**Implementation:** `FirebaseAnalyticsTracker` in `:core:data` wraps `FirebaseAnalytics`. It is the only class that imports Firebase Analytics SDK classes.
+
+**Placement rules (non-negotiable):**
+- Screen views: from `@Composable` functions via `LaunchedEffect` on first composition.
+- User actions: from ViewModel `onIntent()` handlers. Never from Composables directly.
+- System events: from domain use cases (e.g., `DetectDeloadNeedUseCase` fires "deload_recommended").
+- Lifecycle events: from `DeepRepsApplication.onCreate()` or `MainActivity` lifecycle callbacks.
+
+`:core:domain` MUST NOT depend on Firebase. The `AnalyticsTracker` interface is pure Kotlin. Hilt binds `FirebaseAnalyticsTracker` to `AnalyticsTracker` in a `@Module` in `:core:data`.
+
+### 4.11 Analytics Consent and ConsentManager
+
+Analytics and crash reporting require explicit user consent. Consent state is managed by `ConsentManager` in `:core:data`.
+
+**Why EncryptedSharedPreferences, not Room:** Consent state must be readable before the Room database is opened. Firebase Analytics collection must be disabled on `Application.onCreate()` before any analytics event fires. Room may not be initialized at that point. EncryptedSharedPreferences is available immediately.
+
+```kotlin
+// :core:data
+class ConsentManager @Inject constructor(
+    @ApplicationContext private val context: Context,
+) {
+    private val prefs: SharedPreferences by lazy {
+        EncryptedSharedPreferences.create(
+            context,
+            "consent_prefs",
+            MasterKey.Builder(context).setKeyScheme(MasterKey.KeyScheme.AES256_GCM).build(),
+            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
+        )
+    }
+
+    var analyticsConsent: Boolean
+        get() = prefs.getBoolean(KEY_ANALYTICS_CONSENT, false)
+        set(value) = prefs.edit().putBoolean(KEY_ANALYTICS_CONSENT, value).apply()
+
+    var crashlyticsConsent: Boolean
+        get() = prefs.getBoolean(KEY_CRASHLYTICS_CONSENT, false)
+        set(value) = prefs.edit().putBoolean(KEY_CRASHLYTICS_CONSENT, value).apply()
+
+    val hasUserRespondedToConsent: Boolean
+        get() = prefs.getBoolean(KEY_CONSENT_RESPONDED, false)
+
+    fun markConsentResponded() =
+        prefs.edit().putBoolean(KEY_CONSENT_RESPONDED, true).apply()
+
+    companion object {
+        private const val KEY_ANALYTICS_CONSENT = "analytics_consent"
+        private const val KEY_CRASHLYTICS_CONSENT = "crashlytics_consent"
+        private const val KEY_CONSENT_RESPONDED = "consent_responded"
+    }
+}
+```
+
+**Firebase initialization sequence in `DeepRepsApplication.onCreate()`:**
+
+1. `FirebaseAnalytics.getInstance(this).setAnalyticsCollectionEnabled(false)` -- collection disabled by default.
+2. `FirebaseCrashlytics.getInstance().setCrashlyticsCollectionEnabled(false)` -- same for Crashlytics.
+3. Read `ConsentManager.analyticsConsent` and `ConsentManager.crashlyticsConsent`.
+4. If consent was previously granted, enable collection: `setAnalyticsCollectionEnabled(true)`.
+5. If `hasUserRespondedToConsent` is false, the onboarding flow presents the consent screen as **Screen 0** (before experience level selection). The user must respond before proceeding.
+
+**Onboarding flow with consent (updated order):**
+1. Screen 0: Privacy / consent (analytics + crashlytics toggles, brief explanation, "Continue" button)
+2. Screen 1: Experience level selection
+3. Screen 2: Unit preference (kg / lbs)
+4. Screen 3: Optional profile fields (age, height, gender)
+
+### 4.12 FeatureFlagProvider
+
+The `FeatureFlagProvider` interface lives in `:core:domain`. Feature flags control runtime behavior without code changes or app updates.
+
+```kotlin
+// :core:domain
+interface FeatureFlagProvider {
+    /** Current snapshot of all feature flags. Immutable. */
+    val flags: StateFlow<FeatureFlags>
+
+    /** Fetches latest flags from remote config. Call on app start and periodically. */
+    suspend fun refresh()
+}
+
+data class FeatureFlags(
+    val isAiPlanEnabled: Boolean = true,
+    val isBlockPeriodizationEnabled: Boolean = false,
+    val maxExercisesPerSession: Int = 12,
+    // Add flags as needed. Defaults are the fallback when remote config is unavailable.
+)
+```
+
+**Implementation:** `FirebaseFeatureFlagProvider` in `:core:data` wraps Firebase Remote Config (`firebase-config-ktx`). On `refresh()`, it fetches remote values and emits a new immutable `FeatureFlags` instance. The `flags` StateFlow always holds the latest snapshot. If fetch fails (offline), the previous cached values or compile-time defaults are used.
+
+### 4.13 WeightStepProvider
+
+Utility in `:core:domain` that returns the appropriate weight increment based on equipment type.
+
+```kotlin
+// :core:domain
+object WeightStepProvider {
+    /**
+     * Returns the minimum weight increment for the given equipment type.
+     * Cable and machine exercises use larger increments (weight stacks).
+     * All other equipment uses standard plate increments.
+     */
+    fun getIncrement(equipment: String, unit: String): Double = when {
+        equipment in setOf("cable", "machine") -> if (unit == "kg") 5.0 else 10.0
+        else -> if (unit == "kg") 2.5 else 5.0
+    }
+}
+```
+
+This is passed to the `NumberInput` composable in `:core:ui` to control the +/- step buttons. The AI prompt builder also uses these increments for weight rounding (Section 4.3, safety constraint 8).
+
+### 4.14 Exercise Library Migration Strategy
 
 The exercise library ships as a pre-populated `.db` file. Updates are delivered via Room migrations:
 
@@ -1307,6 +1480,50 @@ sealed interface WorkoutPhase {
     data class Completed(val sessionId: Long) : WorkoutPhase
 }
 ```
+
+**`WorkoutStateMachine`** -- A pure domain class in `:core:domain` that encapsulates all valid state transitions. The ViewModel delegates transition logic to this class rather than implementing it inline.
+
+```kotlin
+// :core:domain
+class WorkoutStateMachine {
+    /**
+     * Returns the next phase if the transition is valid, or null if the intent
+     * is not allowed from the current phase. The ViewModel checks the return:
+     * null means the intent is silently ignored (invalid transition).
+     */
+    fun transition(currentPhase: WorkoutPhase, intent: WorkoutIntent): WorkoutPhase? =
+        when (currentPhase) {
+            is WorkoutPhase.Idle -> when (intent) {
+                is WorkoutIntent.SelectExercises -> WorkoutPhase.Setup(intent.exercises)
+                else -> null
+            }
+            is WorkoutPhase.Setup -> when (intent) {
+                is WorkoutIntent.GeneratePlan -> WorkoutPhase.GeneratingPlan
+                else -> null
+            }
+            is WorkoutPhase.GeneratingPlan -> when (intent) {
+                is WorkoutIntent.PlanReceived -> WorkoutPhase.Active(startedAtMillis = System.currentTimeMillis())
+                is WorkoutIntent.PlanFailed -> WorkoutPhase.Active(startedAtMillis = System.currentTimeMillis()) // fallback path
+                else -> null
+            }
+            is WorkoutPhase.Active -> when (intent) {
+                is WorkoutIntent.PauseWorkout -> WorkoutPhase.Paused(
+                    pausedAtMillis = System.currentTimeMillis(),
+                    accumulatedSeconds = currentPhase.startedAtMillis,
+                )
+                is WorkoutIntent.FinishWorkout -> WorkoutPhase.Completed(sessionId = intent.sessionId)
+                else -> null // CompleteSet, StartRestTimer etc. do not change the phase
+            }
+            is WorkoutPhase.Paused -> when (intent) {
+                is WorkoutIntent.ResumeWorkout -> WorkoutPhase.Active(startedAtMillis = currentPhase.accumulatedSeconds)
+                else -> null
+            }
+            is WorkoutPhase.Completed -> null // terminal state, no transitions out
+        }
+}
+```
+
+The `WorkoutStateMachine` is a pure Kotlin class with zero Android dependencies, fully unit-testable without Robolectric. The ViewModel calls `stateMachine.transition(currentPhase, intent)` and only proceeds if the result is non-null.
 
 ### 5.2 Surviving Process Death
 
@@ -1498,7 +1715,18 @@ class RestTimerManager @Inject constructor(
 }
 ```
 
-### 5.4 Elapsed Time Accuracy
+### 5.4 Rest Timer Priority Chain
+
+When a set is completed, the rest timer duration is determined by the following priority chain (first match wins):
+
+1. **AI plan's `rest_seconds`** -- The per-exercise rest time from `ExercisePlan.restSeconds` in the generated plan. This is the AI's recommendation based on the user's training context.
+2. **User per-exercise override** -- If the user manually edited the rest timer for this exercise during the session (stored in `WorkoutExerciseEntity.restTimerSeconds`). Overrides the AI recommendation for the remainder of the session.
+3. **Global default from settings** -- The user's default rest timer preference from `UserProfile` settings (e.g., "always rest 90 seconds"). Used when no AI plan or per-exercise override exists.
+4. **CSCS baseline** -- Experience-level and exercise-type based defaults from `exercise-science.md` Section 3. Compound exercises get longer rest (beginner: 90s, intermediate: 120s, advanced: 180s). Isolation exercises get shorter rest (beginner: 60s, intermediate: 75s, advanced: 90s). This is the fallback of last resort.
+
+The resolution logic lives in a `ResolveRestTimerUseCase` in `:core:domain`. The ViewModel calls this after each set completion to determine the next rest timer duration.
+
+### 5.5 Elapsed Time Accuracy
 
 The workout elapsed timer uses `SystemClock.elapsedRealtime()` (time since boot, including sleep), NOT `System.currentTimeMillis()` (wall clock, subject to user changes and NTP adjustments). The session start time is stored as `System.currentTimeMillis()` in the database for display purposes, but duration calculations use `elapsedRealtime` deltas.
 
@@ -1555,6 +1783,12 @@ The Gemini API key is a sensitive credential. It MUST NOT be:
 - Stored in `BuildConfig` fields generated from `local.properties` (these end up in the APK and are trivially extractable)
 
 **Strategy:**
+
+**API key environment variable convention:**
+- Debug builds: `GEMINI_DEV_API_KEY` environment variable (or `gemini.dev.api.key` in `local.properties` as fallback for local development).
+- Release builds: `GEMINI_PROD_API_KEY` environment variable (CI secret, never in `local.properties`).
+- The Gradle build script reads the appropriate variable per build type and injects it as `BuildConfig.GEMINI_API_KEY`. This field is baked into the APK at compile time.
+- `local.properties` is the fallback for local development only. It is gitignored and never present in CI.
 
 For MVP / pre-revenue phase:
 - Store the API key in `local.properties` (gitignored), injected via `BuildConfig` at build time. This is NOT secure against reverse engineering, but is acceptable for a pre-launch MVP where the attack surface is negligible.
@@ -1779,7 +2013,9 @@ deep-reps/
 |   |   |-- src/main/java/com/deepreps/feature/onboarding/
 |   |   |   |-- OnboardingScreen.kt
 |   |   |   |-- OnboardingViewModel.kt
+|   |   |   |-- ConsentScreen.kt
 |   |   |   |-- components/
+|   |   |   |   |-- ConsentToggleRow.kt
 |   |   |   |   |-- ExperienceLevelSelector.kt
 |   |   |   |   |-- UnitPreferenceSelector.kt
 |   |   |-- src/test/
@@ -1816,19 +2052,27 @@ deep-reps/
 |   |   |   |-- usecase/
 |   |   |   |   |-- GeneratePlanUseCase.kt
 |   |   |   |   |-- CompleteSetUseCase.kt
+|   |   |   |   |-- CompleteOnboardingUseCase.kt
 |   |   |   |   |-- CalculatePersonalRecordsUseCase.kt
 |   |   |   |   |-- GetExerciseProgressUseCase.kt
 |   |   |   |   |-- GetMuscleGroupVolumeUseCase.kt
 |   |   |   |   |-- CalculateEstimated1rmUseCase.kt
 |   |   |   |   |-- SaveTemplateUseCase.kt
 |   |   |   |   |-- GetWorkoutSummaryUseCase.kt
+|   |   |   |   |-- DetermineSessionDayTypeUseCase.kt
+|   |   |   |   |-- ResolveRestTimerUseCase.kt
 |   |   |   |-- provider/
 |   |   |   |   |-- AiPlanProvider.kt
+|   |   |   |   |-- AnalyticsTracker.kt
+|   |   |   |   |-- FeatureFlagProvider.kt
 |   |   |   |   |-- ConnectivityChecker.kt
 |   |   |   |   |-- BaselinePlanGenerator.kt
+|   |   |   |-- statemachine/
+|   |   |   |   |-- WorkoutStateMachine.kt
 |   |   |   |-- util/
 |   |   |   |   |-- Estimated1rmCalculator.kt
 |   |   |   |   |-- VolumeCalculator.kt
+|   |   |   |   |-- WeightStepProvider.kt
 |   |   |-- src/test/
 |   |   |   |-- usecase/
 |   |   |   |   |-- GeneratePlanUseCaseTest.kt
@@ -1848,6 +2092,12 @@ deep-reps/
 |   |   |   |   |-- PersonalRecordRepositoryImpl.kt
 |   |   |   |   |-- BodyWeightRepositoryImpl.kt
 |   |   |   |   |-- CachedPlanRepositoryImpl.kt
+|   |   |   |-- analytics/
+|   |   |   |   |-- FirebaseAnalyticsTracker.kt
+|   |   |   |-- consent/
+|   |   |   |   |-- ConsentManager.kt
+|   |   |   |-- featureflag/
+|   |   |   |   |-- FirebaseFeatureFlagProvider.kt
 |   |   |   |-- mapper/
 |   |   |   |   |-- ExerciseMapper.kt
 |   |   |   |   |-- WorkoutSessionMapper.kt
@@ -1960,6 +2210,12 @@ deep-reps/
 |   |   |-- src/test/
 |   |   |-- build.gradle.kts
 |
+|-- benchmark/
+|   |-- src/androidTest/java/com/deepreps/benchmark/
+|   |   |-- StartupBenchmark.kt
+|   |   |-- WorkoutScrollBenchmark.kt
+|   |-- build.gradle.kts
+|
 |-- build-logic/
 |   |-- convention/
 |   |   |-- src/main/kotlin/
@@ -1968,6 +2224,8 @@ deep-reps/
 |   |   |   |-- AndroidComposeConventionPlugin.kt
 |   |   |   |-- AndroidHiltConventionPlugin.kt
 |   |   |   |-- AndroidFeatureConventionPlugin.kt
+|   |   |   |-- AndroidBenchmarkConventionPlugin.kt
+|   |   |   |-- DetektConventionPlugin.kt
 |   |   |   |-- JvmLibraryConventionPlugin.kt
 |   |   |-- build.gradle.kts
 |   |-- settings.gradle.kts
@@ -2053,6 +2311,8 @@ mockk = "1.13.12"
 turbine = "1.2.0"
 truth = "1.4.4"
 leakcanary = "2.14"
+detekt = "1.23.7"
+firebase-bom = "33.7.0"
 
 [libraries]
 # Compose
@@ -2118,6 +2378,17 @@ truth = { group = "com.google.truth", name = "truth", version.ref = "truth" }
 # Debug
 leakcanary = { group = "com.squareup.leakcanary", name = "leakcanary-android", version.ref = "leakcanary" }
 
+# Firebase (BOM-managed -- individual libraries omit version)
+firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebase-bom" }
+firebase-analytics = { group = "com.google.firebase", name = "firebase-analytics-ktx" }
+firebase-crashlytics = { group = "com.google.firebase", name = "firebase-crashlytics-ktx" }
+firebase-perf = { group = "com.google.firebase", name = "firebase-perf-ktx" }
+firebase-config = { group = "com.google.firebase", name = "firebase-config-ktx" }
+
+# Static Analysis
+detekt-gradle = { group = "io.gitlab.arturbosch.detekt", name = "detekt-gradle-plugin", version.ref = "detekt" }
+detekt-formatting = { group = "io.gitlab.arturbosch.detekt", name = "detekt-formatting", version.ref = "detekt" }
+
 [bundles]
 compose = ["compose-ui", "compose-ui-tooling-preview", "compose-material3", "compose-runtime", "compose-foundation", "compose-animation"]
 compose-debug = ["compose-ui-tooling", "compose-ui-test-manifest"]
@@ -2136,7 +2407,18 @@ compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 ksp = { id = "com.google.devtools.ksp", version = "2.1.0-1.0.29" }
 room = { id = "androidx.room", version.ref = "room" }
+detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
+firebase-crashlytics-gradle = { id = "com.google.firebase.crashlytics", version = "3.0.3" }
+firebase-perf-gradle = { id = "com.google.firebase.firebase-perf", version = "1.4.2" }
+google-services = { id = "com.google.gms.google-services", version = "4.4.2" }
 ```
+
+**Firebase dependency placement rules:**
+- `:app` applies Firebase Gradle plugins (`google-services`, `firebase-crashlytics-gradle`, `firebase-perf-gradle`).
+- `:core:data` declares Firebase SDK library dependencies (`firebase-analytics`, `firebase-crashlytics`, `firebase-config`). This is where `FirebaseAnalyticsTracker`, `FirebaseFeatureFlagProvider`, and `ConsentManager` implementations live.
+- `:core:domain` MUST NOT depend on any Firebase artifact. All Firebase access is behind domain interfaces.
+
+**Detekt integration:** The Detekt Gradle plugin is applied via `DetektConventionPlugin` in `build-logic`. It runs as part of the CI `lint` step. Custom rule sets can be added in `config/detekt/detekt.yml`.
 
 ---
 
@@ -2150,9 +2432,9 @@ name: CI
 
 on:
   push:
-    branches: [main, develop]
+    branches: [develop, main]
   pull_request:
-    branches: [main, develop]
+    branches: [develop]
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -2175,6 +2457,8 @@ jobs:
       - name: Unit Tests
         run: ./gradlew testDebugUnitTest
       - name: Build
+        env:
+          GEMINI_DEV_API_KEY: ${{ secrets.GEMINI_DEV_API_KEY }}
         run: ./gradlew assembleDebug
       - name: Upload test results
         if: always()
@@ -2183,6 +2467,8 @@ jobs:
           name: test-results
           path: '**/build/reports/tests/'
 ```
+
+**Branch strategy note:** PR pipelines trigger on `pull_request: branches: [develop]` only -- all feature branches merge into `develop`. Merge builds trigger on `push: branches: [develop, main]`, covering both integration builds on `develop` and release-candidate validation on `main`. This aligns with the DevOps branching model: `feature/*` -> `develop` -> `main`.
 
 ### Release Pipeline
 
@@ -2213,7 +2499,7 @@ jobs:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_PROD_API_KEY: ${{ secrets.GEMINI_PROD_API_KEY }}
         run: ./gradlew bundleRelease
       - name: Upload to Play Store (Internal Track)
         uses: r0adkll/upload-google-play@v1

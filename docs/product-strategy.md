@@ -179,6 +179,12 @@ Deep Reps targets the upper-right quadrant: high intelligence, plan-forward but 
 | **Value driver** | Deep analytics (1RM trends, volume tracking, frequency heatmaps) and data integrity. These users evaluate tools on data quality, not price. Deep Reps earns their loyalty by being the best free data tool in the space. |
 | **Size estimate** | ~25% of total addressable users. Smallest segment but strongest word-of-mouth influence and highest engagement per user. |
 
+### Edge Cases: Returning Lifters & Casual Gym-Goers
+
+**Returning Lifter** (intermediate who took 6+ month break): Treat as cold-start problem. Onboarding collects experience level, but AI uses baseline tables rather than stale history. After 2-3 sessions, re-classification logic adjusts volume/intensity upward. Tracked separately in retention cohorts to measure re-engagement patterns.
+
+**Casual Gym-Goer** (1-2x/week, inconsistent): Not a target segment. App assumes 3+ sessions/week for progressive overload to function. If retention data shows a significant 1-2x/week cohort, Phase 3 may introduce a "maintenance mode" plan type. Until then, no special accommodation — accept that casual users will dilute D30 retention. Segment retention reporting by workout frequency to isolate their impact.
+
 ---
 
 ## 4. Business Model
@@ -311,7 +317,7 @@ Not DAU. Not downloads. Not revenue. A completed workout means the user went thr
 
 | Metric | Launch (Month 1) | 3 Months | 6 Months | 12 Months |
 |--------|-------------------|----------|----------|-----------|
-| Monthly downloads | 5,000 | 15,000 | 40,000 | 100,000 |
+| Monthly downloads (pessimistic / base / optimistic) | 5K / 10K / 15K | 15K / 20K / 25K | 25K / 40K / 50K | 50K / 100K / 150K |
 | Cumulative installs | 5,000 | 35,000 | 120,000 | 500,000 |
 | Organic vs. paid split | 80/20 | 60/40 | 50/50 | 40/60 |
 | CAC (paid) | $2.50 | $2.00 | $1.80 | $1.50 |
@@ -374,6 +380,7 @@ These are monitored weekly to catch problems before they manifest in lagging met
 | 5 | **Android fragmentation causes device-specific bugs** | High (55%) | Medium | High | Firebase Test Lab for automated testing across 20+ device/OS combinations. Define a support floor (Android 10+, covering ~95% of active devices). QA engineer runs manual tests on 5 representative devices (budget, mid-range, flagship, Samsung, Pixel). |
 | 6 | **Gemini API costs exceed budget at scale** | Medium (40%) | High | High | Monitor cost-per-plan-generation weekly. If costs exceed $0.01/plan, investigate prompt optimization, response caching, or switching to a smaller model for simple plans. Set hard spending caps per month. At 100K DAU, API costs could reach $6K/month — founder must budget accordingly. |
 | 7 | **Users don't engage with AI plans (prefer manual logging)** | Medium (35%) | Medium | Medium | Monitor AI plan usage rate. If <30% of workouts use AI plans at month 3, investigate: are plans inaccurate? Are users unaware? Is the UX friction too high? A/B test plan presentation (inline vs. separate screen). |
+| 11 | **API key security: Gemini key extractable from APK** | High (70%) | Medium | High | Acceptable technical debt for MVP (limited user base). Post-MVP: deploy backend proxy (Cloud Run or Cloud Functions) to hold key server-side. Cost: $50-100/month hosting + 1-2 dev-weeks. Must ship before public launch (Phase 3, week 29). See `architecture.md` Section 7.1. |
 | 8 | **CSCS hire is delayed or poor fit** | Low (20%) | Very High | High | Begin recruiting immediately. The CSCS is a blocker for the exercise library, which is a blocker for everything else. Have a shortlist of 3 candidates. Consider contract engagement if full-time hire takes too long. |
 | 9 | **Gemini API latency makes plan generation feel slow** | Medium (40%) | Medium | Medium | Show loading state with exercise-specific tips during generation. Cache plans aggressively -- if the user runs the same exercises as last time, serve modified cached plan instantly. Target <3 second plan generation P95. If Gemini can't hit this, switch to a faster model for plan generation specifically. |
 | 10 | **Google Play Store ranking is invisible at launch** | High (65%) | Medium | Medium | ASO strategy from day one: keyword research (workout tracker, gym log, strength training, AI workout), screenshot A/B testing, localized listing. Seed 50+ legitimate reviews from beta testers before public launch. Budget for Google Ads App Campaigns at $3K/month from launch. |
@@ -401,8 +408,10 @@ Low Prob.   |             |                 | #8           |
 | 2-4 | Architecture design: tech stack selection, data model, offline-first strategy | Lead Android Dev | Architecture Decision Record (ADR) document |
 | 3-6 | UI/UX design: wireframes for entire core loop | UI/UX Designer | Figma wireframes: onboarding, group select, exercise pick, plan view, workout logging, summary, progress |
 | 4-6 | AI prompt engineering: design and test Gemini prompts with CSCS | CSCS + Lead Dev | Prompt templates with sample inputs/outputs, safety guardrail rules |
+| 4-8 | Anatomy diagram production: 78 exercise diagrams (SVG with fillable muscle regions). Contractor or designer. **Budget: $2,000-$4,000.** Blocks exercise library implementation. | UI/UX Designer | SVG assets for all exercises |
+| 4-8 | UX validation: Product Owner conducts 5-8 moderated usability sessions with gym contacts using wireframes. Lower fidelity than professional research; UX Researcher hired post-launch (Phase 3) for retention deep-dive. | CEO | Usability findings incorporated into high-fidelity designs |
 | 6-8 | UI/UX design: high-fidelity mockups and design system | UI/UX Designer | Figma high-fidelity designs, Material Design 3 component library, dark theme |
-| 8 | **Gate: Go/No-Go for development start** | CEO | Exercise library complete, architecture approved, designs approved, AI prompts validated |
+| 8 | **Gate: Go/No-Go for development start** | CEO | Exercise library complete, architecture approved, designs approved, AI prompts validated, anatomy diagrams delivered |
 
 ### Phase 1: MVP Development (Weeks 9-22, ~14 weeks)
 
@@ -419,6 +428,7 @@ Low Prob.   |             |                 | #8           |
 | 17-19 | Workout complete summary screen | Mid Android Dev |
 | 18-20 | Per-exercise notes, crash recovery, data persistence hardening | Lead Android Dev |
 | 18-22 | QA: full regression testing, device fragmentation testing, edge cases | QA Engineer |
+| 20-22 | Analytics instrumentation: P0 events (session lifecycle, workout flow, onboarding funnel). Must ship before first beta user at week 23. | Data Analyst + Lead Dev |
 | 20-22 | Bug fixes, performance optimization, polish | All Dev |
 | 22 | **Gate: Internal alpha complete. Feature-complete MVP.** | CEO |
 
@@ -427,7 +437,6 @@ Low Prob.   |             |                 | #8           |
 | Week | Milestone | Owner |
 |------|-----------|-------|
 | 23 | Closed beta launch (Google Play internal testing track, 50-100 testers) | CEO + QA |
-| 23-24 | Analytics instrumentation (event taxonomy, Mixpanel/Amplitude setup) | Data Analyst + Lead Dev |
 | 23-26 | Beta feedback collection and triage | CEO + QA |
 | 24-26 | ASO preparation: store listing, screenshots, video, keyword optimization | Growth & Content Marketing |
 | 25-27 | Critical bug fixes from beta feedback | Dev team |
