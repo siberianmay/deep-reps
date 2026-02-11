@@ -621,7 +621,7 @@ Bottom navigation bar. Persistent across all main screens.
 - Exercise list (per tab):
   - Each item: 72dp height, full width
   - Checkbox (left, 48dp touch target) + Exercise name (`body-large`) + Equipment chip (`label-medium`) + Isolation chip (`label-medium`)
-  - Tapping the row (not checkbox) opens Exercise Detail (4.5) as a bottom sheet
+  - **Tapping the checkbox toggles selection.** Tapping anywhere else on the row (exercise name, chips, row background) opens Exercise Detail (4.5) as a bottom sheet -- selection state remains unchanged.
   - Divider: 1dp `border-subtle` between items
 - Bottom action area: Same pattern as 4.3
   - "8 exercises selected" + [Generate Plan] button
@@ -719,6 +719,32 @@ This is the most important screen in the app. Every design decision here priorit
 - Completing the last set of the last exercise shows a "Finish Workout?" confirmation dialog.
 - The screen requests `KEEP_SCREEN_ON` flag to prevent display timeout during workouts.
 
+#### 4.7.1 Paused Workout State
+
+**Trigger:** Tap [Pause] button in sticky header during active workout.
+
+**Visual indicator:**
+- Entire screen overlay: Semi-transparent scrim (`overlay-scrim` at 50% opacity) over workout content
+- Pause banner: Centered card overlay, 280dp wide, 180dp tall, `surface-high` background, `radius-lg`, `elevation-5`
+- Banner content:
+  - Pause icon: 48dp, `status-warning` tint, centered, 16dp from top
+  - "PAUSED" label: `headline-medium` (20sp, SemiBold), `on-surface-primary`, centered below icon
+  - Paused duration: `body-large`, `on-surface-secondary`, centered below label, counts up from 00:00
+  - [Resume] button: Full width minus 32dp, 56dp height, `accent-primary` fill, `radius-md`, 16dp from bottom
+  - [End Workout] text button: `body-medium`, `status-error` text, centered, 8dp below [Resume]
+
+**Timer behavior:**
+- Workout timer (sticky header) freezes at paused time
+- Rest timer (if active when paused): Pauses countdown, resumes from same value on resume
+- All set logging disabled (inputs non-interactive, 40% opacity)
+
+**Resume action:**
+- Tap [Resume] button: Dismisses pause overlay with `motion-fast` (200ms fade out), workout timer resumes, rest timer resumes if active
+- Alternative resume: Tap [Pause] button again (toggles pause off)
+- System back button: Same as tapping [End Workout] -- shows "Discard workout?" confirmation
+
+**Note:** Paused duration is tracked separately and NOT included in total workout duration analytics.
+
 ### 4.8 Workout Summary Screen
 
 Post-workout. Detailed in component 3.6 (WorkoutSummary).
@@ -758,6 +784,24 @@ Post-workout. Detailed in component 3.6 (WorkoutSummary).
   - GitHub-style contribution grid, 52 weeks (or selected range)
   - Cell size: 12dp x 12dp, 2dp gap
   - Color intensity: 0 sessions = `surface-medium`, 1 = 25% `accent-primary`, 2 = 50%, 3 = 75%, 4+ = 100%
+
+#### 4.9.1 Session History List
+
+**Position:** Below the "Strength Trends" section, full width.
+
+**Section title:** "Recent Workouts" -- `headline-small` (18sp, SemiBold), 24dp top margin, 12dp bottom margin
+
+**List item:** 88dp height, `surface-low` background, `radius-md` (12dp), 16dp internal padding, 8dp gap between items.
+- Line 1: Date (`body-medium`, `on-surface-primary`, left) + Duration (`body-medium`, `on-surface-secondary`, right)
+- Line 2: Muscle groups (`body-small`, `on-surface-secondary`, comma-separated), 4dp below date
+- Line 3: "{set_count} sets . {total_volume}kg volume" (`body-small`, `on-surface-secondary`) + chevron (24dp, `on-surface-tertiary`, right-aligned)
+- Contains PR: Gold star icon (16dp, `#FFD43B`) to the left of date
+
+**Interaction:** Tap navigates to Workout Summary (4.8, read-only historical view). Pressed: background shifts to `surface-medium`, scale 98%, 100ms.
+
+**Pagination:** Initial load 10 sessions. Infinite scroll (load 10 more within 200dp of bottom). Skeleton shimmer while loading.
+
+**Empty state:** Centered illustration (160dp), "No workouts yet" heading, "Complete your first workout to see it here" subtitle, [Start Workout] outlined button.
 
 ### 4.10 Exercise History Screen
 
@@ -851,6 +895,54 @@ Post-workout. Detailed in component 3.6 (WorkoutSummary).
 - Rest timer only starts after the last exercise in the superset group is completed
 - "Superset" label badge appears above the grouped exercises: `label-small`, `accent-secondary` text
 
+### 4.14 Template Creation/Edit Screen
+
+**Purpose:** Create a new workout template or modify an existing one.
+
+**Entry points:**
+- Template Manager: Tap [+ New Template] (new blank template)
+- Template Manager: Long-press TemplateCard -> [Edit] (edit existing)
+- Workout Summary: Tap [Save as Template] (pre-populated from completed session)
+
+**Layout:**
+- Top app bar: 56dp. [X] close (48dp, left), title "Create Template" or "Edit Template" (`title-large`), [Save] action (48dp, right, `accent-primary` text)
+- Template name input: Full width minus 32dp margin, 56dp height, `body-large` text, placeholder "e.g., Push Day A"
+- Muscle group chips: Auto-computed from selected exercises, `label-medium`, `radius-xl`, 8dp gap, wrap to rows (non-interactive display)
+- Exercise list: Reorderable items, each 72dp height
+  - Left: Drag handle (24dp icon, 48dp touch target)
+  - Center: Exercise name (`body-large`, `on-surface-primary`) + set config (`body-small`, `on-surface-secondary`, e.g., "4 sets x 8-12 reps")
+  - Right: Delete [X] icon (24dp, 48dp touch target, `on-surface-tertiary`)
+  - Background: `surface-low`, `radius-sm`, 1dp `border-subtle`
+  - Margin between items: 8dp
+- [+ Add Exercise] button: Full width, 56dp, outlined style, `accent-primary` border
+
+**Set configuration (inline editor):**
+- Tap set config row to expand (72dp -> 192dp):
+  - Number of sets: stepper (1-10)
+  - Target reps: range input (e.g., "8-12") or fixed (e.g., "10")
+  - Rest seconds: number input (30s-300s)
+- Collapses on confirm or tap outside
+
+**States:**
+
+| State | Appearance |
+|-------|------------|
+| New template | Empty name (focused), no exercises, no muscle group chips |
+| Edit existing | Pre-filled name, exercises, muscle groups |
+| From completed session | Auto-generated name, exercises from workout, muscle groups auto-detected |
+| Validation error (empty name) | `status-error` border on name field, "Template name required" helper text, [Save] disabled |
+| Validation error (no exercises) | "Add at least one exercise" message, [Save] disabled |
+
+**Validation rules:**
+- Name: Required, 1-60 characters
+- Exercises: Minimum 1, maximum 15
+
+**Interaction:**
+- [X] close: If changes made, "Discard changes?" confirmation dialog. If no changes, dismiss.
+- [Save]: Validate, save to Room DB, navigate back, show "Template saved" snackbar.
+- Reorder exercises: Long-press drag handle (per Section 5.1)
+- Delete exercise: Tap [X], immediate removal, undo snackbar (5s)
+
 ---
 
 ## 5. Interaction Specifications
@@ -926,6 +1018,41 @@ Haptic feedback: Light vibrate (50ms) on all long-press activations.
 - If the same exercise was performed in a recent session, a row of "quick fill" chips appears above the input:
   - "Last: 80kg" -- `label-medium` chip, `surface-highest` background
   - Tapping a chip fills the value instantly
+
+#### 5.4.4 Validation Rules
+
+**Weight input:**
+- Minimum: 0.5kg (1lb)
+- Maximum: 500kg (1100lbs)
+- Precision: 0.5kg increments (1lb increments in lbs mode)
+- Keyboard type: `numberDecimal` (allows decimal point)
+- Out-of-range handling: Field reverts to previous value on blur with haptic feedback (medium vibrate, 100ms) + error toast
+- Invalid characters: Non-numeric characters filtered on input
+
+**Rep input:**
+- Minimum: 1
+- Maximum: 100
+- Precision: Integer only
+- Keyboard type: `number` (no decimal)
+- Out-of-range handling: Same revert behavior as weight
+- Invalid characters: Filtered on input
+
+**Quick-fill logic:**
+- Scans 3 most recent sessions for same exercise
+- Chip display: "Last: {value}" (most recent), "Avg: {value}" (avg of 3), "PR: {value}" (if exists)
+- Placement: 8dp above input field, horizontal row, 8dp gap, left-aligned
+- Chip style: `label-medium`, `surface-highest` background, `radius-xl`, 32dp height
+- Tap fills value instantly and dismisses chip row
+
+**Error handling:**
+- Empty field on blur: Auto-fills with 0 (weight) or 1 (reps)
+- Field with only decimal point: Treated as 0
+- Leading zeros: Normalized on blur ("080" -> "80")
+- Invalid paste: Ignored, field unchanged
+
+**Stepper bounds:**
+- [-] disables at minimum, [+] disables at maximum
+- Disabled appearance: `on-surface-tertiary` icon tint, 40% opacity
 
 ### 5.5 Animations
 

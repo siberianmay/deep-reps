@@ -546,18 +546,118 @@ These tables provide the starting point for AI plan generation when no training 
 
 **Body weight ratio baselines (working weight for sets of 10-12):**
 
+#### Legs
+
 | Exercise | Male | Female |
 |----------|------|--------|
 | Barbell Back Squat | 0.50 x BW | 0.35 x BW |
-| Conventional Deadlift | 0.60 x BW | 0.40 x BW |
-| Barbell Bench Press | 0.40 x BW | 0.20 x BW |
-| Overhead Press | 0.25 x BW | 0.15 x BW |
-| Barbell Bent-Over Row | 0.35 x BW | 0.20 x BW |
-| Barbell Curl | 0.15 x BW | 0.08 x BW |
+| Barbell Front Squat | 0.40 x BW | 0.28 x BW |
 | Leg Press | 0.80 x BW | 0.60 x BW |
-| Lat Pulldown | 0.35 x BW | 0.25 x BW |
+| Romanian Deadlift (RDL) | 0.45 x BW | 0.30 x BW |
+| Walking Lunges | 0.12 x BW per hand | 0.08 x BW per hand |
+| Bulgarian Split Squat | 0.12 x BW per hand | 0.08 x BW per hand |
+| Hack Squat | 0.60 x BW | 0.45 x BW |
+| Leg Extension | 0.35 x BW | 0.25 x BW |
+| Lying Leg Curl | 0.25 x BW | 0.18 x BW |
+| Seated Leg Curl | 0.28 x BW | 0.20 x BW |
+| Standing Calf Raise | 0.40 x BW | 0.30 x BW |
+| Seated Calf Raise | 0.30 x BW | 0.22 x BW |
 
-**When gender is not provided:** Use the male ratios reduced by 15%. This is an imperfect heuristic — the app should prompt for gender as an optional field to improve accuracy.
+#### Lower Back
+
+| Exercise | Male | Female |
+|----------|------|--------|
+| Conventional Deadlift | 0.60 x BW | 0.40 x BW |
+| Sumo Deadlift | 0.55 x BW | 0.38 x BW |
+| Trap Bar Deadlift | 0.65 x BW | 0.45 x BW |
+| Rack Pull | 0.70 x BW | 0.48 x BW |
+| Good Morning | N/A (Advanced only) | N/A (Advanced only) |
+| Back Extension (45-degree) | Bodyweight | Bodyweight |
+| Reverse Hyperextension | 0.10 x BW | 0.08 x BW |
+| Barbell Hip Thrust | 0.50 x BW | 0.35 x BW |
+| Cable Pull-Through | 0.25 x BW | 0.18 x BW |
+| Deficit Deadlift | N/A (Advanced only) | N/A (Advanced only) |
+
+#### Chest
+
+| Exercise | Male | Female |
+|----------|------|--------|
+| Barbell Bench Press | 0.40 x BW | 0.20 x BW |
+| Incline Barbell Bench Press | 0.35 x BW | 0.18 x BW |
+| Dumbbell Bench Press | 0.18 x BW per hand | 0.09 x BW per hand |
+| Incline Dumbbell Press | 0.15 x BW per hand | 0.08 x BW per hand |
+| Decline Barbell Bench Press | 0.42 x BW | 0.22 x BW |
+| Dumbbell Fly | 0.08 x BW per hand | 0.04 x BW per hand |
+| Cable Crossover | 0.12 x BW per side | 0.07 x BW per side |
+| Machine Chest Press | 0.35 x BW | 0.20 x BW |
+| Pec Deck / Machine Fly | 0.20 x BW | 0.12 x BW |
+| Push-Up | Bodyweight | Bodyweight |
+| Dips (Chest-Focused) | Bodyweight | Bodyweight (or band-assisted) |
+
+#### Back
+
+| Exercise | Male | Female |
+|----------|------|--------|
+| Barbell Bent-Over Row | 0.35 x BW | 0.20 x BW |
+| Pull-Up | Bodyweight (or band-assisted) | Band-assisted |
+| Lat Pulldown | 0.35 x BW | 0.25 x BW |
+| Seated Cable Row | 0.40 x BW | 0.28 x BW |
+| Dumbbell Single-Arm Row | 0.15 x BW | 0.10 x BW |
+| T-Bar Row | 0.30 x BW | 0.20 x BW |
+| Chest-Supported Row | 0.35 x BW | 0.25 x BW |
+| Chin-Up | Bodyweight (or band-assisted) | Band-assisted |
+| Straight-Arm Pulldown | 0.15 x BW | 0.10 x BW |
+| Face Pull | 0.10 x BW | 0.07 x BW |
+| Cable Lat Pullover | 0.18 x BW | 0.12 x BW |
+
+#### Shoulders
+
+| Exercise | Male | Female |
+|----------|------|--------|
+| Overhead Press (Barbell) | 0.25 x BW | 0.15 x BW |
+| Dumbbell Shoulder Press | 0.12 x BW per hand | 0.07 x BW per hand |
+| Arnold Press | 0.10 x BW per hand | 0.06 x BW per hand |
+| Lateral Raise | 0.04 x BW per hand | 0.02 x BW per hand |
+| Cable Lateral Raise | 0.05 x BW per side | 0.03 x BW per side |
+| Front Raise | 0.05 x BW per hand | 0.03 x BW per hand |
+| Reverse Fly (Dumbbell) | 0.04 x BW per hand | 0.02 x BW per hand |
+| Barbell Upright Row | 0.20 x BW | 0.12 x BW |
+| Barbell Shrug | 0.40 x BW | 0.25 x BW |
+| Dumbbell Shrug | 0.20 x BW per hand | 0.12 x BW per hand |
+| Landmine Press | 0.15 x BW per side | 0.10 x BW per side |
+
+#### Arms
+
+| Exercise | Male | Female |
+|----------|------|--------|
+| Barbell Curl | 0.15 x BW | 0.08 x BW |
+| Dumbbell Curl | 0.07 x BW per hand | 0.04 x BW per hand |
+| Hammer Curl | 0.08 x BW per hand | 0.05 x BW per hand |
+| Preacher Curl | 0.12 x BW | 0.07 x BW |
+| Incline Dumbbell Curl | 0.06 x BW per hand | 0.03 x BW per hand |
+| Cable Curl | 0.12 x BW | 0.07 x BW |
+| Close-Grip Bench Press | 0.35 x BW | 0.18 x BW |
+| Skull Crusher (Lying Tricep Extension) | 0.12 x BW | 0.07 x BW |
+| Tricep Pushdown (Cable) | 0.15 x BW | 0.10 x BW |
+| Overhead Tricep Extension | 0.08 x BW per hand | 0.05 x BW per hand |
+| Concentration Curl | 0.07 x BW | 0.04 x BW |
+| Wrist Curl | 0.10 x BW | 0.06 x BW |
+
+#### Core
+
+| Exercise | Male | Female | Notes |
+|----------|------|--------|-------|
+| Plank | Bodyweight, 30s hold | Bodyweight, 20s hold | Time-based |
+| Ab Wheel Rollout | N/A (Advanced only) | N/A (Advanced only) | — |
+| Hanging Leg Raise | Bodyweight, 8 reps | Bodyweight, 6 reps | Rep-based |
+| Cable Crunch | 0.20 x BW | 0.15 x BW | Weight-based |
+| Russian Twist | Bodyweight | Bodyweight | Rep-based |
+| Bicycle Crunch | Bodyweight, 15 reps | Bodyweight, 12 reps | Rep-based |
+| Dead Bug | Bodyweight, 10 reps/side | Bodyweight, 8 reps/side | Rep-based |
+| Pallof Press | 0.10 x BW | 0.07 x BW | Weight-based |
+| Decline Sit-Up | Bodyweight, 12 reps | Bodyweight, 10 reps | Rep-based |
+| Side Plank | Bodyweight, 20s/side | Bodyweight, 15s/side | Time-based |
+| Dragon Flag | N/A (Advanced only) | N/A (Advanced only) | — |
 
 **Example:** Male beginner, 80 kg body weight, Barbell Bench Press:
 - Working weight: 0.40 x 80 = 32 kg (round to nearest 2.5 kg = 32.5 kg)
@@ -575,16 +675,118 @@ These tables provide the starting point for AI plan generation when no training 
 
 **Body weight ratio baselines (working weight for sets of 8-10):**
 
+#### Legs
+
 | Exercise | Male | Female |
 |----------|------|--------|
 | Barbell Back Squat | 1.00 x BW | 0.70 x BW |
-| Conventional Deadlift | 1.25 x BW | 0.85 x BW |
-| Barbell Bench Press | 0.75 x BW | 0.40 x BW |
-| Overhead Press | 0.45 x BW | 0.25 x BW |
-| Barbell Bent-Over Row | 0.65 x BW | 0.40 x BW |
-| Barbell Curl | 0.25 x BW | 0.13 x BW |
+| Barbell Front Squat | 0.80 x BW | 0.56 x BW |
 | Leg Press | 1.50 x BW | 1.10 x BW |
+| Romanian Deadlift (RDL) | 0.90 x BW | 0.63 x BW |
+| Walking Lunges | 0.25 x BW per hand | 0.18 x BW per hand |
+| Bulgarian Split Squat | 0.25 x BW per hand | 0.18 x BW per hand |
+| Hack Squat | 1.20 x BW | 0.85 x BW |
+| Leg Extension | 0.65 x BW | 0.48 x BW |
+| Lying Leg Curl | 0.50 x BW | 0.38 x BW |
+| Seated Leg Curl | 0.55 x BW | 0.42 x BW |
+| Standing Calf Raise | 0.80 x BW | 0.60 x BW |
+| Seated Calf Raise | 0.60 x BW | 0.45 x BW |
+
+#### Lower Back
+
+| Exercise | Male | Female |
+|----------|------|--------|
+| Conventional Deadlift | 1.25 x BW | 0.85 x BW |
+| Sumo Deadlift | 1.15 x BW | 0.80 x BW |
+| Trap Bar Deadlift | 1.35 x BW | 0.95 x BW |
+| Rack Pull | 1.45 x BW | 1.00 x BW |
+| Good Morning | 0.35 x BW | 0.25 x BW |
+| Back Extension (45-degree) | BW + 10 kg | BW + 5 kg |
+| Reverse Hyperextension | 0.25 x BW | 0.18 x BW |
+| Barbell Hip Thrust | 1.00 x BW | 0.70 x BW |
+| Cable Pull-Through | 0.50 x BW | 0.38 x BW |
+| Deficit Deadlift | N/A (Advanced only) | N/A (Advanced only) |
+
+#### Chest
+
+| Exercise | Male | Female |
+|----------|------|--------|
+| Barbell Bench Press | 0.75 x BW | 0.40 x BW |
+| Incline Barbell Bench Press | 0.65 x BW | 0.35 x BW |
+| Dumbbell Bench Press | 0.35 x BW per hand | 0.19 x BW per hand |
+| Incline Dumbbell Press | 0.30 x BW per hand | 0.17 x BW per hand |
+| Decline Barbell Bench Press | 0.80 x BW | 0.45 x BW |
+| Dumbbell Fly | 0.15 x BW per hand | 0.09 x BW per hand |
+| Cable Crossover | 0.22 x BW per side | 0.14 x BW per side |
+| Machine Chest Press | 0.65 x BW | 0.40 x BW |
+| Pec Deck / Machine Fly | 0.38 x BW | 0.25 x BW |
+| Push-Up | Bodyweight, 20 reps | Bodyweight, 15 reps |
+| Dips (Chest-Focused) | Bodyweight, 10 reps | Bodyweight, 8 reps |
+
+#### Back
+
+| Exercise | Male | Female |
+|----------|------|--------|
+| Barbell Bent-Over Row | 0.65 x BW | 0.40 x BW |
+| Pull-Up | Bodyweight, 8 reps | Bodyweight, 5 reps |
 | Lat Pulldown | 0.55 x BW | 0.40 x BW |
+| Seated Cable Row | 0.75 x BW | 0.53 x BW |
+| Dumbbell Single-Arm Row | 0.30 x BW | 0.20 x BW |
+| T-Bar Row | 0.60 x BW | 0.42 x BW |
+| Chest-Supported Row | 0.65 x BW | 0.48 x BW |
+| Chin-Up | Bodyweight, 10 reps | Bodyweight, 6 reps |
+| Straight-Arm Pulldown | 0.28 x BW | 0.20 x BW |
+| Face Pull | 0.20 x BW | 0.15 x BW |
+| Cable Lat Pullover | 0.35 x BW | 0.25 x BW |
+
+#### Shoulders
+
+| Exercise | Male | Female |
+|----------|------|--------|
+| Overhead Press (Barbell) | 0.45 x BW | 0.25 x BW |
+| Dumbbell Shoulder Press | 0.22 x BW per hand | 0.13 x BW per hand |
+| Arnold Press | 0.18 x BW per hand | 0.11 x BW per hand |
+| Lateral Raise | 0.08 x BW per hand | 0.05 x BW per hand |
+| Cable Lateral Raise | 0.10 x BW per side | 0.07 x BW per side |
+| Front Raise | 0.10 x BW per hand | 0.06 x BW per hand |
+| Reverse Fly (Dumbbell) | 0.08 x BW per hand | 0.05 x BW per hand |
+| Barbell Upright Row | 0.38 x BW | 0.25 x BW |
+| Barbell Shrug | 0.80 x BW | 0.55 x BW |
+| Dumbbell Shrug | 0.40 x BW per hand | 0.28 x BW per hand |
+| Landmine Press | 0.30 x BW per side | 0.20 x BW per side |
+
+#### Arms
+
+| Exercise | Male | Female |
+|----------|------|--------|
+| Barbell Curl | 0.25 x BW | 0.13 x BW |
+| Dumbbell Curl | 0.13 x BW per hand | 0.07 x BW per hand |
+| Hammer Curl | 0.15 x BW per hand | 0.09 x BW per hand |
+| Preacher Curl | 0.22 x BW | 0.12 x BW |
+| Incline Dumbbell Curl | 0.11 x BW per hand | 0.06 x BW per hand |
+| Cable Curl | 0.23 x BW | 0.14 x BW |
+| Close-Grip Bench Press | 0.65 x BW | 0.35 x BW |
+| Skull Crusher (Lying Tricep Extension) | 0.22 x BW | 0.13 x BW |
+| Tricep Pushdown (Cable) | 0.28 x BW | 0.18 x BW |
+| Overhead Tricep Extension | 0.15 x BW per hand | 0.10 x BW per hand |
+| Concentration Curl | 0.13 x BW | 0.07 x BW |
+| Wrist Curl | 0.18 x BW | 0.11 x BW |
+
+#### Core
+
+| Exercise | Male | Female | Notes |
+|----------|------|--------|-------|
+| Plank | Bodyweight, 60s hold | Bodyweight, 45s hold | Time-based |
+| Ab Wheel Rollout | N/A (Advanced only) | N/A (Advanced only) | — |
+| Hanging Leg Raise | Bodyweight, 12 reps | Bodyweight, 10 reps | Rep-based |
+| Cable Crunch | 0.40 x BW | 0.30 x BW | Weight-based |
+| Russian Twist | 5 kg plate | 2.5 kg plate | Weight-based |
+| Bicycle Crunch | Bodyweight, 25 reps | Bodyweight, 20 reps | Rep-based |
+| Dead Bug | Bodyweight, 15 reps/side | Bodyweight, 12 reps/side | Rep-based |
+| Pallof Press | 0.20 x BW | 0.15 x BW | Weight-based |
+| Decline Sit-Up | Bodyweight, 20 reps | Bodyweight, 15 reps | Rep-based |
+| Side Plank | Bodyweight, 40s/side | Bodyweight, 30s/side | Time-based |
+| Dragon Flag | N/A (Advanced only) | N/A (Advanced only) | — |
 
 ### 4.3 Advanced (Level 3: 18+ months)
 
@@ -597,16 +799,135 @@ These tables provide the starting point for AI plan generation when no training 
 
 **Body weight ratio baselines (working weight for sets of 5-6):**
 
+#### Legs
+
 | Exercise | Male | Female |
 |----------|------|--------|
 | Barbell Back Squat | 1.50 x BW | 1.10 x BW |
-| Conventional Deadlift | 1.75 x BW | 1.25 x BW |
-| Barbell Bench Press | 1.25 x BW | 0.65 x BW |
-| Overhead Press | 0.70 x BW | 0.40 x BW |
-| Barbell Bent-Over Row | 0.90 x BW | 0.55 x BW |
-| Barbell Curl | 0.35 x BW | 0.18 x BW |
+| Barbell Front Squat | 1.25 x BW | 0.90 x BW |
 | Leg Press | 2.50 x BW | 1.80 x BW |
+| Romanian Deadlift (RDL) | 1.35 x BW | 1.00 x BW |
+| Walking Lunges | 0.40 x BW per hand | 0.30 x BW per hand |
+| Bulgarian Split Squat | 0.40 x BW per hand | 0.30 x BW per hand |
+| Hack Squat | 2.00 x BW | 1.45 x BW |
+| Leg Extension | 1.00 x BW | 0.75 x BW |
+| Lying Leg Curl | 0.75 x BW | 0.58 x BW |
+| Seated Leg Curl | 0.85 x BW | 0.65 x BW |
+| Standing Calf Raise | 1.25 x BW | 0.95 x BW |
+| Seated Calf Raise | 1.00 x BW | 0.75 x BW |
+
+#### Lower Back
+
+| Exercise | Male | Female |
+|----------|------|--------|
+| Conventional Deadlift | 1.75 x BW | 1.25 x BW |
+| Sumo Deadlift | 1.65 x BW | 1.18 x BW |
+| Trap Bar Deadlift | 1.90 x BW | 1.38 x BW |
+| Rack Pull | 2.00 x BW | 1.45 x BW |
+| Good Morning | 0.60 x BW | 0.43 x BW |
+| Back Extension (45-degree) | BW + 25 kg | BW + 15 kg |
+| Reverse Hyperextension | 0.45 x BW | 0.33 x BW |
+| Barbell Hip Thrust | 1.75 x BW | 1.25 x BW |
+| Cable Pull-Through | 0.85 x BW | 0.63 x BW |
+| Deficit Deadlift | 1.50 x BW | 1.08 x BW |
+
+#### Chest
+
+| Exercise | Male | Female |
+|----------|------|--------|
+| Barbell Bench Press | 1.25 x BW | 0.65 x BW |
+| Incline Barbell Bench Press | 1.10 x BW | 0.58 x BW |
+| Dumbbell Bench Press | 0.55 x BW per hand | 0.30 x BW per hand |
+| Incline Dumbbell Press | 0.48 x BW per hand | 0.27 x BW per hand |
+| Decline Barbell Bench Press | 1.30 x BW | 0.70 x BW |
+| Dumbbell Fly | 0.25 x BW per hand | 0.15 x BW per hand |
+| Cable Crossover | 0.38 x BW per side | 0.23 x BW per side |
+| Machine Chest Press | 1.10 x BW | 0.65 x BW |
+| Pec Deck / Machine Fly | 0.65 x BW | 0.43 x BW |
+| Push-Up | Bodyweight, 30+ reps or weighted | Bodyweight, 25+ reps |
+| Dips (Chest-Focused) | BW + 15 kg | BW + 7.5 kg |
+
+#### Back
+
+| Exercise | Male | Female |
+|----------|------|--------|
+| Barbell Bent-Over Row | 0.90 x BW | 0.55 x BW |
+| Pull-Up | BW + 12.5 kg | BW + 5 kg |
 | Lat Pulldown | 0.75 x BW | 0.55 x BW |
+| Seated Cable Row | 1.10 x BW | 0.80 x BW |
+| Dumbbell Single-Arm Row | 0.48 x BW | 0.33 x BW |
+| T-Bar Row | 0.95 x BW | 0.68 x BW |
+| Chest-Supported Row | 1.00 x BW | 0.73 x BW |
+| Chin-Up | BW + 15 kg | BW + 7.5 kg |
+| Straight-Arm Pulldown | 0.45 x BW | 0.33 x BW |
+| Face Pull | 0.35 x BW | 0.25 x BW |
+| Cable Lat Pullover | 0.55 x BW | 0.40 x BW |
+
+#### Shoulders
+
+| Exercise | Male | Female |
+|----------|------|--------|
+| Overhead Press (Barbell) | 0.70 x BW | 0.40 x BW |
+| Dumbbell Shoulder Press | 0.35 x BW per hand | 0.20 x BW per hand |
+| Arnold Press | 0.30 x BW per hand | 0.18 x BW per hand |
+| Lateral Raise | 0.13 x BW per hand | 0.08 x BW per hand |
+| Cable Lateral Raise | 0.17 x BW per side | 0.11 x BW per side |
+| Front Raise | 0.17 x BW per hand | 0.10 x BW per hand |
+| Reverse Fly (Dumbbell) | 0.13 x BW per hand | 0.08 x BW per hand |
+| Barbell Upright Row | 0.60 x BW | 0.40 x BW |
+| Barbell Shrug | 1.30 x BW | 0.90 x BW |
+| Dumbbell Shrug | 0.65 x BW per hand | 0.45 x BW per hand |
+| Landmine Press | 0.50 x BW per side | 0.35 x BW per side |
+
+#### Arms
+
+| Exercise | Male | Female |
+|----------|------|--------|
+| Barbell Curl | 0.35 x BW | 0.18 x BW |
+| Dumbbell Curl | 0.20 x BW per hand | 0.11 x BW per hand |
+| Hammer Curl | 0.23 x BW per hand | 0.14 x BW per hand |
+| Preacher Curl | 0.32 x BW | 0.18 x BW |
+| Incline Dumbbell Curl | 0.17 x BW per hand | 0.10 x BW per hand |
+| Cable Curl | 0.35 x BW | 0.21 x BW |
+| Close-Grip Bench Press | 1.00 x BW | 0.55 x BW |
+| Skull Crusher (Lying Tricep Extension) | 0.35 x BW | 0.20 x BW |
+| Tricep Pushdown (Cable) | 0.45 x BW | 0.30 x BW |
+| Overhead Tricep Extension | 0.25 x BW per hand | 0.17 x BW per hand |
+| Concentration Curl | 0.20 x BW | 0.11 x BW |
+| Wrist Curl | 0.28 x BW | 0.18 x BW |
+
+#### Core
+
+| Exercise | Male | Female | Notes |
+|----------|------|--------|-------|
+| Plank | Bodyweight, 90s+ or weighted | Bodyweight, 75s+ | Time-based |
+| Ab Wheel Rollout | Bodyweight, 12 reps | Bodyweight, 10 reps | Rep-based |
+| Hanging Leg Raise | Bodyweight, 15+ reps | Bodyweight, 12+ reps | Rep-based |
+| Cable Crunch | 0.65 x BW | 0.50 x BW | Weight-based |
+| Russian Twist | 10 kg plate | 7.5 kg plate | Weight-based |
+| Bicycle Crunch | Bodyweight, 35+ reps | Bodyweight, 30+ reps | Rep-based |
+| Dead Bug | Bodyweight, 20 reps/side | Bodyweight, 18 reps/side | Rep-based |
+| Pallof Press | 0.35 x BW | 0.25 x BW | Weight-based |
+| Decline Sit-Up | BW + 10 kg plate | BW + 5 kg plate | Weight-based |
+| Side Plank | Bodyweight, 60s+/side | Bodyweight, 50s+/side | Time-based |
+| Dragon Flag | Bodyweight, 6 reps | Bodyweight, 4 reps | Rep-based |
+
+### 4.3.1 Baseline Construction Notes
+
+**Progression ratios across levels:**
+- Compound exercises: ~2.0x beginner-to-intermediate, ~1.5x intermediate-to-advanced
+- Isolation exercises: ~1.8x beginner-to-intermediate, ~1.4x intermediate-to-advanced
+- Dumbbell "per hand" multipliers: ~40-45% of equivalent barbell at beginner, ~43-48% at advanced
+
+**Machine vs free-weight:** Machine exercises allow 10-20% higher loads due to fixed movement paths.
+
+**Female baselines:** 50-70% of male for upper body compounds, 65-80% for lower body (reflecting documented sex differences in upper vs lower body strength).
+
+**Bodyweight exercises:** Use rep/time targets instead of weight ratios. Progression follows Section 3.6.
+
+**Advanced-only exercises:** Good Morning, Ab Wheel Rollout, Dragon Flag, Deficit Deadlift have N/A at beginner level per Section 8.4 safety constraints.
+
+**Gender-unknown fallback:** Male ratios x 0.85 (15% reduction), applied uniformly across all levels.
 
 ### 4.4 Volume Recommendations by Group (Weekly Working Sets)
 
@@ -682,41 +1003,34 @@ SAFETY CONSTRAINTS (non-negotiable):
 
 The AI must return a valid JSON response. The app parses this directly — free-text responses are rejected and trigger a retry.
 
+> **Note:** This schema matches the Kotlin domain model in architecture.md Section 4.3.
+> Fields like `exercise_name` and `order` are omitted because they are derivable from `exercise_id`
+> and array index respectively. All weights are in kg (see Appendix B).
+
 ```json
 {
-  "session_plan": {
-    "generated_at": "2026-02-11T10:30:00Z",
-    "experience_level": 2,
-    "body_weight_kg": 80,
-    "exercises": [
-      {
-        "exercise_id": "chest_barbell_bench_press",
-        "exercise_name": "Barbell Bench Press",
-        "order": 1,
-        "warmup_sets": [
-          { "weight_kg": 20, "reps": 12 },
-          { "weight_kg": 40, "reps": 8 },
-          { "weight_kg": 55, "reps": 5 }
-        ],
-        "working_sets": [
-          { "weight_kg": 70, "reps": 8, "set_number": 1 },
-          { "weight_kg": 70, "reps": 8, "set_number": 2 },
-          { "weight_kg": 70, "reps": 8, "set_number": 3 },
-          { "weight_kg": 70, "reps": 8, "set_number": 4 }
-        ],
-        "rest_seconds": 120,
-        "notes": "Increase by 2.5 kg next session if all sets completed."
-      }
-    ],
-    "session_summary": {
-      "total_working_sets": 16,
-      "estimated_duration_minutes": 55,
-      "primary_groups": ["chest"],
-      "volume_check": {
-        "chest": { "sets": 12, "status": "within_range" },
-        "arms_triceps": { "sets": 4, "status": "within_range" }
-      }
+  "exercise_plans": [
+    {
+      "exercise_id": "chest_barbell_bench_press",
+      "warmup_sets": [
+        { "weight": 20, "reps": 12, "set_number": 1 },
+        { "weight": 40, "reps": 8, "set_number": 2 },
+        { "weight": 55, "reps": 5, "set_number": 3 }
+      ],
+      "working_sets": [
+        { "weight": 70, "reps": 8, "set_number": 1 },
+        { "weight": 70, "reps": 8, "set_number": 2 },
+        { "weight": 70, "reps": 8, "set_number": 3 },
+        { "weight": 70, "reps": 8, "set_number": 4 }
+      ],
+      "rest_seconds": 120,
+      "notes": "Increase by 2.5 kg next session if all sets completed."
     }
+  ],
+  "session_summary": {
+    "total_working_sets": 16,
+    "estimated_duration_minutes": 55,
+    "volume_check": "ok"
   }
 }
 ```
@@ -731,7 +1045,6 @@ USER PROFILE:
 - Body weight: {{body_weight_kg}} kg
 - Age: {{age | "not provided"}}
 - Gender: {{gender | "not provided"}}
-- Preferred unit: {{unit}}
 
 EXERCISES FOR THIS SESSION (in order):
 {{#each exercises}}
@@ -757,6 +1070,9 @@ PROGRESSION CONTEXT:
 - Current periodization model: {{periodization_model}}
 - Last session performance trend: {{trend}} (improving/stalled/regressing)
 - Weeks since last deload: {{weeks_since_deload}}
+{{#if currentBlockPhase}}
+- Current block phase: {{currentBlockPhase}} (week {{currentBlockWeek}})
+{{/if}}
 {{#if deload_recommended}}
 - DELOAD RECOMMENDED: Reduce volume by 40-50% and intensity to 50-65%.
 {{/if}}
@@ -780,7 +1096,7 @@ SAFETY CONSTRAINTS (non-negotiable):
 {{/if}}
 
 OUTPUT FORMAT:
-Return a valid JSON object matching the session_plan schema. Do not include any text outside the JSON.
+Return a valid JSON object matching the exercise_plans schema (Section 5.3). Do not include any text outside the JSON.
 ```
 
 ### 5.5 Prompt Versioning
@@ -1168,22 +1484,7 @@ All suggested weights must be rounded to practically loadable values:
 
 **Always round down, not up.** When in doubt, prescribe the lighter load. The user can always add weight; starting too heavy risks form breakdown and injury.
 
----
-
-## Appendix A: Exercise ID Convention
-
-Format: `{group}_{equipment}_{exercise_name_snake_case}`
-
-Examples:
-- `legs_barbell_back_squat`
-- `chest_dumbbell_fly`
-- `arms_cable_curl`
-- `core_bodyweight_plank`
-- `lower_back_barbell_conventional_deadlift`
-
-IDs must be stable across app versions. Once assigned, an exercise ID is never changed or reused.
-
-## 8.8 Default Rest Timer Values (Canonical Source)
+### 8.8 Default Rest Timer Values (Canonical Source)
 
 All other documents (design-system, architecture, FEATURES.md) reference this table for rest timer defaults. When ranges exist in Sections 4.1-4.3, these single values are the midpoints to use as programmatic defaults.
 
@@ -1206,6 +1507,21 @@ All other documents (design-system, architecture, FEATURES.md) reference this ta
 2. User per-exercise override (if user has customized)
 3. This table's defaults (based on experience level + exercise type)
 4. User global setting from Settings screen (fallback only)
+
+---
+
+## Appendix A: Exercise ID Convention
+
+Format: `{group}_{equipment}_{exercise_name_snake_case}`
+
+Examples:
+- `legs_barbell_back_squat`
+- `chest_dumbbell_fly`
+- `arms_cable_curl`
+- `core_bodyweight_plank`
+- `lower_back_barbell_conventional_deadlift`
+
+IDs must be stable across app versions. Once assigned, an exercise ID is never changed or reused.
 
 ---
 

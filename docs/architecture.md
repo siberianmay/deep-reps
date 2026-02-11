@@ -1092,14 +1092,51 @@ class GeminiPromptBuilder @Inject constructor(
         request.userProfile.age?.let { age ->
             when {
                 age < 18 -> appendLine("7. AGE MODIFIER (under 18): Cap intensity at 85% 1RM. No singles (1-rep sets). Focus on movement quality.")
-                age in 51..60 -> appendLine("7. AGE MODIFIER (51-60): Reduce max intensity by 5%. Add 1 extra warm-up set per compound. Increase rest by 15s. Reduce weekly volume by 10%.")
-                age > 60 -> appendLine("7. AGE MODIFIER (60+): Reduce max intensity by 10%. Add 2 extra warm-up sets. Prefer machine exercises over free weights. Increase rest by 30s.")
-                else -> {} // No age modifier needed
+                age in 41..50 -> appendLine("7. AGE MODIFIER (41-50): Reduce max intensity by 2.5%. Add +15s rest between sets.")
+                age in 51..60 -> appendLine("7. AGE MODIFIER (51-60): Reduce max intensity by 5%. Add 1 extra warm-up set per compound. Increase rest by 30s. Reduce weekly volume by 10%.")
+                age > 60 -> appendLine("7. AGE MODIFIER (60+): Reduce max intensity by 10%. Add 2 extra warm-up sets. Prefer machine exercises over free weights. Increase rest by 45s. Reduce weekly volume by 20%.")
+                else -> {} // 18-40: No age modifier needed
             }
         }
         appendLine("8. Weight rounding: Round all weights DOWN to nearest increment (barbell: 2.5kg, dumbbell: 2.5kg, cable/machine: 5kg).")
         appendLine("9. When no training history exists, use baseline tables from exercise-science Section 4 (body weight ratios by experience level).")
         appendLine()
+
+        // --- EXERCISE-SPECIFIC CONTRAINDICATIONS (per exercise-science Section 8.4) ---
+        val contraindications = buildList {
+            if (request.exercises.any { it.stableId == "back_barbell_good_morning" }) {
+                add("Good Morning: Max weight = 60% of squat working weight. Never appears in beginner plans.")
+            }
+            if (request.exercises.any { it.stableId == "shoulders_barbell_upright_row" }) {
+                add("Barbell Upright Row: Pull to chest height only. Stop if shoulder pain occurs. Do not program above moderate weight for beginners.")
+            }
+            if (request.exercises.any { it.stableId == "arms_barbell_skull_crusher" }) {
+                add("Skull Crusher: Maximum 3 working sets. Recommend EZ bar over straight bar.")
+            }
+            if (request.exercises.any { it.stableId == "back_barbell_deficit_deadlift" }) {
+                val hasDeadliftRegression = request.trainingHistory
+                    .filter { it.exerciseName == "Conventional Deadlift" }
+                    .any { it.trend == "regressing" }
+                if (hasDeadliftRegression) {
+                    add("Deficit Deadlift: EXCLUDED — conventional deadlift history shows regression. Substitute with conventional deadlift.")
+                } else {
+                    add("Deficit Deadlift: Only program if conventional deadlift history shows no regression pattern.")
+                }
+            }
+            if (request.exercises.any { it.stableId == "core_dragon_flag" || it.stableId == "core_ab_wheel_rollout" }) {
+                if (request.userProfile.experienceLevel == 1) {
+                    add("Dragon Flag / Ab Wheel Rollout: EXCLUDED for beginners — never auto-programmed at experience level 1.")
+                }
+            }
+            if (request.exercises.any { it.stableId == "core_ab_wheel_rollout" }) {
+                add("Ab Wheel Rollout: Maintain posterior pelvic tilt throughout. If lower back arches, reduce range of motion.")
+            }
+        }
+        if (contraindications.isNotEmpty()) {
+            appendLine("## EXERCISE-SPECIFIC SAFETY CONSTRAINTS (NON-NEGOTIABLE)")
+            contraindications.forEach { appendLine("- $it") }
+            appendLine()
+        }
 
         // --- CROSS-GROUP FATIGUE (per exercise-science Section 2.2) ---
         val overlaps = overlapDetector.detect(request.exercises)
