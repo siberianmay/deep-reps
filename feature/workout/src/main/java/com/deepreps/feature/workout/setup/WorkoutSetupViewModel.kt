@@ -75,7 +75,7 @@ class WorkoutSetupViewModel @Inject constructor(
                     )
                 }
                 _sideEffect.trySend(WorkoutSetupSideEffect.NavigateToExerciseOrder)
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 _state.update {
                     it.copy(error = WorkoutSetupError.ExerciseLoadFailed)
                 }
@@ -134,7 +134,7 @@ class WorkoutSetupViewModel @Inject constructor(
                     )
                 }
                 _sideEffect.trySend(WorkoutSetupSideEffect.NavigateToExerciseOrder)
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 _state.update {
                     it.copy(error = WorkoutSetupError.ExerciseLoadFailed)
                 }

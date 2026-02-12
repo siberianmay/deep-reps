@@ -11,6 +11,7 @@ import androidx.room.PrimaryKey
  * repository layer.
  */
 @Entity(tableName = "body_weight_entries")
+@Suppress("ForbiddenPublicDataClass")
 data class BodyWeightEntryEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,

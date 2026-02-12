@@ -9,23 +9,23 @@ import kotlinx.serialization.Serializable
  * candidates[0].content.parts[0].text
  */
 @Serializable
-data class GeminiResponse(
+internal data class GeminiResponse(
     val candidates: List<GeminiCandidate> = emptyList(),
 )
 
 @Serializable
-data class GeminiCandidate(
+internal data class GeminiCandidate(
     val content: GeminiCandidateContent? = null,
     val finishReason: String? = null,
 )
 
 @Serializable
-data class GeminiCandidateContent(
+internal data class GeminiCandidateContent(
     val parts: List<GeminiResponsePart> = emptyList(),
     val role: String? = null,
 )
 
 @Serializable
-data class GeminiResponsePart(
+internal data class GeminiResponsePart(
     val text: String? = null,
 )

@@ -8,6 +8,7 @@ import androidx.room.PrimaryKey
  * A saved workout template. Stores muscle group IDs as a JSON array string.
  */
 @Entity(tableName = "templates")
+@Suppress("ForbiddenPublicDataClass")
 data class TemplateEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,

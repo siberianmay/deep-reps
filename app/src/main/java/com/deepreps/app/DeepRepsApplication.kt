@@ -92,7 +92,7 @@ class DeepRepsApplication : Application() {
                 crashlytics.setCrashlyticsCollectionEnabled(true)
                 Timber.d("Crashlytics collection enabled (previously consented)")
             }
-        } catch (e: Exception) {
+        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
             Timber.w("Firebase not available; skipping collection toggle: %s", e.message)
         }
     }
@@ -112,7 +112,7 @@ class DeepRepsApplication : Application() {
                             .getInstance(this@DeepRepsApplication)
                             .setAnalyticsCollectionEnabled(enabled)
                         Timber.d("Analytics collection toggled: %s", enabled)
-                    } catch (e: Exception) {
+                    } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
                         Timber.w("Failed to toggle analytics collection: %s", e.message)
                     }
                 }
@@ -127,7 +127,7 @@ class DeepRepsApplication : Application() {
                             .getInstance()
                             .setCrashlyticsCollectionEnabled(enabled)
                         Timber.d("Crashlytics collection toggled: %s", enabled)
-                    } catch (e: Exception) {
+                    } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
                         Timber.w("Failed to toggle crashlytics collection: %s", e.message)
                     }
                 }

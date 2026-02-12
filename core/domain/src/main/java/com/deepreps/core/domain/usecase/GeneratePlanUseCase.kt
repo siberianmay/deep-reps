@@ -8,6 +8,7 @@ import com.deepreps.core.domain.provider.BaselinePlanGenerator
 import com.deepreps.core.domain.provider.ConnectivityChecker
 import com.deepreps.core.domain.repository.CachedPlanRepository
 import java.security.MessageDigest
+import java.util.Locale
 import javax.inject.Inject
 
 /**
@@ -37,6 +38,7 @@ class GeneratePlanUseCase @Inject constructor(
      * This is a suspend function -- safe to call from ViewModel scope.
      * Internally catches all exceptions and maps them to [PlanResult] variants.
      */
+    @Suppress("ReturnCount")
     suspend fun execute(request: PlanRequest): PlanResult {
         val cacheHash = computeCacheHash(request)
         val experienceLevel = request.userProfile.experienceLevel
@@ -100,7 +102,7 @@ class GeneratePlanUseCase @Inject constructor(
                 .sorted()
                 .joinToString(",")
             val bytes = MessageDigest.getInstance("SHA-256").digest(sortedIds.toByteArray())
-            return bytes.joinToString("") { "%02x".format(it) }
+            return bytes.joinToString("") { String.format(Locale.US, "%02x", it) }
         }
     }
 }

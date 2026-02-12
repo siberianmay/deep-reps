@@ -18,7 +18,6 @@ class CleanupStaleSessionsUseCaseTest {
 
     private val now = 1_700_000_000_000L // fixed reference time
     private val twentyFiveHoursAgo = now - (25 * 60 * 60 * 1000)
-    private val twentyThreeHoursAgo = now - (23 * 60 * 60 * 1000)
 
     @BeforeEach
     fun setup() {
@@ -62,7 +61,7 @@ class CleanupStaleSessionsUseCaseTest {
         val count = useCase(currentTimeMillis = now)
 
         assertThat(count).isEqualTo(2)
-        coVerify(exactly = 2) { repository.updateStatus(any(), eq(SessionStatus.ABANDONED.value), eq(null)) }
+        coVerify(exactly = 2) { repository.updateStatus(any(), eq(SessionStatus.ABANDONED.value), isNull()) }
     }
 
     @Test

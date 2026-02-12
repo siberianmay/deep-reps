@@ -8,6 +8,7 @@ import com.deepreps.core.domain.model.enums.MovementType
 /**
  * UI state for the exercise list (browse by muscle group) screen.
  */
+@Suppress("ForbiddenPublicDataClass")
 data class ExerciseListUiState(
     val selectedGroup: MuscleGroup = MuscleGroup.CHEST,
     val exercises: List<ExerciseUi> = emptyList(),
@@ -20,6 +21,7 @@ data class ExerciseListUiState(
  * Lightweight UI model for an exercise row in a list.
  * Mapped from [com.deepreps.core.domain.model.Exercise] at the presentation layer.
  */
+@Suppress("ForbiddenPublicDataClass")
 data class ExerciseUi(
     val id: Long,
     val name: String,

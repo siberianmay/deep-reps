@@ -44,5 +44,6 @@ sealed interface SessionRecoveryResult {
     data object NoRecoveryNeeded : SessionRecoveryResult
 
     /** An active or paused session was found. Show resume/discard dialog. */
+    @Suppress("ForbiddenPublicDataClass")
     data class RecoverableSessionFound(val session: WorkoutSession) : SessionRecoveryResult
 }

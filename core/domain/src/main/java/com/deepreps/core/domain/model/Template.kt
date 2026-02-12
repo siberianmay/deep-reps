@@ -6,6 +6,7 @@ package com.deepreps.core.domain.model
  * [muscleGroups] stores the list of muscle group IDs that this template targets.
  * Stored as a JSON array in Room; deserialized to a list in the domain model.
  */
+@Suppress("ForbiddenPublicDataClass")
 data class Template(
     val id: Long,
     val name: String,

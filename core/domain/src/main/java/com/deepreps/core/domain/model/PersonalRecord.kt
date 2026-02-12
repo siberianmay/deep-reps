@@ -10,6 +10,7 @@ import com.deepreps.core.domain.model.enums.RecordType
  * [sessionId] links back to the workout where this PR was achieved. Nullable if the session
  * was deleted but the PR was preserved.
  */
+@Suppress("ForbiddenPublicDataClass")
 data class PersonalRecord(
     val id: Long,
     val exerciseId: Long,

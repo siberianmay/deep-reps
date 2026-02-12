@@ -1,6 +1,7 @@
 package com.deepreps.core.ui.theme
 
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.ProvidableCompositionLocal
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import com.deepreps.core.domain.model.enums.MuscleGroup
@@ -11,6 +12,7 @@ import com.deepreps.core.domain.model.enums.MuscleGroup
  *
  * Accessed via [LocalDeepRepsColors].
  */
+@Suppress("ForbiddenPublicDataClass")
 @Immutable
 data class DeepRepsColorScheme(
     // Surface
@@ -73,7 +75,7 @@ data class DeepRepsColorScheme(
     }
 }
 
-val DarkDeepRepsColorScheme = DeepRepsColorScheme(
+val DarkDeepRepsColorScheme: DeepRepsColorScheme = DeepRepsColorScheme(
     surfaceLowest = DarkSurfaceLowest,
     surfaceLow = DarkSurfaceLow,
     surfaceMedium = DarkSurfaceMedium,
@@ -106,7 +108,7 @@ val DarkDeepRepsColorScheme = DeepRepsColorScheme(
     muscleCore = DarkMuscleCore,
 )
 
-val LightDeepRepsColorScheme = DeepRepsColorScheme(
+val LightDeepRepsColorScheme: DeepRepsColorScheme = DeepRepsColorScheme(
     surfaceLowest = LightSurfaceLowest,
     surfaceLow = LightSurfaceLow,
     surfaceMedium = LightSurfaceMedium,
@@ -143,4 +145,5 @@ val LightDeepRepsColorScheme = DeepRepsColorScheme(
  * CompositionLocal for Deep Reps extended color scheme.
  * Access via [DeepRepsTheme.colors].
  */
-val LocalDeepRepsColors = staticCompositionLocalOf { DarkDeepRepsColorScheme }
+val LocalDeepRepsColors: ProvidableCompositionLocal<DeepRepsColorScheme> =
+    staticCompositionLocalOf { DarkDeepRepsColorScheme }

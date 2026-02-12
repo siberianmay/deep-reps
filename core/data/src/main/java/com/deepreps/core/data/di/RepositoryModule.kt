@@ -25,7 +25,7 @@ import javax.inject.Singleton
 /**
  * Hilt module binding all 8 repository implementations to their domain interfaces.
  *
- * All repository implementations are internal classes with @Inject constructor.
+ * All repository implementations use @Inject constructor.
  * Feature modules depend only on the interfaces in :core:domain.
  */
 @Module

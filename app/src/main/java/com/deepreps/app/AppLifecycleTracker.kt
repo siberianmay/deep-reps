@@ -58,6 +58,7 @@ class AppLifecycleTracker @Inject constructor(
         }
 
         applicationScope.launch {
+            @Suppress("TooGenericExceptionCaught")
             val hasActiveWorkout = try {
                 workoutSessionRepository.getActiveSession() != null
             } catch (e: Exception) {

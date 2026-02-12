@@ -33,6 +33,7 @@ import androidx.room.Index
         Index("muscle_group_id"),
     ],
 )
+@Suppress("ForbiddenPublicDataClass")
 data class ExerciseMuscleEntity(
     @ColumnInfo(name = "exercise_id")
     val exerciseId: Long,

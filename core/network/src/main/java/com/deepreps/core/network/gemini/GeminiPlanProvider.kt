@@ -40,6 +40,7 @@ class GeminiPlanProvider @Inject constructor(
     @GeminiApiKey private val apiKey: String,
 ) : AiPlanProvider {
 
+    @Suppress("ThrowsCount", "LongMethod")
     override suspend fun generatePlan(request: PlanRequest): GeneratedPlan {
         val prompt = promptBuilder.build(request)
 
@@ -62,14 +63,17 @@ class GeminiPlanProvider @Inject constructor(
             throw AiPlanException("Gemini API timeout", e)
         } catch (e: ClientRequestException) {
             throw AiPlanException("Gemini API error: ${e.response.status}", e)
-        } catch (e: Exception) {
+        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
             throw AiPlanException("Unexpected error calling Gemini API: ${e.message}", e)
         }
 
         val body = try {
             geminiResponse.body<GeminiResponse>()
-        } catch (e: Exception) {
-            throw AiPlanException("Failed to deserialize Gemini response envelope: ${e.message}", e)
+        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+            throw AiPlanException(
+                "Failed to deserialize Gemini response envelope: ${e.message}",
+                e,
+            )
         }
 
         val text = body.candidates.firstOrNull()

@@ -9,6 +9,7 @@ import com.deepreps.core.domain.model.SafetyViolation
  * Represents the complete, immutable UI state at any point in time.
  * The screen renders from this single object -- no partial updates.
  */
+@Suppress("ForbiddenPublicDataClass")
 data class PlanReviewUiState(
     val phase: Phase = Phase.Loading,
     val exercisePlans: List<EditableExercisePlan> = emptyList(),
@@ -39,6 +40,7 @@ data class PlanReviewUiState(
  * The user can modify any weight/rep value on the plan review screen
  * before starting the workout.
  */
+@Suppress("ForbiddenPublicDataClass")
 data class EditableExercisePlan(
     val exerciseId: Long,
     val stableId: String,
@@ -67,6 +69,7 @@ data class EditableExercisePlan(
     }
 }
 
+@Suppress("ForbiddenPublicDataClass")
 data class EditableSet(
     val index: Int,
     val setType: String,

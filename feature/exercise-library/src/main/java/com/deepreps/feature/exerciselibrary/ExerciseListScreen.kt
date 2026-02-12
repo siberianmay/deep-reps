@@ -70,6 +70,7 @@ fun ExerciseListScreen(
     )
 }
 
+@Suppress("LongMethod")
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 internal fun ExerciseListContent(

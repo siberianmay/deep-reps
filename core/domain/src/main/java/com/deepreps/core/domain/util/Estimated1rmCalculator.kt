@@ -54,6 +54,7 @@ object Estimated1rmCalculator {
      * - 11-20 reps: Low confidence (display with warning, do not use for PR detection)
      * - 21+ reps: Invalid (do not calculate)
      */
+    @Suppress("ReturnCount")
     fun calculateWithConfidence(weightKg: Double, reps: Int): Estimated1rmResult? {
         if (weightKg <= 0.0 || reps < 1) return null
         if (reps > 20) return null // Endurance set -- not valid for 1RM estimation
@@ -74,6 +75,7 @@ object Estimated1rmCalculator {
     private fun isValid(weightKg: Double, reps: Int): Boolean =
         weightKg > 0.0 && reps in 1..30
 
+    @Suppress("ForbiddenPublicDataClass")
     data class Estimated1rmResult(
         val estimatedKg: Double,
         val confidence: Confidence,

@@ -19,6 +19,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.deepreps.core.ui.theme.DeepRepsTheme
+import java.util.Locale
 
 /**
  * Circular countdown timer display.
@@ -34,6 +35,7 @@ import com.deepreps.core.ui.theme.DeepRepsTheme
  * @param strokeWidth Ring stroke width.
  * @param modifier External modifier.
  */
+@Suppress("LongMethod")
 @Composable
 fun CountdownTimer(
     remainingSeconds: Int,
@@ -63,7 +65,11 @@ fun CountdownTimer(
 
     val minutes = remainingSeconds / 60
     val seconds = remainingSeconds % 60
-    val displayText = if (isTimesUp) "GO" else "%d:%02d".format(minutes, seconds)
+    val displayText = if (isTimesUp) {
+        "GO"
+    } else {
+        String.format(Locale.US, "%d:%02d", minutes, seconds)
+    }
 
     val accessibilityText = if (isTimesUp) {
         "Rest timer complete"

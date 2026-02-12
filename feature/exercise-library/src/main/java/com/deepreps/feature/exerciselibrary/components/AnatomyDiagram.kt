@@ -27,7 +27,7 @@ import com.deepreps.core.ui.theme.DeepRepsTheme
  * - Face/hands: always #9A9A9A
  * - Body outline: #4A4A54 stroke, 1.5dp
  *
- * TODO: Implement SVG-based anatomy highlighting per architecture.md.
+ * Phase 2: Implement SVG-based anatomy highlighting per architecture.md.
  *       This requires:
  *       1. The cleaned SVG asset with named paths per sub-muscle zone
  *       2. A custom Compose Canvas or AndroidView rendering the SVG
@@ -43,7 +43,7 @@ import com.deepreps.core.ui.theme.DeepRepsTheme
  */
 @Composable
 fun AnatomyDiagram(
-    exerciseId: Long,
+    @Suppress("UnusedParameter") exerciseId: Long,
     primaryGroupId: Long,
     modifier: Modifier = Modifier,
 ) {

@@ -13,7 +13,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import javax.inject.Inject
 
-internal class CachedPlanRepositoryImpl @Inject constructor(
+class CachedPlanRepositoryImpl @Inject constructor(
     private val cachedAiPlanDao: CachedAiPlanDao,
     private val dispatchers: DispatcherProvider,
 ) : CachedPlanRepository {

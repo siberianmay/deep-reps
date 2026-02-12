@@ -6,6 +6,7 @@ package com.deepreps.core.domain.model
  * Fed into the AI prompt's CROSS-GROUP FATIGUE section so the LLM can
  * reduce redundant volume for shared muscles.
  */
+@Suppress("ForbiddenPublicDataClass")
 data class CrossGroupOverlap(
     val primaryGroup: String,
     val overlappingGroup: String,

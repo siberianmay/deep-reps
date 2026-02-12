@@ -43,6 +43,7 @@ import com.deepreps.core.ui.theme.DeepRepsTheme
  *
  * All profile fields are optional. The button is always enabled.
  */
+@Suppress("LongMethod")
 @Composable
 internal fun UnitAndProfileStepScreen(
     state: OnboardingUiState,
@@ -168,10 +169,6 @@ private fun UnitToggleRow(
     selectedUnit: WeightUnit,
     onUnitSelected: (WeightUnit) -> Unit,
 ) {
-    val colors = DeepRepsTheme.colors
-    val typography = DeepRepsTheme.typography
-    val radius = DeepRepsTheme.radius
-
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(16.dp),

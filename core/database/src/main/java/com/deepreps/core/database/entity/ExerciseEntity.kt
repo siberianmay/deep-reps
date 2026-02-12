@@ -21,6 +21,7 @@ import androidx.room.PrimaryKey
         Index(value = ["stable_id"], unique = true),
     ],
 )
+@Suppress("ForbiddenPublicDataClass")
 data class ExerciseEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,

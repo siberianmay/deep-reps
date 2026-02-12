@@ -58,6 +58,7 @@ class OnboardingViewModelTest {
             completeOnboardingUseCase = completeOnboardingUseCase,
             consentManager = consentManager,
             onboardingRepository = onboardingRepository,
+            analyticsTracker = mockk(relaxed = true),
         )
     }
 

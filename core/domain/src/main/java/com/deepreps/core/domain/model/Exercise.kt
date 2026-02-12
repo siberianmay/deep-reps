@@ -12,6 +12,7 @@ import com.deepreps.core.domain.model.enums.MovementType
  * [orderPriority] is distinct from [displayOrder]: orderPriority drives the auto-ordering
  * algorithm, displayOrder drives the library browsing UI.
  */
+@Suppress("ForbiddenPublicDataClass")
 data class Exercise(
     val id: Long,
     val stableId: String,

@@ -1,8 +1,15 @@
 package com.deepreps.core.data.di
 
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
+import com.deepreps.core.common.dispatcher.DefaultDispatcherProvider
+import com.deepreps.core.common.dispatcher.DispatcherProvider
+import com.deepreps.core.domain.provider.ConnectivityChecker
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -35,4 +42,22 @@ object DataModule {
     @Singleton
     fun provideApplicationScope(): CoroutineScope =
         CoroutineScope(SupervisorJob() + Dispatchers.Main)
+
+    @Provides
+    @Singleton
+    fun provideDispatcherProvider(): DispatcherProvider =
+        DefaultDispatcherProvider()
+
+    @Provides
+    @Singleton
+    fun provideConnectivityChecker(
+        @ApplicationContext context: Context,
+    ): ConnectivityChecker = object : ConnectivityChecker {
+        override fun isOnline(): Boolean {
+            val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+            val network = cm.activeNetwork ?: return false
+            val caps = cm.getNetworkCapabilities(network) ?: return false
+            return caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+        }
+    }
 }

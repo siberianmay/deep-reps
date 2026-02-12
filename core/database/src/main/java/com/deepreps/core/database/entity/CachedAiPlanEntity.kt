@@ -17,6 +17,7 @@ import androidx.room.PrimaryKey
         Index("exercise_ids_hash"),
     ],
 )
+@Suppress("ForbiddenPublicDataClass")
 data class CachedAiPlanEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,

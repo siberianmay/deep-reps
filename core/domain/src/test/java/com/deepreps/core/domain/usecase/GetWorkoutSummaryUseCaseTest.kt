@@ -45,44 +45,90 @@ class GetWorkoutSummaryUseCaseTest {
 
     private val testExercises = listOf(
         WorkoutExercise(
-            id = 10L, sessionId = 1L, exerciseId = 100L,
-            orderIndex = 0, supersetGroupId = null, restTimerSeconds = 120, notes = null,
+            id = 10L,
+            sessionId = 1L,
+            exerciseId = 100L,
+            orderIndex = 0,
+            supersetGroupId = null,
+            restTimerSeconds = 120,
+            notes = null,
         ),
         WorkoutExercise(
-            id = 11L, sessionId = 1L, exerciseId = 101L,
-            orderIndex = 1, supersetGroupId = null, restTimerSeconds = 90, notes = null,
+            id = 11L,
+            sessionId = 1L,
+            exerciseId = 101L,
+            orderIndex = 1,
+            supersetGroupId = null,
+            restTimerSeconds = 90,
+            notes = null,
         ),
     )
 
     // Exercise 100: Bench Press (Chest = group 3)
     private val benchPressSets = listOf(
         WorkoutSet(
-            id = 1, setNumber = 1, type = SetType.WARMUP, status = SetStatus.COMPLETED,
-            plannedWeightKg = 40.0, plannedReps = 12, actualWeightKg = 40.0, actualReps = 12,
+            id = 1,
+            setNumber = 1,
+            type = SetType.WARMUP,
+            status = SetStatus.COMPLETED,
+            plannedWeightKg = 40.0,
+            plannedReps = 12,
+            actualWeightKg = 40.0,
+            actualReps = 12,
         ),
         WorkoutSet(
-            id = 2, setNumber = 2, type = SetType.WORKING, status = SetStatus.COMPLETED,
-            plannedWeightKg = 80.0, plannedReps = 8, actualWeightKg = 80.0, actualReps = 8,
+            id = 2,
+            setNumber = 2,
+            type = SetType.WORKING,
+            status = SetStatus.COMPLETED,
+            plannedWeightKg = 80.0,
+            plannedReps = 8,
+            actualWeightKg = 80.0,
+            actualReps = 8,
         ),
         WorkoutSet(
-            id = 3, setNumber = 3, type = SetType.WORKING, status = SetStatus.COMPLETED,
-            plannedWeightKg = 80.0, plannedReps = 8, actualWeightKg = 85.0, actualReps = 6,
+            id = 3,
+            setNumber = 3,
+            type = SetType.WORKING,
+            status = SetStatus.COMPLETED,
+            plannedWeightKg = 80.0,
+            plannedReps = 8,
+            actualWeightKg = 85.0,
+            actualReps = 6,
         ),
         WorkoutSet(
-            id = 4, setNumber = 4, type = SetType.WORKING, status = SetStatus.PLANNED,
-            plannedWeightKg = 80.0, plannedReps = 8, actualWeightKg = null, actualReps = null,
+            id = 4,
+            setNumber = 4,
+            type = SetType.WORKING,
+            status = SetStatus.PLANNED,
+            plannedWeightKg = 80.0,
+            plannedReps = 8,
+            actualWeightKg = null,
+            actualReps = null,
         ),
     )
 
     // Exercise 101: Barbell Row (Back = group 4)
     private val rowSets = listOf(
         WorkoutSet(
-            id = 5, setNumber = 1, type = SetType.WORKING, status = SetStatus.COMPLETED,
-            plannedWeightKg = 60.0, plannedReps = 10, actualWeightKg = 60.0, actualReps = 10,
+            id = 5,
+            setNumber = 1,
+            type = SetType.WORKING,
+            status = SetStatus.COMPLETED,
+            plannedWeightKg = 60.0,
+            plannedReps = 10,
+            actualWeightKg = 60.0,
+            actualReps = 10,
         ),
         WorkoutSet(
-            id = 6, setNumber = 2, type = SetType.WORKING, status = SetStatus.COMPLETED,
-            plannedWeightKg = 60.0, plannedReps = 10, actualWeightKg = 60.0, actualReps = 10,
+            id = 6,
+            setNumber = 2,
+            type = SetType.WORKING,
+            status = SetStatus.COMPLETED,
+            plannedWeightKg = 60.0,
+            plannedReps = 10,
+            actualWeightKg = 60.0,
+            actualReps = 10,
         ),
     )
 

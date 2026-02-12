@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.deepreps.core.domain.model.WorkoutExercise
 import com.deepreps.core.domain.model.WorkoutSession
-import com.deepreps.core.domain.model.WorkoutSet
 import com.deepreps.core.domain.model.enums.MuscleGroup
 import com.deepreps.core.domain.model.enums.SetStatus
 import com.deepreps.core.domain.repository.ExerciseRepository
@@ -135,8 +134,10 @@ class ProgressDashboardViewModel @Inject constructor(
                 .getSetsForExercise(exercise.id)
                 .first()
             for (set in sets) {
-                if (set.status == SetStatus.COMPLETED && set.actualWeightKg != null && set.actualReps != null) {
-                    totalVolume += set.actualWeightKg * set.actualReps
+                val weight = set.actualWeightKg
+                val reps = set.actualReps
+                if (set.status == SetStatus.COMPLETED && weight != null && reps != null) {
+                    totalVolume += weight * reps
                     totalSets++
                 }
             }

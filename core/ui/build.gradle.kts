@@ -14,5 +14,5 @@ dependencies {
     implementation(libs.core.ktx)
     implementation(libs.bundles.lifecycle)
     implementation(libs.coil.compose)
-    implementation(libs.compose.material.icons.extended)
+    api(libs.compose.material.icons.extended)
 }

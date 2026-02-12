@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
-internal class UserProfileRepositoryImpl @Inject constructor(
+class UserProfileRepositoryImpl @Inject constructor(
     private val userProfileDao: UserProfileDao,
     private val dispatchers: DispatcherProvider,
 ) : UserProfileRepository {

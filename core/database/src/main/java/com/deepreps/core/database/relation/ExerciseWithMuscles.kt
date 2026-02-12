@@ -13,6 +13,7 @@ import com.deepreps.core.database.entity.MuscleGroupEntity
  * Used by [ExerciseDao.getExercisesWithMuscles] to avoid N+1 queries when
  * displaying exercises with their primary and secondary muscle group tags.
  */
+@Suppress("ForbiddenPublicDataClass")
 data class ExerciseWithMuscles(
     @Embedded
     val exercise: ExerciseEntity,

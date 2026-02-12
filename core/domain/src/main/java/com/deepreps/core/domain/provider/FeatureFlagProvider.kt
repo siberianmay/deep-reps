@@ -22,6 +22,7 @@ interface FeatureFlagProvider {
  *
  * Defaults are the fallback when remote config is unavailable (offline).
  */
+@Suppress("ForbiddenPublicDataClass")
 data class FeatureFlags(
     val isAiPlanEnabled: Boolean = true,
     val isBlockPeriodizationEnabled: Boolean = false,

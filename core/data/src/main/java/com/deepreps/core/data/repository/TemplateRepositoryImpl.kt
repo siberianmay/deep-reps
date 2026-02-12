@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
-internal class TemplateRepositoryImpl @Inject constructor(
+class TemplateRepositoryImpl @Inject constructor(
     private val templateDao: TemplateDao,
     private val dispatchers: DispatcherProvider,
 ) : TemplateRepository {

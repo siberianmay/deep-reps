@@ -13,7 +13,7 @@ import kotlinx.serialization.Serializable
  * - Response MIME type: application/json (forces structured output)
  */
 @Serializable
-data class GeminiGenerationConfig(
+internal data class GeminiGenerationConfig(
     val temperature: Float = 0.3f,
     @SerialName("topP")
     val topP: Float = 0.8f,

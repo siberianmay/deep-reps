@@ -31,6 +31,7 @@ class CompleteOnboardingUseCase(
      * @param bodyWeightKg Optional body weight in kilograms.
      * @throws IllegalArgumentException if experienceLevel is null (should never happen if UI enforces selection).
      */
+    @Suppress("LongParameterList")
     suspend operator fun invoke(
         experienceLevel: ExperienceLevel,
         preferredUnit: WeightUnit,

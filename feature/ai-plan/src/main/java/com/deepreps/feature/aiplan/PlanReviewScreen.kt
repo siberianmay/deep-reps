@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -30,6 +31,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import java.util.Locale
 
 /**
  * Plan Review screen.
@@ -38,6 +40,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
  * Shows which fallback level was used (AI/cached/baseline).
  * User can modify any weight/reps before starting the workout.
  */
+@Suppress("LongMethod")
 @Composable
 fun PlanReviewScreen(
     exerciseIds: List<Long>,
@@ -54,9 +57,11 @@ fun PlanReviewScreen(
     LaunchedEffect(Unit) {
         viewModel.sideEffect.collect { effect ->
             when (effect) {
-                is PlanReviewSideEffect.NavigateToWorkout -> onNavigateToWorkout(effect.sessionId)
+                is PlanReviewSideEffect.NavigateToWorkout -> {
+                    onNavigateToWorkout(effect.sessionId)
+                }
                 is PlanReviewSideEffect.ShowError -> {
-                    // In a real app, show a Snackbar via SnackbarHostState
+                    // Phase 2: show a Snackbar via SnackbarHostState
                 }
             }
         }
@@ -67,7 +72,9 @@ fun PlanReviewScreen(
             PlanReviewUiState.Phase.Loading,
             PlanReviewUiState.Phase.Generating -> LoadingContent()
             PlanReviewUiState.Phase.Error -> ErrorContent(
-                onRetry = { viewModel.onIntent(PlanReviewIntent.RegeneratePlan) },
+                onRetry = {
+                    viewModel.onIntent(PlanReviewIntent.RegeneratePlan)
+                },
                 onBack = onBack,
             )
             PlanReviewUiState.Phase.PlanReady -> PlanReadyContent(
@@ -80,7 +87,9 @@ fun PlanReviewScreen(
     if (state.showSafetyWarnings && state.safetyViolations.isNotEmpty()) {
         SafetyWarningsDialog(
             violations = state.safetyViolations.map { it.message },
-            onDismiss = { viewModel.onIntent(PlanReviewIntent.DismissSafetyWarnings) },
+            onDismiss = {
+                viewModel.onIntent(PlanReviewIntent.DismissSafetyWarnings)
+            },
         )
     }
 }
@@ -130,13 +139,13 @@ private fun ErrorContent(
     }
 }
 
+@Suppress("LongMethod")
 @Composable
 private fun PlanReadyContent(
     state: PlanReviewUiState,
     onIntent: (PlanReviewIntent) -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
-        // Plan source indicator
         PlanSourceBanner(source = state.planSource)
 
         LazyColumn(
@@ -156,10 +165,22 @@ private fun PlanReadyContent(
                     exercisePlan = exercisePlan,
                     exerciseIndex = exerciseIndex,
                     onWeightChange = { setIndex, weight ->
-                        onIntent(PlanReviewIntent.UpdateWeight(exerciseIndex, setIndex, weight))
+                        onIntent(
+                            PlanReviewIntent.UpdateWeight(
+                                exerciseIndex,
+                                setIndex,
+                                weight,
+                            ),
+                        )
                     },
                     onRepsChange = { setIndex, reps ->
-                        onIntent(PlanReviewIntent.UpdateReps(exerciseIndex, setIndex, reps))
+                        onIntent(
+                            PlanReviewIntent.UpdateReps(
+                                exerciseIndex,
+                                setIndex,
+                                reps,
+                            ),
+                        )
                     },
                 )
             }
@@ -168,30 +189,36 @@ private fun PlanReadyContent(
             }
         }
 
-        // Bottom bar with Start Workout button
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            shadowElevation = 8.dp,
-            color = MaterialTheme.colorScheme.surface,
+        PlanBottomBar(onIntent = onIntent)
+    }
+}
+
+@Composable
+private fun PlanBottomBar(
+    onIntent: (PlanReviewIntent) -> Unit,
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shadowElevation = 8.dp,
+        color = MaterialTheme.colorScheme.surface,
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            TextButton(
+                onClick = { onIntent(PlanReviewIntent.RegeneratePlan) },
+                modifier = Modifier.weight(1f),
             ) {
-                TextButton(
-                    onClick = { onIntent(PlanReviewIntent.RegeneratePlan) },
-                    modifier = Modifier.weight(1f),
-                ) {
-                    Text("Regenerate")
-                }
-                androidx.compose.material3.Button(
-                    onClick = { onIntent(PlanReviewIntent.ConfirmPlan) },
-                    modifier = Modifier.weight(1f),
-                ) {
-                    Text("Start Workout")
-                }
+                Text("Regenerate")
+            }
+            Button(
+                onClick = { onIntent(PlanReviewIntent.ConfirmPlan) },
+                modifier = Modifier.weight(1f),
+            ) {
+                Text("Start Workout")
             }
         }
     }
@@ -218,17 +245,21 @@ private fun PlanSourceBanner(source: PlanReviewUiState.PlanSource) {
     ) {
         Text(
             text = text,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            modifier = Modifier.padding(
+                horizontal = 16.dp,
+                vertical = 8.dp,
+            ),
             style = MaterialTheme.typography.labelLarge,
             color = color,
         )
     }
 }
 
+@Suppress("LongMethod")
 @Composable
 private fun ExercisePlanCard(
     exercisePlan: EditableExercisePlan,
-    exerciseIndex: Int,
+    @Suppress("UnusedParameter") exerciseIndex: Int,
     onWeightChange: (setIndex: Int, weight: Double) -> Unit,
     onRepsChange: (setIndex: Int, reps: Int) -> Unit,
 ) {
@@ -263,31 +294,11 @@ private fun ExercisePlanCard(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Header row
-            Row(modifier = Modifier.fillMaxWidth()) {
-                Text(
-                    text = "Set",
-                    modifier = Modifier.weight(0.15f),
-                    style = MaterialTheme.typography.labelSmall,
-                )
-                Text(
-                    text = "Type",
-                    modifier = Modifier.weight(0.2f),
-                    style = MaterialTheme.typography.labelSmall,
-                )
-                Text(
-                    text = "Weight (kg)",
-                    modifier = Modifier.weight(0.35f),
-                    style = MaterialTheme.typography.labelSmall,
-                )
-                Text(
-                    text = "Reps",
-                    modifier = Modifier.weight(0.3f),
-                    style = MaterialTheme.typography.labelSmall,
-                )
-            }
+            SetHeaderRow()
 
-            HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+            HorizontalDivider(
+                modifier = Modifier.padding(vertical = 4.dp),
+            )
 
             exercisePlan.sets.forEachIndexed { setIndex, set ->
                 SetRow(
@@ -302,11 +313,37 @@ private fun ExercisePlanCard(
 }
 
 @Composable
+private fun SetHeaderRow() {
+    Row(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = "Set",
+            modifier = Modifier.weight(0.15f),
+            style = MaterialTheme.typography.labelSmall,
+        )
+        Text(
+            text = "Type",
+            modifier = Modifier.weight(0.2f),
+            style = MaterialTheme.typography.labelSmall,
+        )
+        Text(
+            text = "Weight (kg)",
+            modifier = Modifier.weight(0.35f),
+            style = MaterialTheme.typography.labelSmall,
+        )
+        Text(
+            text = "Reps",
+            modifier = Modifier.weight(0.3f),
+            style = MaterialTheme.typography.labelSmall,
+        )
+    }
+}
+
+@Composable
 private fun SetRow(
     set: EditableSet,
     setIndex: Int,
-    onWeightChange: (Double) -> Unit,
-    onRepsChange: (Int) -> Unit,
+    @Suppress("UnusedParameter") onWeightChange: (Double) -> Unit,
+    @Suppress("UnusedParameter") onRepsChange: (Int) -> Unit,
 ) {
     Row(
         modifier = Modifier
@@ -330,7 +367,7 @@ private fun SetRow(
             },
         )
         Text(
-            text = if (set.weight > 0) String.format("%.1f", set.weight) else "BW",
+            text = formatWeight(set.weight),
             modifier = Modifier.weight(0.35f),
             style = MaterialTheme.typography.bodyMedium,
         )
@@ -341,6 +378,9 @@ private fun SetRow(
         )
     }
 }
+
+private fun formatWeight(weight: Double): String =
+    if (weight > 0) String.format(Locale.US, "%.1f", weight) else "BW"
 
 @Composable
 private fun SafetyWarningsDialog(

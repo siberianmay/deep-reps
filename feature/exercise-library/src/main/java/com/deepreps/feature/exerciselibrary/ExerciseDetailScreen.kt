@@ -69,7 +69,8 @@ fun ExerciseDetailScreen(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@Suppress("LongMethod")
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun ExerciseDetailContent(
     state: ExerciseDetailUiState,
@@ -78,7 +79,6 @@ internal fun ExerciseDetailContent(
 ) {
     val colors = DeepRepsTheme.colors
     val typography = DeepRepsTheme.typography
-    val spacing = DeepRepsTheme.spacing
 
     Column(modifier = Modifier.fillMaxSize()) {
         TopAppBar(
@@ -112,10 +112,14 @@ internal fun ExerciseDetailContent(
             state.errorType != null -> {
                 ErrorState(
                     message = when (state.errorType) {
-                        ExerciseDetailError.NotFound -> "Exercise not found."
-                        ExerciseDetailError.LoadFailed -> "Failed to load exercise details."
+                        ExerciseDetailError.NotFound ->
+                            "Exercise not found."
+                        ExerciseDetailError.LoadFailed ->
+                            "Failed to load exercise details."
                     },
-                    onRetry = { onIntent(ExerciseDetailIntent.Retry) },
+                    onRetry = {
+                        onIntent(ExerciseDetailIntent.Retry)
+                    },
                 )
             }
 
@@ -126,6 +130,7 @@ internal fun ExerciseDetailContent(
     }
 }
 
+@Suppress("LongMethod")
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ExerciseDetailBody(exercise: ExerciseDetailUi) {
@@ -141,7 +146,6 @@ private fun ExerciseDetailBody(exercise: ExerciseDetailUi) {
     ) {
         Spacer(modifier = Modifier.height(spacing.space4))
 
-        // Exercise name
         Text(
             text = exercise.name,
             style = typography.displaySmall,
@@ -150,27 +154,10 @@ private fun ExerciseDetailBody(exercise: ExerciseDetailUi) {
 
         Spacer(modifier = Modifier.height(spacing.space2))
 
-        // Tags row
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(spacing.space2),
-            verticalArrangement = Arrangement.spacedBy(spacing.space2),
-        ) {
-            DetailTagChip(
-                text = equipmentDisplayName(exercise.equipment),
-                containerColor = colors.surfaceHighest,
-                contentColor = colors.onSurfaceSecondary,
-            )
-            DetailTagChip(
-                text = movementTypeDisplayName(exercise.movementType),
-                containerColor = colors.surfaceHighest,
-                contentColor = colors.onSurfaceSecondary,
-            )
-            DifficultyDetailChip(difficulty = exercise.difficulty)
-        }
+        ExerciseTagsRow(exercise = exercise)
 
         Spacer(modifier = Modifier.height(spacing.space5))
 
-        // Anatomy diagram placeholder (200dp tall per spec)
         AnatomyDiagram(
             exerciseId = exercise.id,
             primaryGroupId = exercise.primaryGroupId,
@@ -178,55 +165,105 @@ private fun ExerciseDetailBody(exercise: ExerciseDetailUi) {
 
         Spacer(modifier = Modifier.height(spacing.space5))
 
-        // Description
-        if (exercise.description.isNotBlank()) {
-            Text(
-                text = exercise.description,
-                style = typography.bodyMedium,
-                color = colors.onSurfaceSecondary,
-            )
-            Spacer(modifier = Modifier.height(spacing.space5))
-        }
+        ExerciseDescriptionSection(exercise = exercise)
+        ExerciseProsSection(exercise = exercise)
+        ExerciseTipsSection(exercise = exercise)
+        SecondaryMusclesSection(exercise = exercise)
 
-        // Pros / Key Benefits
-        if (exercise.pros.isNotEmpty()) {
-            BulletSection(
-                title = "Key Benefits",
-                items = exercise.pros,
-                icon = Icons.Outlined.CheckCircle,
-                iconTint = colors.statusSuccess,
-            )
-            Spacer(modifier = Modifier.height(spacing.space5))
-        }
-
-        // Tips / Cues
-        if (exercise.tips.isNotEmpty()) {
-            BulletSection(
-                title = "Tips",
-                items = exercise.tips,
-                icon = Icons.Outlined.Lightbulb,
-                iconTint = colors.statusWarning,
-            )
-            Spacer(modifier = Modifier.height(spacing.space5))
-        }
-
-        // Secondary muscles
-        if (exercise.secondaryMuscles.isNotEmpty()) {
-            Text(
-                text = "Secondary Muscles",
-                style = typography.headlineSmall,
-                color = colors.onSurfacePrimary,
-            )
-            Spacer(modifier = Modifier.height(spacing.space2))
-            Text(
-                text = exercise.secondaryMuscles.joinToString(", "),
-                style = typography.bodyMedium,
-                color = colors.onSurfaceSecondary,
-            )
-        }
-
-        // Bottom spacing for scroll overscroll
         Spacer(modifier = Modifier.height(spacing.space8))
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun ExerciseTagsRow(exercise: ExerciseDetailUi) {
+    val colors = DeepRepsTheme.colors
+    val spacing = DeepRepsTheme.spacing
+
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(spacing.space2),
+        verticalArrangement = Arrangement.spacedBy(spacing.space2),
+    ) {
+        DetailTagChip(
+            text = equipmentDisplayName(exercise.equipment),
+            containerColor = colors.surfaceHighest,
+            contentColor = colors.onSurfaceSecondary,
+        )
+        DetailTagChip(
+            text = movementTypeDisplayName(exercise.movementType),
+            containerColor = colors.surfaceHighest,
+            contentColor = colors.onSurfaceSecondary,
+        )
+        DifficultyDetailChip(difficulty = exercise.difficulty)
+    }
+}
+
+@Composable
+private fun ExerciseDescriptionSection(exercise: ExerciseDetailUi) {
+    if (exercise.description.isNotBlank()) {
+        val colors = DeepRepsTheme.colors
+        val typography = DeepRepsTheme.typography
+        val spacing = DeepRepsTheme.spacing
+
+        Text(
+            text = exercise.description,
+            style = typography.bodyMedium,
+            color = colors.onSurfaceSecondary,
+        )
+        Spacer(modifier = Modifier.height(spacing.space5))
+    }
+}
+
+@Composable
+private fun ExerciseProsSection(exercise: ExerciseDetailUi) {
+    if (exercise.pros.isNotEmpty()) {
+        val colors = DeepRepsTheme.colors
+        val spacing = DeepRepsTheme.spacing
+
+        BulletSection(
+            title = "Key Benefits",
+            items = exercise.pros,
+            icon = Icons.Outlined.CheckCircle,
+            iconTint = colors.statusSuccess,
+        )
+        Spacer(modifier = Modifier.height(spacing.space5))
+    }
+}
+
+@Composable
+private fun ExerciseTipsSection(exercise: ExerciseDetailUi) {
+    if (exercise.tips.isNotEmpty()) {
+        val colors = DeepRepsTheme.colors
+        val spacing = DeepRepsTheme.spacing
+
+        BulletSection(
+            title = "Tips",
+            items = exercise.tips,
+            icon = Icons.Outlined.Lightbulb,
+            iconTint = colors.statusWarning,
+        )
+        Spacer(modifier = Modifier.height(spacing.space5))
+    }
+}
+
+@Composable
+private fun SecondaryMusclesSection(exercise: ExerciseDetailUi) {
+    if (exercise.secondaryMuscles.isNotEmpty()) {
+        val colors = DeepRepsTheme.colors
+        val typography = DeepRepsTheme.typography
+        val spacing = DeepRepsTheme.spacing
+
+        Text(
+            text = "Secondary Muscles",
+            style = typography.headlineSmall,
+            color = colors.onSurfacePrimary,
+        )
+        Spacer(modifier = Modifier.height(spacing.space2))
+        Text(
+            text = exercise.secondaryMuscles.joinToString(", "),
+            style = typography.bodyMedium,
+            color = colors.onSurfaceSecondary,
+        )
     }
 }
 
@@ -295,7 +332,10 @@ private fun DetailTagChip(
             text = text,
             style = DeepRepsTheme.typography.labelMedium,
             color = contentColor,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+            modifier = Modifier.padding(
+                horizontal = 8.dp,
+                vertical = 4.dp,
+            ),
         )
     }
 }
@@ -311,9 +351,15 @@ private fun DifficultyDetailChip(
     val colors = DeepRepsTheme.colors
 
     val (containerColor, contentColor) = when (difficulty) {
-        Difficulty.BEGINNER -> colors.statusSuccess.copy(alpha = 0.15f) to colors.statusSuccess
-        Difficulty.INTERMEDIATE -> colors.statusWarning.copy(alpha = 0.15f) to colors.statusWarning
-        Difficulty.ADVANCED -> colors.statusError.copy(alpha = 0.15f) to colors.statusError
+        Difficulty.BEGINNER ->
+            colors.statusSuccess.copy(alpha = 0.15f) to
+                colors.statusSuccess
+        Difficulty.INTERMEDIATE ->
+            colors.statusWarning.copy(alpha = 0.15f) to
+                colors.statusWarning
+        Difficulty.ADVANCED ->
+            colors.statusError.copy(alpha = 0.15f) to
+                colors.statusError
     }
 
     DetailTagChip(

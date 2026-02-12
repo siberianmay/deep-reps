@@ -93,11 +93,11 @@ class FirebaseAnalyticsTracker @Inject constructor(
         /** Firebase max parameter string value length. */
         private const val PARAM_STRING_MAX = 100
 
-        /** Firebase max event name length. */
-        private const val EVENT_NAME_MAX = 40
+        /** Firebase max event name length. Used by sanitizeEventName. */
+        const val EVENT_NAME_MAX = 40
 
-        /** Firebase max parameter key length. */
-        private const val PARAM_KEY_MAX = 40
+        /** Firebase max parameter key length. Used by sanitizeParamKey. */
+        const val PARAM_KEY_MAX = 40
 
         /** Firebase max custom parameters per event. */
         private const val MAX_PARAMS = 25

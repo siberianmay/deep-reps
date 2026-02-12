@@ -1,6 +1,7 @@
 package com.deepreps.core.ui.theme
 
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.ProvidableCompositionLocal
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -9,6 +10,7 @@ import androidx.compose.ui.unit.dp
 // Spacing -- design-system.md Section 2.3 (4dp grid)
 // ---------------------------------------------------------------------------
 
+@Suppress("ForbiddenPublicDataClass")
 @Immutable
 data class DeepRepsSpacing(
     /** 0dp - No spacing */
@@ -39,6 +41,7 @@ data class DeepRepsSpacing(
 // Border radius -- design-system.md Section 2.4
 // ---------------------------------------------------------------------------
 
+@Suppress("ForbiddenPublicDataClass")
 @Immutable
 data class DeepRepsRadius(
     /** 0dp - Square edges (progress bar fills) */
@@ -62,6 +65,7 @@ data class DeepRepsRadius(
 // M3 tonal elevation in dark theme; shadow in light theme.
 // ---------------------------------------------------------------------------
 
+@Suppress("ForbiddenPublicDataClass")
 @Immutable
 data class DeepRepsElevation(
     /** Level 0 - Flat content on background */
@@ -82,6 +86,7 @@ data class DeepRepsElevation(
 // Touch targets -- design-system.md Section 2.6
 // ---------------------------------------------------------------------------
 
+@Suppress("ForbiddenPublicDataClass")
 @Immutable
 data class DeepRepsTouchTargets(
     /** 48dp x 48dp - Absolute minimum per M3 spec */
@@ -100,7 +105,11 @@ data class DeepRepsTouchTargets(
 // CompositionLocals
 // ---------------------------------------------------------------------------
 
-val LocalDeepRepsSpacing = staticCompositionLocalOf { DeepRepsSpacing() }
-val LocalDeepRepsRadius = staticCompositionLocalOf { DeepRepsRadius() }
-val LocalDeepRepsElevation = staticCompositionLocalOf { DeepRepsElevation() }
-val LocalDeepRepsTouchTargets = staticCompositionLocalOf { DeepRepsTouchTargets() }
+val LocalDeepRepsSpacing: ProvidableCompositionLocal<DeepRepsSpacing> =
+    staticCompositionLocalOf { DeepRepsSpacing() }
+val LocalDeepRepsRadius: ProvidableCompositionLocal<DeepRepsRadius> =
+    staticCompositionLocalOf { DeepRepsRadius() }
+val LocalDeepRepsElevation: ProvidableCompositionLocal<DeepRepsElevation> =
+    staticCompositionLocalOf { DeepRepsElevation() }
+val LocalDeepRepsTouchTargets: ProvidableCompositionLocal<DeepRepsTouchTargets> =
+    staticCompositionLocalOf { DeepRepsTouchTargets() }

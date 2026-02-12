@@ -1,8 +1,10 @@
 package com.deepreps.core.domain.usecase
 
 import com.deepreps.core.domain.model.ExerciseHistory
+import com.deepreps.core.domain.model.HistoricalSession
 import com.deepreps.core.domain.model.SessionDayType
 import javax.inject.Inject
+import kotlin.math.abs
 
 /**
  * Determines the DUP day type for intermediate+ users.
@@ -105,7 +107,8 @@ class DetermineSessionDayTypeUseCase @Inject constructor() {
         // Infer phase from rep range and volume patterns
         val (phase, dayType) = when {
             avgReps >= 8 && avgWorkingSetsPerSession >= 16 -> "accumulation" to SessionDayType.HYPERTROPHY
-            avgReps in 4.0..7.0 && avgWorkingSetsPerSession in 12.0..16.0 -> "intensification" to SessionDayType.STRENGTH
+            avgReps in 4.0..7.0 && avgWorkingSetsPerSession in 12.0..16.0 ->
+                "intensification" to SessionDayType.STRENGTH
             avgReps < 4 && avgWorkingSetsPerSession < 12 -> "realization" to SessionDayType.POWER
             else -> "accumulation" to SessionDayType.HYPERTROPHY
         }
@@ -140,7 +143,7 @@ class DetermineSessionDayTypeUseCase @Inject constructor() {
     }
 
     private fun estimateBlockWeek(
-        recentSessions: List<com.deepreps.core.domain.model.HistoricalSession>,
+        recentSessions: List<HistoricalSession>,
         avgReps: Double,
     ): Int {
         // Simple heuristic: count how many recent sessions share similar rep patterns
@@ -151,7 +154,7 @@ class DetermineSessionDayTypeUseCase @Inject constructor() {
                 .filter { it.setType == "working" && it.reps > 0 }
                 .map { it.reps }
                 .average()
-            if (kotlin.math.abs(sessionAvg - avgReps) / avgReps <= threshold) {
+            if (abs(sessionAvg - avgReps) / avgReps <= threshold) {
                 count++
             } else {
                 break
@@ -165,6 +168,7 @@ class DetermineSessionDayTypeUseCase @Inject constructor() {
 /**
  * Result of periodization determination.
  */
+@Suppress("ForbiddenPublicDataClass")
 data class PeriodizationResult(
     val periodizationModel: String,
     val dayType: SessionDayType,

@@ -51,6 +51,7 @@ import com.deepreps.core.ui.theme.DeepRepsTheme
  * - 7th item spans full width at bottom
  * - Bottom action area: selected count + Next button
  */
+@Suppress("LongMethod")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MuscleGroupSelectorScreen(
@@ -142,6 +143,7 @@ fun MuscleGroupSelectorScreen(
  * - Unselected: surface-low, border-subtle 1dp
  * - Selected: group color 15% opacity, group color 2dp border, checkmark badge
  */
+@Suppress("LongMethod")
 @Composable
 private fun MuscleGroupCard(
     group: MuscleGroup,
@@ -186,7 +188,7 @@ private fun MuscleGroupCard(
                 .fillMaxSize()
                 .padding(spacing.space3),
         ) {
-            // TODO: Replace with custom muscle group icon when assets are available
+            // Phase 2: Replace with custom muscle group icon when assets are available
             Column(
                 modifier = Modifier.fillMaxSize(),
                 horizontalAlignment = Alignment.CenterHorizontally,

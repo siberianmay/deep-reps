@@ -5,3 +5,7 @@ plugins {
 android {
     namespace = "com.deepreps.feature.workout"
 }
+
+dependencies {
+    implementation(project(":core:data"))
+}

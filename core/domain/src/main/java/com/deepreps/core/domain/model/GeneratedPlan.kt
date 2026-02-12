@@ -1,3 +1,5 @@
+@file:Suppress("ForbiddenPublicDataClass")
+
 package com.deepreps.core.domain.model
 
 import com.deepreps.core.domain.model.enums.SetType

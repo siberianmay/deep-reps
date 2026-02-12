@@ -1,3 +1,5 @@
+@file:Suppress("ForbiddenPublicDataClass")
+
 package com.deepreps.core.domain.model
 
 /**

@@ -19,7 +19,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
@@ -79,6 +78,7 @@ fun CreateTemplateScreen(
     )
 }
 
+@Suppress("LongMethod")
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 internal fun CreateTemplateContent(
@@ -219,6 +219,7 @@ internal fun CreateTemplateContent(
  *
  * Design spec: Section 4.14 - 72dp height, drag handle left, name center, delete right.
  */
+@Suppress("LongMethod")
 @Composable
 private fun TemplateExerciseRow(
     exercise: TemplateExerciseUi,

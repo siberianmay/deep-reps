@@ -18,7 +18,8 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
-internal class WorkoutSessionRepositoryImpl @Inject constructor(
+@Suppress("TooManyFunctions")
+class WorkoutSessionRepositoryImpl @Inject constructor(
     private val database: DeepRepsDatabase,
     private val sessionDao: WorkoutSessionDao,
     private val exerciseDao: WorkoutExerciseDao,

@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.Flow
  * Flow-based queries for reactive UI. Suspend functions for one-shot writes.
  * All writes are immediate (defensive persistence -- see architecture.md Section 3.7).
  */
+@Suppress("TooManyFunctions")
 interface WorkoutSessionRepository {
 
     /** Creates a new session and returns its generated ID. */

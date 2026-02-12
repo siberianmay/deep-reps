@@ -35,6 +35,7 @@ class CalculatePersonalRecordsUseCase @Inject constructor(
      * @param sessionId The completed session to scan for PRs.
      * @return List of detected PRs, empty if none.
      */
+    @Suppress("LongMethod", "CyclomaticComplexMethod", "LoopWithTooManyJumpStatements")
     suspend operator fun invoke(sessionId: Long): List<DetectedPr> {
         val workoutExercises = workoutSessionRepository
             .getExercisesForSession(sessionId)

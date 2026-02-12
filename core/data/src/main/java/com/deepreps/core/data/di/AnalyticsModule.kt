@@ -46,7 +46,7 @@ object AnalyticsModule {
                 firebaseAnalytics = firebaseAnalytics,
                 consentManager = consentManager,
             )
-        } catch (e: Exception) {
+        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
             Timber.w("Firebase Analytics not available; using NoOpAnalyticsTracker: %s", e.message)
             NoOpAnalyticsTracker()
         }
@@ -58,7 +58,7 @@ object AnalyticsModule {
         return try {
             val remoteConfig = FirebaseRemoteConfig.getInstance()
             FirebaseFeatureFlagProvider(remoteConfig = remoteConfig)
-        } catch (e: Exception) {
+        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
             Timber.w("Firebase Remote Config not available; using NoOpFeatureFlagProvider: %s", e.message)
             NoOpFeatureFlagProvider()
         }

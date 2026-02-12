@@ -44,6 +44,7 @@ import com.deepreps.core.ui.theme.DeepRepsTheme
  * - Up/Down arrow buttons for manual reordering
  * - "Generate Plan" CTA at bottom
  */
+@Suppress("LongMethod")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ExerciseOrderScreen(
@@ -153,6 +154,7 @@ fun ExerciseOrderScreen(
  *
  * Shows exercise name, equipment, difficulty, and move up/down buttons.
  */
+@Suppress("LongMethod")
 @Composable
 private fun ExerciseOrderCard(
     exercise: ExerciseOrderItem,

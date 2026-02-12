@@ -26,6 +26,7 @@ import com.deepreps.core.ui.theme.DeepRepsTheme
  * @param modifier External modifier.
  * @param onRetry If non-null, a retry button is displayed.
  */
+@Suppress("LongMethod")
 @Composable
 fun ErrorState(
     message: String,

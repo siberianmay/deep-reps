@@ -66,6 +66,7 @@ import com.deepreps.feature.workout.active.WorkoutExerciseUi
  * @param onNotesChanged Callback when the user edits the notes text.
  * @param modifier External modifier.
  */
+@Suppress("LongMethod", "CyclomaticComplexMethod")
 @Composable
 fun ExerciseCard(
     exercise: WorkoutExerciseUi,

@@ -16,6 +16,7 @@ import com.deepreps.core.domain.model.enums.SetStatus
 import com.deepreps.core.domain.model.enums.SetType
 import com.deepreps.core.domain.repository.ExerciseRepository
 import com.deepreps.core.domain.repository.WorkoutSessionRepository
+import com.deepreps.core.domain.provider.AnalyticsTracker
 import com.deepreps.core.domain.statemachine.WorkoutStateMachine
 import io.mockk.Runs
 import io.mockk.coEvery
@@ -36,7 +37,6 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
-import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -51,6 +51,7 @@ class WorkoutViewModelTest {
     private lateinit var exerciseRepository: ExerciseRepository
     private lateinit var restTimerManager: RestTimerManager
     private lateinit var stateMachine: WorkoutStateMachine
+    private lateinit var analyticsTracker: AnalyticsTracker
     private lateinit var viewModel: WorkoutViewModel
 
     private val testSession = WorkoutSession(
@@ -86,19 +87,59 @@ class WorkoutViewModelTest {
     )
 
     private val testSets1 = listOf(
-        WorkoutSet(id = 1, setNumber = 1, type = SetType.WORKING, status = SetStatus.PLANNED,
-            plannedWeightKg = 80.0, plannedReps = 8, actualWeightKg = null, actualReps = null),
-        WorkoutSet(id = 2, setNumber = 2, type = SetType.WORKING, status = SetStatus.PLANNED,
-            plannedWeightKg = 80.0, plannedReps = 8, actualWeightKg = null, actualReps = null),
-        WorkoutSet(id = 3, setNumber = 3, type = SetType.WORKING, status = SetStatus.PLANNED,
-            plannedWeightKg = 80.0, plannedReps = 8, actualWeightKg = null, actualReps = null),
+        WorkoutSet(
+            id = 1,
+            setNumber = 1,
+            type = SetType.WORKING,
+            status = SetStatus.PLANNED,
+            plannedWeightKg = 80.0,
+            plannedReps = 8,
+            actualWeightKg = null,
+            actualReps = null
+        ),
+        WorkoutSet(
+            id = 2,
+            setNumber = 2,
+            type = SetType.WORKING,
+            status = SetStatus.PLANNED,
+            plannedWeightKg = 80.0,
+            plannedReps = 8,
+            actualWeightKg = null,
+            actualReps = null
+        ),
+        WorkoutSet(
+            id = 3,
+            setNumber = 3,
+            type = SetType.WORKING,
+            status = SetStatus.PLANNED,
+            plannedWeightKg = 80.0,
+            plannedReps = 8,
+            actualWeightKg = null,
+            actualReps = null
+        ),
     )
 
     private val testSets2 = listOf(
-        WorkoutSet(id = 4, setNumber = 1, type = SetType.WORKING, status = SetStatus.PLANNED,
-            plannedWeightKg = 40.0, plannedReps = 12, actualWeightKg = null, actualReps = null),
-        WorkoutSet(id = 5, setNumber = 2, type = SetType.WORKING, status = SetStatus.PLANNED,
-            plannedWeightKg = 40.0, plannedReps = 12, actualWeightKg = null, actualReps = null),
+        WorkoutSet(
+            id = 4,
+            setNumber = 1,
+            type = SetType.WORKING,
+            status = SetStatus.PLANNED,
+            plannedWeightKg = 40.0,
+            plannedReps = 12,
+            actualWeightKg = null,
+            actualReps = null
+        ),
+        WorkoutSet(
+            id = 5,
+            setNumber = 2,
+            type = SetType.WORKING,
+            status = SetStatus.PLANNED,
+            plannedWeightKg = 40.0,
+            plannedReps = 12,
+            actualWeightKg = null,
+            actualReps = null
+        ),
     )
 
     private val testExerciseLibrary1 = Exercise(
@@ -148,6 +189,7 @@ class WorkoutViewModelTest {
         exerciseRepository = mockk(relaxed = true)
         restTimerManager = mockk(relaxed = true)
         stateMachine = WorkoutStateMachine()
+        analyticsTracker = mockk(relaxed = true)
 
         // Setup mocks
         coEvery { workoutSessionRepository.getSession(1L) } returns testSession
@@ -174,6 +216,7 @@ class WorkoutViewModelTest {
         exerciseRepository = exerciseRepository,
         restTimerManager = restTimerManager,
         stateMachine = stateMachine,
+        analyticsTracker = analyticsTracker,
     )
 
     // --- Session Loading ---
@@ -486,9 +529,11 @@ class WorkoutViewModelTest {
         viewModel.onIntent(WorkoutIntent.ConfirmFinishWorkout)
 
         coVerify {
-            workoutSessionRepository.updateSession(match {
+            workoutSessionRepository.updateSession(
+                match {
                 it.status == SessionStatus.COMPLETED && it.completedAt != null
-            })
+            }
+            )
         }
     }
 

@@ -3,7 +3,6 @@ package com.deepreps.feature.templates
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.deepreps.core.domain.model.enums.MuscleGroup
 import com.deepreps.core.domain.repository.ExerciseRepository
 import com.deepreps.core.domain.repository.TemplateRepository
 import com.deepreps.core.domain.usecase.InvalidTemplateException
@@ -77,6 +76,7 @@ class CreateTemplateViewModel @Inject constructor(
         }
     }
 
+    @Suppress("LongMethod")
     private fun handleSave() {
         val current = _state.value
 
@@ -178,6 +178,7 @@ class CreateTemplateViewModel @Inject constructor(
         _sideEffect.trySend(CreateTemplateSideEffect.NavigateBack)
     }
 
+    @Suppress("LongMethod")
     private fun loadExistingTemplate(id: Long) {
         viewModelScope.launch {
             try {
@@ -268,7 +269,7 @@ class CreateTemplateViewModel @Inject constructor(
      * Returns cached group names based on current exercise data.
      */
     private fun computeMuscleGroupNamesSync(
-        exercises: List<TemplateExerciseUi>,
+        @Suppress("UnusedParameter") exercises: List<TemplateExerciseUi>,
     ): List<String> {
         // Without primaryGroupId in TemplateExerciseUi, we preserve existing muscle group names.
         // The authoritative muscle group computation happens in handleSave via exerciseRepository.

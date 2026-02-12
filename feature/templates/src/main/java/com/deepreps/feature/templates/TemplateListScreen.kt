@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -79,6 +78,7 @@ fun TemplateListScreen(
     )
 }
 
+@Suppress("LongMethod")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun TemplateListContent(
@@ -207,6 +207,7 @@ internal fun TemplateListContent(
  * - Swipe right-to-left to reveal delete action
  * - Red background with trash icon
  */
+@Suppress("LongMethod")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SwipeToDeleteTemplateItem(
@@ -267,6 +268,7 @@ private fun SwipeToDeleteTemplateItem(
  *
  * Design spec: Section 1.1 - "Every destructive action requires confirmation."
  */
+@Suppress("LongMethod")
 @Composable
 private fun DeleteConfirmationDialog(
     templateName: String,

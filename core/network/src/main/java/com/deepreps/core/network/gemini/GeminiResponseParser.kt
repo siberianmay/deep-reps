@@ -32,13 +32,17 @@ class GeminiResponseParser @Inject constructor(
      * @param exercises the exercise list from the request, used to map stable IDs to Room PKs
      * @throws AiPlanException if the JSON is unparseable or missing required fields
      */
+    @Suppress("ThrowsCount")
     fun parse(responseText: String, exercises: List<ExerciseForPlan>): GeneratedPlan {
         val exerciseMap = exercises.associateBy { it.stableId }
 
         val planDto = try {
             json.decodeFromString(GeminiPlanDto.serializer(), responseText.trim())
-        } catch (e: Exception) {
-            throw AiPlanException("Failed to parse Gemini response as JSON: ${e.message}", e)
+        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+            throw AiPlanException(
+                "Failed to parse Gemini response as JSON: ${e.message}",
+                e,
+            )
         }
 
         if (planDto.exercisePlans.isEmpty()) {
@@ -91,7 +95,7 @@ class GeminiResponseParser @Inject constructor(
     private fun mapPlannedSet(
         dto: GeminiPlannedSetDto,
         setType: SetType,
-        fallbackIndex: Int,
+        @Suppress("UnusedPrivateMember") fallbackIndex: Int,
     ): PlannedSet = PlannedSet(
         setType = setType,
         weight = dto.weight.coerceAtLeast(0.0),

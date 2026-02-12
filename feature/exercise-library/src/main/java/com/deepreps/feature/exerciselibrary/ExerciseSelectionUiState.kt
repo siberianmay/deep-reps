@@ -5,6 +5,7 @@ import com.deepreps.core.domain.model.enums.MuscleGroup
 /**
  * UI state for the exercise selection (multi-select picker) screen.
  */
+@Suppress("ForbiddenPublicDataClass")
 data class ExerciseSelectionUiState(
     val activeGroup: MuscleGroup = MuscleGroup.CHEST,
     val exercises: List<ExerciseUi> = emptyList(),

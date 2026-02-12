@@ -1,3 +1,5 @@
+@file:Suppress("ForbiddenPublicDataClass")
+
 package com.deepreps.core.domain.statemachine
 
 /**
@@ -17,6 +19,7 @@ class WorkoutStateMachine {
      * @return the new [WorkoutPhase] if the transition is valid, or null if
      *   the [event] is not allowed from the [currentPhase].
      */
+    @Suppress("LongMethod", "CyclomaticComplexMethod")
     fun transition(currentPhase: WorkoutPhase, event: WorkoutEvent): WorkoutPhase? =
         when (currentPhase) {
             is WorkoutPhase.Idle -> when (event) {

@@ -32,6 +32,7 @@ import com.deepreps.feature.progress.TimeRange
  * @param onSelect Callback when a range is tapped.
  * @param modifier External modifier.
  */
+@Suppress("LongMethod")
 @Composable
 fun TimeRangeSelector(
     selected: TimeRange,

@@ -14,6 +14,9 @@ dependencies {
     implementation(project(":core:network"))
     implementation(project(":core:common"))
 
+    // Room KTX for withTransaction() in WorkoutSessionRepositoryImpl
+    implementation(libs.room.ktx)
+
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.serialization.json)

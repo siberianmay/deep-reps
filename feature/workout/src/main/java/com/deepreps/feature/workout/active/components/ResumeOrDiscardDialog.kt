@@ -56,7 +56,7 @@ fun ResumeOrDiscardDialog(
             TextButton(onClick = onResume) {
                 Text(
                     text = "Resume",
-                    color = colors.primary,
+                    color = colors.accentPrimary,
                 )
             }
         },

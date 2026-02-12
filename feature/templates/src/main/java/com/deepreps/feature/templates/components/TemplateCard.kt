@@ -35,6 +35,7 @@ import com.deepreps.feature.templates.TemplateUi
  * @param onClick Called when the card is tapped.
  * @param modifier External modifier.
  */
+@Suppress("LongMethod")
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun TemplateCard(

@@ -1,3 +1,5 @@
+@file:Suppress("MatchingDeclarationName")
+
 package com.deepreps.core.ui.component
 
 import androidx.compose.foundation.layout.PaddingValues
@@ -37,6 +39,7 @@ enum class ButtonVariant {
  * @param enabled Interactive state.
  * @param modifier External modifier.
  */
+@Suppress("LongMethod")
 @Composable
 fun DeepRepsButton(
     text: String,

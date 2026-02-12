@@ -37,34 +37,68 @@ class CalculatePersonalRecordsUseCaseTest {
 
     private val testExercises = listOf(
         WorkoutExercise(
-            id = 10L, sessionId = 1L, exerciseId = 100L,
-            orderIndex = 0, supersetGroupId = null, restTimerSeconds = 120, notes = null,
+            id = 10L,
+            sessionId = 1L,
+            exerciseId = 100L,
+            orderIndex = 0,
+            supersetGroupId = null,
+            restTimerSeconds = 120,
+            notes = null,
         ),
         WorkoutExercise(
-            id = 11L, sessionId = 1L, exerciseId = 101L,
-            orderIndex = 1, supersetGroupId = null, restTimerSeconds = 90, notes = null,
+            id = 11L,
+            sessionId = 1L,
+            exerciseId = 101L,
+            orderIndex = 1,
+            supersetGroupId = null,
+            restTimerSeconds = 90,
+            notes = null,
         ),
     )
 
     private val benchPressSets = listOf(
         WorkoutSet(
-            id = 1, setNumber = 1, type = SetType.WARMUP, status = SetStatus.COMPLETED,
-            plannedWeightKg = 40.0, plannedReps = 12, actualWeightKg = 40.0, actualReps = 12,
+            id = 1,
+            setNumber = 1,
+            type = SetType.WARMUP,
+            status = SetStatus.COMPLETED,
+            plannedWeightKg = 40.0,
+            plannedReps = 12,
+            actualWeightKg = 40.0,
+            actualReps = 12,
         ),
         WorkoutSet(
-            id = 2, setNumber = 2, type = SetType.WORKING, status = SetStatus.COMPLETED,
-            plannedWeightKg = 80.0, plannedReps = 8, actualWeightKg = 80.0, actualReps = 8,
+            id = 2,
+            setNumber = 2,
+            type = SetType.WORKING,
+            status = SetStatus.COMPLETED,
+            plannedWeightKg = 80.0,
+            plannedReps = 8,
+            actualWeightKg = 80.0,
+            actualReps = 8,
         ),
         WorkoutSet(
-            id = 3, setNumber = 3, type = SetType.WORKING, status = SetStatus.COMPLETED,
-            plannedWeightKg = 80.0, plannedReps = 8, actualWeightKg = 100.0, actualReps = 3,
+            id = 3,
+            setNumber = 3,
+            type = SetType.WORKING,
+            status = SetStatus.COMPLETED,
+            plannedWeightKg = 80.0,
+            plannedReps = 8,
+            actualWeightKg = 100.0,
+            actualReps = 3,
         ),
     )
 
     private val rowSets = listOf(
         WorkoutSet(
-            id = 4, setNumber = 1, type = SetType.WORKING, status = SetStatus.COMPLETED,
-            plannedWeightKg = 60.0, plannedReps = 10, actualWeightKg = 60.0, actualReps = 10,
+            id = 4,
+            setNumber = 1,
+            type = SetType.WORKING,
+            status = SetStatus.COMPLETED,
+            plannedWeightKg = 60.0,
+            plannedReps = 10,
+            actualWeightKg = 60.0,
+            actualReps = 10,
         ),
     )
 
@@ -135,11 +169,13 @@ class CalculatePersonalRecordsUseCaseTest {
         useCase(1L)
 
         coVerify {
-            personalRecordRepository.insertAll(match { records ->
+            personalRecordRepository.insertAll(
+                match { records ->
                 records.size == 2 &&
                     records.all { it.recordType == RecordType.MAX_WEIGHT } &&
                     records.all { it.sessionId == 1L }
-            })
+            }
+            )
         }
     }
 
@@ -148,9 +184,14 @@ class CalculatePersonalRecordsUseCaseTest {
     @Test
     fun `detects PR when new weight exceeds existing record`() = runTest {
         val existingBenchPr = PersonalRecord(
-            id = 1L, exerciseId = 100L, recordType = RecordType.MAX_WEIGHT,
-            weightValue = 90.0, reps = 5, estimated1rm = null,
-            achievedAt = now - 86_400_000, sessionId = null,
+            id = 1L,
+            exerciseId = 100L,
+            recordType = RecordType.MAX_WEIGHT,
+            weightValue = 90.0,
+            reps = 5,
+            estimated1rm = null,
+            achievedAt = now - 86_400_000,
+            sessionId = null,
         )
         coEvery {
             personalRecordRepository.getBestByType(100L, RecordType.MAX_WEIGHT.value)
@@ -172,9 +213,14 @@ class CalculatePersonalRecordsUseCaseTest {
     @Test
     fun `does not detect PR when weight equals existing record`() = runTest {
         val existingBenchPr = PersonalRecord(
-            id = 1L, exerciseId = 100L, recordType = RecordType.MAX_WEIGHT,
-            weightValue = 100.0, reps = 5, estimated1rm = null,
-            achievedAt = now - 86_400_000, sessionId = null,
+            id = 1L,
+            exerciseId = 100L,
+            recordType = RecordType.MAX_WEIGHT,
+            weightValue = 100.0,
+            reps = 5,
+            estimated1rm = null,
+            achievedAt = now - 86_400_000,
+            sessionId = null,
         )
         coEvery {
             personalRecordRepository.getBestByType(100L, RecordType.MAX_WEIGHT.value)
@@ -195,14 +241,24 @@ class CalculatePersonalRecordsUseCaseTest {
     @Test
     fun `does not detect PR when weight is below existing record`() = runTest {
         val existingBenchPr = PersonalRecord(
-            id = 1L, exerciseId = 100L, recordType = RecordType.MAX_WEIGHT,
-            weightValue = 120.0, reps = 3, estimated1rm = null,
-            achievedAt = now - 86_400_000, sessionId = null,
+            id = 1L,
+            exerciseId = 100L,
+            recordType = RecordType.MAX_WEIGHT,
+            weightValue = 120.0,
+            reps = 3,
+            estimated1rm = null,
+            achievedAt = now - 86_400_000,
+            sessionId = null,
         )
         val existingRowPr = PersonalRecord(
-            id = 2L, exerciseId = 101L, recordType = RecordType.MAX_WEIGHT,
-            weightValue = 80.0, reps = 8, estimated1rm = null,
-            achievedAt = now - 86_400_000, sessionId = null,
+            id = 2L,
+            exerciseId = 101L,
+            recordType = RecordType.MAX_WEIGHT,
+            weightValue = 80.0,
+            reps = 8,
+            estimated1rm = null,
+            achievedAt = now - 86_400_000,
+            sessionId = null,
         )
         coEvery {
             personalRecordRepository.getBestByType(100L, RecordType.MAX_WEIGHT.value)
@@ -221,14 +277,24 @@ class CalculatePersonalRecordsUseCaseTest {
     @Test
     fun `does not insert records when no PRs detected`() = runTest {
         val existingBenchPr = PersonalRecord(
-            id = 1L, exerciseId = 100L, recordType = RecordType.MAX_WEIGHT,
-            weightValue = 120.0, reps = 3, estimated1rm = null,
-            achievedAt = now - 86_400_000, sessionId = null,
+            id = 1L,
+            exerciseId = 100L,
+            recordType = RecordType.MAX_WEIGHT,
+            weightValue = 120.0,
+            reps = 3,
+            estimated1rm = null,
+            achievedAt = now - 86_400_000,
+            sessionId = null,
         )
         val existingRowPr = PersonalRecord(
-            id = 2L, exerciseId = 101L, recordType = RecordType.MAX_WEIGHT,
-            weightValue = 80.0, reps = 8, estimated1rm = null,
-            achievedAt = now - 86_400_000, sessionId = null,
+            id = 2L,
+            exerciseId = 101L,
+            recordType = RecordType.MAX_WEIGHT,
+            weightValue = 80.0,
+            reps = 8,
+            estimated1rm = null,
+            achievedAt = now - 86_400_000,
+            sessionId = null,
         )
         coEvery {
             personalRecordRepository.getBestByType(100L, RecordType.MAX_WEIGHT.value)
@@ -257,8 +323,14 @@ class CalculatePersonalRecordsUseCaseTest {
     fun `exercises with only warmup sets are skipped`() = runTest {
         val warmupOnlySets = listOf(
             WorkoutSet(
-                id = 1, setNumber = 1, type = SetType.WARMUP, status = SetStatus.COMPLETED,
-                plannedWeightKg = 40.0, plannedReps = 12, actualWeightKg = 40.0, actualReps = 12,
+                id = 1,
+                setNumber = 1,
+                type = SetType.WARMUP,
+                status = SetStatus.COMPLETED,
+                plannedWeightKg = 40.0,
+                plannedReps = 12,
+                actualWeightKg = 40.0,
+                actualReps = 12,
             ),
         )
         every { workoutSessionRepository.getSetsForExercise(10L) } returns flowOf(warmupOnlySets)
@@ -278,8 +350,14 @@ class CalculatePersonalRecordsUseCaseTest {
     fun `exercises with only planned sets are skipped`() = runTest {
         val plannedOnlySets = listOf(
             WorkoutSet(
-                id = 1, setNumber = 1, type = SetType.WORKING, status = SetStatus.PLANNED,
-                plannedWeightKg = 100.0, plannedReps = 5, actualWeightKg = null, actualReps = null,
+                id = 1,
+                setNumber = 1,
+                type = SetType.WORKING,
+                status = SetStatus.PLANNED,
+                plannedWeightKg = 100.0,
+                plannedReps = 5,
+                actualWeightKg = null,
+                actualReps = null,
             ),
         )
         every { workoutSessionRepository.getSetsForExercise(10L) } returns flowOf(plannedOnlySets)

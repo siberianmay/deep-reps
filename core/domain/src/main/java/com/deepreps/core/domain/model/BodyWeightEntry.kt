@@ -6,6 +6,7 @@ package com.deepreps.core.domain.model
  * [weightKg] is always in kilograms. Conversion to display unit happens in the UI layer.
  * [recordedAt] is epoch millis.
  */
+@Suppress("ForbiddenPublicDataClass")
 data class BodyWeightEntry(
     val id: Long,
     val weightKg: Double,

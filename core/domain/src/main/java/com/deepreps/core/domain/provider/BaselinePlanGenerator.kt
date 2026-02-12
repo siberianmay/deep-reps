@@ -5,11 +5,10 @@ import com.deepreps.core.domain.model.ExercisePlan
 import com.deepreps.core.domain.model.GeneratedPlan
 import com.deepreps.core.domain.model.PlannedSet
 import com.deepreps.core.domain.model.PlanRequest
+import com.deepreps.core.domain.model.enums.Equipment
 import com.deepreps.core.domain.model.enums.SetType
 import com.deepreps.core.domain.util.WeightStepProvider
-import com.deepreps.core.domain.model.enums.Equipment
 import javax.inject.Inject
-import kotlin.math.floor
 
 /**
  * Generates a default workout plan when AI is unavailable.
@@ -40,6 +39,7 @@ class BaselinePlanGenerator @Inject constructor() {
         return GeneratedPlan(exercises = exercisePlans)
     }
 
+    @Suppress("LongParameterList", "LongMethod")
     private fun generateExercisePlan(
         exercise: ExerciseForPlan,
         level: Int,
@@ -71,7 +71,7 @@ class BaselinePlanGenerator @Inject constructor() {
         val restSeconds = getRestSeconds(level, exercise)
 
         val warmupSets = generateWarmupSets(workingWeight, exercise, level, age, equipment)
-        val workingSets = (1..workingSetsCount).map { setNum ->
+        val workingSets = (1..workingSetsCount).map {
             PlannedSet(
                 setType = SetType.WORKING,
                 weight = if (isBw) 0.0 else workingWeight,
@@ -90,10 +90,11 @@ class BaselinePlanGenerator @Inject constructor() {
         )
     }
 
+    @Suppress("LongMethod", "ComplexMethod")
     private fun generateWarmupSets(
         workingWeight: Double,
         exercise: ExerciseForPlan,
-        level: Int,
+        @Suppress("UnusedParameter") level: Int,
         age: Int?,
         equipment: Equipment,
     ): List<PlannedSet> {
@@ -114,27 +115,27 @@ class BaselinePlanGenerator @Inject constructor() {
         return when {
             isHeavyCompound -> {
                 val sets = mutableListOf(
-                    PlannedSet(SetType.WARMUP, roundDown(emptyBarWeight, equipment), reps = 12, restSeconds = WARMUP_REST),
+                    warmupSet(roundDown(emptyBarWeight, equipment), reps = 12),
                 )
                 if (isOver50) {
-                    sets.add(PlannedSet(SetType.WARMUP, roundDown(workingWeight * 0.40, equipment), reps = 10, restSeconds = WARMUP_REST))
-                    sets.add(PlannedSet(SetType.WARMUP, roundDown(workingWeight * 0.60, equipment), reps = 8, restSeconds = WARMUP_REST))
-                    sets.add(PlannedSet(SetType.WARMUP, roundDown(workingWeight * 0.80, equipment), reps = 4, restSeconds = WARMUP_REST))
+                    sets.add(warmupSet(roundDown(workingWeight * 0.40, equipment), reps = 10))
+                    sets.add(warmupSet(roundDown(workingWeight * 0.60, equipment), reps = 8))
+                    sets.add(warmupSet(roundDown(workingWeight * 0.80, equipment), reps = 4))
                 } else {
-                    sets.add(PlannedSet(SetType.WARMUP, roundDown(workingWeight * 0.50, equipment), reps = 8, restSeconds = WARMUP_REST))
-                    sets.add(PlannedSet(SetType.WARMUP, roundDown(workingWeight * 0.75, equipment), reps = 4, restSeconds = WARMUP_REST))
+                    sets.add(warmupSet(roundDown(workingWeight * 0.50, equipment), reps = 8))
+                    sets.add(warmupSet(roundDown(workingWeight * 0.75, equipment), reps = 4))
                 }
                 sets
             }
             isCompound -> {
                 val sets = mutableListOf(
-                    PlannedSet(SetType.WARMUP, roundDown(workingWeight * 0.50, equipment), reps = 10, restSeconds = WARMUP_REST),
+                    warmupSet(roundDown(workingWeight * 0.50, equipment), reps = 10),
                 )
                 if (isOver50) {
-                    sets.add(PlannedSet(SetType.WARMUP, roundDown(workingWeight * 0.60, equipment), reps = 8, restSeconds = WARMUP_REST))
-                    sets.add(PlannedSet(SetType.WARMUP, roundDown(workingWeight * 0.80, equipment), reps = 4, restSeconds = WARMUP_REST))
+                    sets.add(warmupSet(roundDown(workingWeight * 0.60, equipment), reps = 8))
+                    sets.add(warmupSet(roundDown(workingWeight * 0.80, equipment), reps = 4))
                 } else {
-                    sets.add(PlannedSet(SetType.WARMUP, roundDown(workingWeight * 0.75, equipment), reps = 6, restSeconds = WARMUP_REST))
+                    sets.add(warmupSet(roundDown(workingWeight * 0.75, equipment), reps = 6))
                 }
                 sets
             }
@@ -142,12 +143,12 @@ class BaselinePlanGenerator @Inject constructor() {
                 // Isolation: 1 warmup set (or 0 for bodyweight)
                 if (isOver50) {
                     listOf(
-                        PlannedSet(SetType.WARMUP, roundDown(workingWeight * 0.40, equipment), reps = 12, restSeconds = WARMUP_REST),
-                        PlannedSet(SetType.WARMUP, roundDown(workingWeight * 0.70, equipment), reps = 8, restSeconds = WARMUP_REST),
+                        warmupSet(roundDown(workingWeight * 0.40, equipment), reps = 12),
+                        warmupSet(roundDown(workingWeight * 0.70, equipment), reps = 8),
                     )
                 } else {
                     listOf(
-                        PlannedSet(SetType.WARMUP, roundDown(workingWeight * 0.50, equipment), reps = 12, restSeconds = WARMUP_REST),
+                        warmupSet(roundDown(workingWeight * 0.50, equipment), reps = 12),
                     )
                 }
             }
@@ -171,6 +172,7 @@ class BaselinePlanGenerator @Inject constructor() {
         else -> 10
     }
 
+    @Suppress("ComplexMethod")
     private fun getRestSeconds(level: Int, exercise: ExerciseForPlan): Int {
         val isHeavyCompound = exercise.movementType == "compound" && exercise.stableId in HEAVY_COMPOUND_IDS
         val isCompound = exercise.movementType == "compound"
@@ -233,6 +235,9 @@ class BaselinePlanGenerator @Inject constructor() {
 
         return ratio * bodyWeightKg
     }
+
+    private fun warmupSet(weight: Double, reps: Int): PlannedSet =
+        PlannedSet(SetType.WARMUP, weight = weight, reps = reps, restSeconds = WARMUP_REST)
 
     private fun roundDown(weight: Double, equipment: Equipment): Double =
         WeightStepProvider.roundDown(weight, equipment)

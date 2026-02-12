@@ -84,6 +84,7 @@ fun WorkoutSummarySheet(
     }
 }
 
+@Suppress("LongMethod")
 @Composable
 internal fun WorkoutSummarySheetContent(
     state: WorkoutSummaryUiState,
@@ -199,7 +200,7 @@ internal fun WorkoutSummarySheetContent(
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = colors.accentPrimary,
-                        contentColor = colors.onAccentPrimary,
+                        contentColor = colors.surfaceLowest,
                     ),
                     shape = RoundedCornerShape(radius.md),
                 ) {
@@ -337,6 +338,7 @@ private fun GroupVolumeRow(
     }
 }
 
+@Suppress("LongMethod")
 @Composable
 private fun PersonalRecordRow(
     pr: PersonalRecordUi,

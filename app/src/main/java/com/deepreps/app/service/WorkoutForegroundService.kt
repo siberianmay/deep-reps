@@ -164,7 +164,9 @@ class WorkoutForegroundService : Service() {
             flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
         }
         val pendingContent = PendingIntent.getActivity(
-            this, 0, contentIntent,
+            this,
+            0,
+            contentIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
 
@@ -173,7 +175,9 @@ class WorkoutForegroundService : Service() {
             action = if (isPaused) ACTION_RESUME else ACTION_PAUSE
         }
         val pausePending = PendingIntent.getService(
-            this, 1, pauseIntent,
+            this,
+            1,
+            pauseIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
         val pauseActionLabel = if (isPaused) "Resume" else "Pause"
@@ -203,6 +207,7 @@ class WorkoutForegroundService : Service() {
         }
     }
 
+    @Suppress("UnusedParameter")
     private fun updateNotification(text: String, restTimerState: RestTimerState?) {
         val notification = NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_media_play)

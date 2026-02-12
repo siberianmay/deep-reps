@@ -80,7 +80,7 @@ fun MuscleGroupChip(
 // Helpers
 // ---------------------------------------------------------------------------
 
-internal fun muscleGroupDisplayName(group: MuscleGroup): String = when (group) {
+fun muscleGroupDisplayName(group: MuscleGroup): String = when (group) {
     MuscleGroup.LEGS -> "Legs"
     MuscleGroup.LOWER_BACK -> "Lower Back"
     MuscleGroup.CHEST -> "Chest"

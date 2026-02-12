@@ -73,19 +73,36 @@ class ProgressDashboardViewModelTest {
 
     private val testExercisesSession1 = listOf(
         WorkoutExercise(
-            id = 10L, sessionId = 1L, exerciseId = 100L,
-            orderIndex = 0, supersetGroupId = null, restTimerSeconds = 120, notes = null,
+            id = 10L,
+            sessionId = 1L,
+            exerciseId = 100L,
+            orderIndex = 0,
+            supersetGroupId = null,
+            restTimerSeconds = 120,
+            notes = null,
         ),
     )
 
     private val testSetsSession1 = listOf(
         WorkoutSet(
-            id = 1, setNumber = 1, type = SetType.WORKING, status = SetStatus.COMPLETED,
-            plannedWeightKg = 80.0, plannedReps = 8, actualWeightKg = 80.0, actualReps = 8,
+            id = 1,
+            setNumber = 1,
+            type = SetType.WORKING,
+            status = SetStatus.COMPLETED,
+            plannedWeightKg = 80.0,
+            plannedReps = 8,
+            actualWeightKg = 80.0,
+            actualReps = 8,
         ),
         WorkoutSet(
-            id = 2, setNumber = 2, type = SetType.WORKING, status = SetStatus.COMPLETED,
-            plannedWeightKg = 80.0, plannedReps = 8, actualWeightKg = 80.0, actualReps = 8,
+            id = 2,
+            setNumber = 2,
+            type = SetType.WORKING,
+            status = SetStatus.COMPLETED,
+            plannedWeightKg = 80.0,
+            plannedReps = 8,
+            actualWeightKg = 80.0,
+            actualReps = 8,
         ),
     )
 
@@ -211,7 +228,7 @@ class ProgressDashboardViewModelTest {
     @Test
     fun `repository error sets error state`() = runTest {
         every { workoutSessionRepository.getCompletedSessions() } returns flow {
-            throw RuntimeException("DB error")
+            throw IllegalStateException("DB error")
         }
 
         viewModel = ProgressDashboardViewModel(
@@ -231,7 +248,7 @@ class ProgressDashboardViewModelTest {
         every { workoutSessionRepository.getCompletedSessions() } answers {
             callCount++
             if (callCount == 1) {
-                flow { throw RuntimeException("DB error") }
+                flow { throw IllegalStateException("DB error") }
             } else {
                 flowOf(testSessions)
             }

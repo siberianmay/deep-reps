@@ -39,7 +39,13 @@ class WorkoutSetupViewModelTest {
     private val testExercises = listOf(
         makeExercise(id = 1, name = "Bench Press", groupId = 3, orderPriority = 1),
         makeExercise(id = 2, name = "Incline DB Press", groupId = 3, orderPriority = 2),
-        makeExercise(id = 3, name = "Cable Flye", groupId = 3, orderPriority = 3, movementType = MovementType.ISOLATION),
+        makeExercise(
+            id = 3,
+            name = "Cable Flye",
+            groupId = 3,
+            orderPriority = 3,
+            movementType = MovementType.ISOLATION
+        ),
     )
 
     @BeforeEach

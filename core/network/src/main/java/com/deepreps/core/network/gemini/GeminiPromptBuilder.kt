@@ -24,7 +24,10 @@ class GeminiPromptBuilder @Inject constructor(
 ) {
 
     fun build(request: PlanRequest): String = buildString {
-        appendLine("You are a certified strength & conditioning specialist. Generate a structured workout plan as JSON.")
+        appendLine(
+            "You are a certified strength & conditioning specialist." +
+                " Generate a structured workout plan as JSON.",
+        )
         appendLine()
 
         appendUserProfile(request)
@@ -71,10 +74,15 @@ class GeminiPromptBuilder @Inject constructor(
         appendLine()
     }
 
+    @Suppress("LongMethod")
     private fun StringBuilder.appendTrainingHistory(request: PlanRequest, remainingBudget: Int) {
         if (request.trainingHistory.isEmpty()) {
             appendLine("## Training History")
-            appendLine("NO TRAINING HISTORY AVAILABLE. Use baseline tables for experience level ${request.userProfile.experienceLevel}.")
+            val level = request.userProfile.experienceLevel
+            appendLine(
+                "NO TRAINING HISTORY AVAILABLE. " +
+                    "Use baseline tables for experience level $level.",
+            )
             appendLine()
             return
         }
@@ -121,6 +129,7 @@ class GeminiPromptBuilder @Inject constructor(
         appendLine()
     }
 
+    @Suppress("LongMethod", "ComplexMethod")
     private fun StringBuilder.appendSafetyConstraints(request: PlanRequest) {
         appendLine("## SAFETY CONSTRAINTS (NON-NEGOTIABLE)")
         appendLine(
@@ -178,6 +187,7 @@ class GeminiPromptBuilder @Inject constructor(
         appendLine()
     }
 
+    @Suppress("LongMethod", "ComplexMethod")
     private fun StringBuilder.appendContraindications(request: PlanRequest) {
         val contraindications = buildList {
             if (request.exercises.any { it.stableId == "lower_back_barbell_good_morning" }) {
@@ -205,13 +215,23 @@ class GeminiPromptBuilder @Inject constructor(
                     add("Deficit Deadlift: Only program if conventional deadlift history shows no regression pattern.")
                 }
             }
-            if (request.exercises.any { it.stableId == "core_bodyweight_dragon_flag" || it.stableId == "core_bodyweight_ab_wheel_rollout" }) {
+            val hasDragonFlagOrAbWheel = request.exercises.any {
+                it.stableId == "core_bodyweight_dragon_flag" ||
+                    it.stableId == "core_bodyweight_ab_wheel_rollout"
+            }
+            if (hasDragonFlagOrAbWheel) {
                 if (request.userProfile.experienceLevel == 1) {
-                    add("Dragon Flag / Ab Wheel Rollout: EXCLUDED for beginners -- never auto-programmed at experience level 1.")
+                    add(
+                        "Dragon Flag / Ab Wheel Rollout: EXCLUDED for beginners" +
+                            " -- never auto-programmed at experience level 1.",
+                    )
                 }
             }
             if (request.exercises.any { it.stableId == "core_bodyweight_ab_wheel_rollout" }) {
-                add("Ab Wheel Rollout: Maintain posterior pelvic tilt throughout. If lower back arches, reduce range of motion.")
+                add(
+                    "Ab Wheel Rollout: Maintain posterior pelvic tilt throughout." +
+                        " If lower back arches, reduce range of motion.",
+                )
             }
         }
 
@@ -260,7 +280,7 @@ class GeminiPromptBuilder @Inject constructor(
     }
 
     companion object {
-        const val PROMPT_VERSION = "v2.0"
+        const val PROMPT_VERSION: String = "v2.0"
 
         private const val MAX_CHARS = 8000 // ~2000 tokens at ~4 chars/token
         private const val MAX_SESSIONS_PER_EXERCISE = 5

@@ -47,6 +47,7 @@ import com.deepreps.feature.exerciselibrary.ExerciseUi
  * @param isChecked Whether the checkbox is checked. Ignored if [isCheckable] is false.
  * @param onCheckedChange Called when the checkbox is toggled. Ignored if [isCheckable] is false.
  */
+@Suppress("LongMethod")
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ExerciseListItem(

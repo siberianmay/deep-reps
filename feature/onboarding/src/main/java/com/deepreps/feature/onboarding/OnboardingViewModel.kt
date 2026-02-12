@@ -38,6 +38,7 @@ import javax.inject.Inject
  * - onboarding_experience_selected: on experience level selection
  * - onboarding_finished: on successful completion
  */
+@Suppress("TooManyFunctions")
 @HiltViewModel
 class OnboardingViewModel @Inject constructor(
     private val completeOnboardingUseCase: CompleteOnboardingUseCase,
@@ -150,6 +151,7 @@ class OnboardingViewModel @Inject constructor(
         _state.update { it.copy(gender = option.toDomainGender(), genderDisplayOption = option) }
     }
 
+    @Suppress("LongMethod")
     private fun handleComplete() {
         val current = _state.value
 
@@ -197,7 +199,7 @@ class OnboardingViewModel @Inject constructor(
 
                 _state.update { it.copy(isCompleting = false) }
                 _sideEffect.trySend(OnboardingSideEffect.NavigateToMain)
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 _state.update {
                     it.copy(
                         isCompleting = false,

@@ -86,6 +86,7 @@ class WorkoutSummaryViewModel @Inject constructor(
         }
     }
 
+    @Suppress("LongMethod")
     private fun loadSummary() {
         viewModelScope.launch {
             try {

@@ -161,7 +161,7 @@ class TemplateListViewModelTest {
     @Test
     fun `repository error sets error state`() = runTest {
         every { templateRepository.getAll() } returns flow {
-            throw RuntimeException("DB error")
+            throw IllegalStateException("DB error")
         }
 
         viewModel = TemplateListViewModel(templateRepository, exerciseRepository)
@@ -179,7 +179,7 @@ class TemplateListViewModelTest {
         every { templateRepository.getAll() } answers {
             callCount++
             if (callCount == 1) {
-                flow { throw RuntimeException("DB error") }
+                flow { throw IllegalStateException("DB error") }
             } else {
                 flowOf(testTemplates)
             }

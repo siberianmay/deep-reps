@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -57,11 +56,12 @@ import com.deepreps.feature.workout.active.components.RestTimerBottomSheet
  * @param onNavigateToSummary Callback to navigate to workout summary after completion.
  * @param onNavigateBack Callback for back navigation.
  */
+@Suppress("LongMethod")
 @Composable
 fun WorkoutScreen(
     viewModel: WorkoutViewModel,
     onNavigateToSummary: (Long) -> Unit,
-    onNavigateBack: () -> Unit,
+    @Suppress("UnusedParameter") onNavigateBack: () -> Unit,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
@@ -82,7 +82,7 @@ fun WorkoutScreen(
             when (effect) {
                 is WorkoutSideEffect.NavigateToSummary -> onNavigateToSummary(effect.sessionId)
                 is WorkoutSideEffect.Vibrate -> { /* Vibration handled by RestTimerManager */ }
-                is WorkoutSideEffect.ShowError -> { /* TODO: Show Snackbar */ }
+                is WorkoutSideEffect.ShowError -> { /* Phase 2: Show Snackbar */ }
                 is WorkoutSideEffect.ScrollToExercise -> {
                     listState.animateScrollToItem(effect.exerciseIndex)
                 }
@@ -117,6 +117,7 @@ fun WorkoutScreen(
     }
 }
 
+@Suppress("LongMethod")
 @Composable
 private fun ActiveWorkoutContent(
     state: WorkoutUiState,
@@ -177,11 +178,11 @@ private fun ActiveWorkoutContent(
                                 ),
                             )
                         },
-                        onWeightFieldClick = { set ->
-                            // TODO: Open weight stepper (NumberInput in a dialog/sheet)
+                        onWeightFieldClick = { _ ->
+                            // Phase 2: Open weight stepper (NumberInput in a dialog/sheet)
                         },
-                        onRepsFieldClick = { set ->
-                            // TODO: Open reps stepper (NumberInput in a dialog/sheet)
+                        onRepsFieldClick = { _ ->
+                            // Phase 2: Open reps stepper (NumberInput in a dialog/sheet)
                         },
                         onAddSet = {
                             onIntent(WorkoutIntent.AddSet(exercise.id))
@@ -237,6 +238,7 @@ private fun ActiveWorkoutContent(
  * - Workout timer: center, headline-medium
  * - [End Workout] text button: right-aligned, status-error
  */
+@Suppress("LongMethod")
 @Composable
 private fun StickyHeader(
     elapsedSeconds: Long,

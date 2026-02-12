@@ -16,6 +16,7 @@ import com.deepreps.core.domain.model.enums.SetStatus
 import com.deepreps.core.domain.model.enums.SetType
 import com.deepreps.core.domain.repository.ExerciseRepository
 import com.deepreps.core.domain.repository.WorkoutSessionRepository
+import com.deepreps.core.domain.provider.AnalyticsTracker
 import com.deepreps.core.domain.statemachine.WorkoutStateMachine
 import io.mockk.Runs
 import io.mockk.coEvery
@@ -58,6 +59,7 @@ class NotesIntegrationTest {
     private lateinit var exerciseRepository: ExerciseRepository
     private lateinit var restTimerManager: RestTimerManager
     private lateinit var stateMachine: WorkoutStateMachine
+    private lateinit var analyticsTracker: AnalyticsTracker
     private lateinit var viewModel: WorkoutViewModel
 
     private val testSession = WorkoutSession(
@@ -94,8 +96,14 @@ class NotesIntegrationTest {
 
     private val testSets = listOf(
         WorkoutSet(
-            id = 1, setNumber = 1, type = SetType.WORKING, status = SetStatus.PLANNED,
-            plannedWeightKg = 80.0, plannedReps = 8, actualWeightKg = null, actualReps = null,
+            id = 1,
+            setNumber = 1,
+            type = SetType.WORKING,
+            status = SetStatus.PLANNED,
+            plannedWeightKg = 80.0,
+            plannedReps = 8,
+            actualWeightKg = null,
+            actualReps = null,
         ),
     )
 
@@ -128,6 +136,7 @@ class NotesIntegrationTest {
         exerciseRepository = mockk(relaxed = true)
         restTimerManager = mockk(relaxed = true)
         stateMachine = WorkoutStateMachine()
+        analyticsTracker = mockk(relaxed = true)
 
         coEvery { workoutSessionRepository.getSession(1L) } returns testSession
         coEvery { workoutSessionRepository.getActiveSession() } returns testSession
@@ -152,6 +161,7 @@ class NotesIntegrationTest {
         exerciseRepository = exerciseRepository,
         restTimerManager = restTimerManager,
         stateMachine = stateMachine,
+        analyticsTracker = analyticsTracker,
     )
 
     // --- Initial Notes State ---

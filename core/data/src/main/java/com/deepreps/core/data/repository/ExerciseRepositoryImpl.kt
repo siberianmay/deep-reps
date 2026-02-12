@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
-internal class ExerciseRepositoryImpl @Inject constructor(
+class ExerciseRepositoryImpl @Inject constructor(
     private val muscleGroupDao: MuscleGroupDao,
     private val exerciseDao: ExerciseDao,
     private val dispatchers: DispatcherProvider,

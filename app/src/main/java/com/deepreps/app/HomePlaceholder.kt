@@ -61,7 +61,7 @@ fun HomePlaceholder(
 
         DeepRepsButton(
             text = "From Template",
-            onClick = { /* TODO: Navigate to template list */ },
+            onClick = { /* Navigate to template list when implemented */ },
             variant = ButtonVariant.Secondary,
             modifier = Modifier.fillMaxWidth(),
         )

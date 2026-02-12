@@ -2,16 +2,21 @@ plugins {
     id("deepreps.android.application")
     id("deepreps.android.compose")
     id("deepreps.android.hilt")
-    // Firebase: google-services plugin processes google-services.json.
-    // The build will warn (not fail) if google-services.json is missing,
-    // because the actual Firebase SDK calls are wrapped in try/catch
-    // and fall back to no-op implementations.
-    alias(libs.plugins.google.services)
-    alias(libs.plugins.firebase.crashlytics.gradle)
+}
+
+// Firebase plugins require google-services.json to exist.
+// Apply conditionally so the project builds without Firebase configured.
+if (file("google-services.json").exists()) {
+    apply(plugin = libs.plugins.google.services.get().pluginId)
+    apply(plugin = libs.plugins.firebase.crashlytics.gradle.get().pluginId)
 }
 
 android {
     namespace = "com.deepreps.app"
+
+    buildFeatures {
+        buildConfig = true
+    }
 
     defaultConfig {
         applicationId = "com.deepreps.app"
@@ -56,7 +61,10 @@ dependencies {
     implementation(project(":feature:templates"))
     implementation(project(":feature:onboarding"))
 
+    implementation(project(":core:domain"))
     implementation(project(":core:data"))
+    implementation(project(":core:ui"))
+    implementation(project(":core:common"))
 
     implementation(libs.core.ktx)
     implementation(libs.navigation.compose)

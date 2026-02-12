@@ -16,6 +16,7 @@ import com.google.common.truth.Truth.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
+@Suppress("TooManyFunctions")
 class ValidatePlanSafetyUseCaseTest {
 
     private lateinit var useCase: ValidatePlanSafetyUseCase
@@ -119,9 +120,11 @@ class ValidatePlanSafetyUseCaseTest {
 
         val violations = useCase.validate(plan, request)
 
-        assertThat(violations.any {
+        assertThat(
+            violations.any {
             it.type == SafetyViolationType.VOLUME_CEILING_EXCEEDED && it.message.contains("30")
-        }).isTrue()
+        }
+        ).isTrue()
     }
 
     @Test
@@ -145,10 +148,12 @@ class ValidatePlanSafetyUseCaseTest {
 
         val violations = useCase.validate(plan, request)
 
-        assertThat(violations.any {
+        assertThat(
+            violations.any {
             it.type == SafetyViolationType.VOLUME_CEILING_EXCEEDED &&
                 it.exerciseStableId == "chest_barbell_bench_press"
-        }).isTrue()
+        }
+        ).isTrue()
     }
 
     @Test
@@ -161,7 +166,10 @@ class ValidatePlanSafetyUseCaseTest {
             experienceLevel = 1,
             exercises = listOf(
                 makeExerciseForPlan(
-                    "lower_back_barbell_good_morning", "barbell", "compound", difficulty = "advanced",
+                    "lower_back_barbell_good_morning",
+                    "barbell",
+                    "compound",
+                    difficulty = "advanced",
                 ),
             ),
         )
@@ -183,7 +191,10 @@ class ValidatePlanSafetyUseCaseTest {
             experienceLevel = 2,
             exercises = listOf(
                 makeExerciseForPlan(
-                    "lower_back_barbell_good_morning", "barbell", "compound", difficulty = "advanced",
+                    "lower_back_barbell_good_morning",
+                    "barbell",
+                    "compound",
+                    difficulty = "advanced",
                 ),
             ),
         )

@@ -43,6 +43,7 @@ import com.deepreps.core.domain.model.enums.SetStatus
 import com.deepreps.core.domain.model.enums.SetType
 import com.deepreps.core.ui.theme.DeepRepsTheme
 import com.deepreps.core.ui.theme.PrGold
+import java.util.Locale
 
 /**
  * The atomic unit of workout logging.
@@ -66,6 +67,7 @@ import com.deepreps.core.ui.theme.PrGold
  * @param onDoneClick Marks the set complete / toggles completion.
  * @param modifier External modifier.
  */
+@Suppress("LongMethod", "CyclomaticComplexMethod")
 @Composable
 fun SetRow(
     set: WorkoutSet,
@@ -247,6 +249,7 @@ fun SetRow(
  * When interactive, shows a tappable surface with focus ring when focused.
  * When non-interactive, shows static text.
  */
+@Suppress("LongMethod")
 @Composable
 private fun ValueCell(
     value: String,
@@ -309,7 +312,7 @@ private fun formatWeight(kg: Double): String {
     return if (kg % 1.0 == 0.0) {
         "${kg.toInt()}"
     } else {
-        "%.1f".format(kg)
+        String.format(Locale.US, "%.1f", kg)
     }
 }
 
@@ -428,29 +431,74 @@ private fun SkippedDarkPreview() {
     }
 }
 
-@Preview(name = "All States Column - Dark", showBackground = true, backgroundColor = 0xFF0A0A0F)
+@Preview(
+    name = "All States Column - Dark",
+    showBackground = true,
+    backgroundColor = 0xFF0A0A0F,
+)
+@Suppress("LongMethod")
 @Composable
 private fun AllStatesDarkPreview() {
     DeepRepsTheme(darkTheme = true) {
         Column(modifier = Modifier.padding(8.dp)) {
             SetRow(
-                set = WorkoutSet(1, SetType.WARMUP, SetStatus.COMPLETED, 40.0, 12, 40.0, 12),
-                onWeightFieldClick = {}, onRepsFieldClick = {}, onDoneClick = {},
+                set = WorkoutSet(
+                    setNumber = 1,
+                    type = SetType.WARMUP,
+                    status = SetStatus.COMPLETED,
+                    plannedWeightKg = 40.0,
+                    plannedReps = 12,
+                    actualWeightKg = 40.0,
+                    actualReps = 12,
+                ),
+                onWeightFieldClick = {},
+                onRepsFieldClick = {},
+                onDoneClick = {},
             )
             Spacer(modifier = Modifier.height(4.dp))
             SetRow(
-                set = WorkoutSet(2, SetType.WORKING, SetStatus.COMPLETED, 80.0, 8, 80.0, 8),
-                onWeightFieldClick = {}, onRepsFieldClick = {}, onDoneClick = {},
+                set = WorkoutSet(
+                    setNumber = 2,
+                    type = SetType.WORKING,
+                    status = SetStatus.COMPLETED,
+                    plannedWeightKg = 80.0,
+                    plannedReps = 8,
+                    actualWeightKg = 80.0,
+                    actualReps = 8,
+                ),
+                onWeightFieldClick = {},
+                onRepsFieldClick = {},
+                onDoneClick = {},
             )
             Spacer(modifier = Modifier.height(4.dp))
             SetRow(
-                set = WorkoutSet(3, SetType.WORKING, SetStatus.IN_PROGRESS, 80.0, 8, 80.0, 8),
-                onWeightFieldClick = {}, onRepsFieldClick = {}, onDoneClick = {},
+                set = WorkoutSet(
+                    setNumber = 3,
+                    type = SetType.WORKING,
+                    status = SetStatus.IN_PROGRESS,
+                    plannedWeightKg = 80.0,
+                    plannedReps = 8,
+                    actualWeightKg = 80.0,
+                    actualReps = 8,
+                ),
+                onWeightFieldClick = {},
+                onRepsFieldClick = {},
+                onDoneClick = {},
             )
             Spacer(modifier = Modifier.height(4.dp))
             SetRow(
-                set = WorkoutSet(4, SetType.WORKING, SetStatus.PLANNED, 80.0, 8, null, null),
-                onWeightFieldClick = {}, onRepsFieldClick = {}, onDoneClick = {},
+                set = WorkoutSet(
+                    setNumber = 4,
+                    type = SetType.WORKING,
+                    status = SetStatus.PLANNED,
+                    plannedWeightKg = 80.0,
+                    plannedReps = 8,
+                    actualWeightKg = null,
+                    actualReps = null,
+                ),
+                onWeightFieldClick = {},
+                onRepsFieldClick = {},
+                onDoneClick = {},
             )
         }
     }

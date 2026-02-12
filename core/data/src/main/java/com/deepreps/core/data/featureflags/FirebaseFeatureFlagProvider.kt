@@ -42,7 +42,7 @@ class FirebaseFeatureFlagProvider @Inject constructor(
             remoteConfig.fetchAndActivate().await()
             _flags.value = readCurrentFlags()
             Timber.d("Feature flags refreshed: %s", _flags.value)
-        } catch (e: Exception) {
+        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
             Timber.w(e, "Feature flag refresh failed; using cached/default values")
             // _flags retains its current value -- no crash, no empty state
         }

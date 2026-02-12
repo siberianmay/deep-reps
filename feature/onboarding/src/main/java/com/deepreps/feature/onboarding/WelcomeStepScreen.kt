@@ -24,6 +24,7 @@ import com.deepreps.core.ui.theme.DeepRepsTheme
  * - [Get Started] button at bottom
  * - Background: surface-lowest
  */
+@Suppress("LongMethod")
 @Composable
 internal fun WelcomeStepScreen(
     onIntent: (OnboardingIntent) -> Unit,
@@ -44,7 +45,7 @@ internal fun WelcomeStepScreen(
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            // TODO: Add branded gym silhouette illustration when asset is available
+            // Phase 2: Add branded gym silhouette illustration when asset is available
 
             Spacer(modifier = Modifier.height(spacing.space10))
 

@@ -1,6 +1,7 @@
 package com.deepreps.core.domain.usecase
 
 import com.deepreps.core.domain.model.GroupVolume
+import com.deepreps.core.domain.model.WorkoutSet
 import com.deepreps.core.domain.model.WorkoutSummary
 import com.deepreps.core.domain.model.enums.MuscleGroup
 import com.deepreps.core.domain.repository.ExerciseRepository
@@ -31,6 +32,7 @@ class GetWorkoutSummaryUseCase @Inject constructor(
      * @param sessionId The completed session to summarize.
      * @return [WorkoutSummary] with volume stats, or null if session not found.
      */
+    @Suppress("LongMethod")
     suspend operator fun invoke(sessionId: Long): WorkoutSummary? {
         val session = workoutSessionRepository.getSession(sessionId) ?: return null
 
@@ -51,7 +53,7 @@ class GetWorkoutSummaryUseCase @Inject constructor(
         }
 
         // Build map: exerciseId -> list of sets
-        val exerciseSets = mutableMapOf<Long, List<com.deepreps.core.domain.model.WorkoutSet>>()
+        val exerciseSets = mutableMapOf<Long, List<WorkoutSet>>()
         for (we in workoutExercises) {
             val sets = workoutSessionRepository.getSetsForExercise(we.id).first()
             exerciseSets[we.exerciseId] = sets
@@ -65,7 +67,7 @@ class GetWorkoutSummaryUseCase @Inject constructor(
         val exerciseDetails = exerciseRepository.getExercisesByIds(exerciseIds)
         val exerciseToGroup = exerciseDetails.associate { it.id to it.primaryGroupId }
 
-        val groupedSets = mutableMapOf<Long, MutableMap<Long, List<com.deepreps.core.domain.model.WorkoutSet>>>()
+        val groupedSets = mutableMapOf<Long, MutableMap<Long, List<WorkoutSet>>>()
         for ((exerciseId, sets) in exerciseSets) {
             val groupId = exerciseToGroup[exerciseId] ?: continue
             val groupMap = groupedSets.getOrPut(groupId) { mutableMapOf() }

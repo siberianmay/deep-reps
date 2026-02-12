@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
-internal class BodyWeightRepositoryImpl @Inject constructor(
+class BodyWeightRepositoryImpl @Inject constructor(
     private val bodyWeightDao: BodyWeightDao,
     private val dispatchers: DispatcherProvider,
 ) : BodyWeightRepository {

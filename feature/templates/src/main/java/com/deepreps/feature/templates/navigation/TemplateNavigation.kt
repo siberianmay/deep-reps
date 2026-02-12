@@ -62,7 +62,9 @@ fun NavGraphBuilder.createTemplateScreen(
     onTemplateSaved: (message: String) -> Unit,
 ) {
     composable(
-        route = "${TemplateNavigation.CREATE_TEMPLATE_ROUTE}?${TemplateNavigation.EXERCISE_IDS_ARG}={${TemplateNavigation.EXERCISE_IDS_ARG}}",
+        route = "${TemplateNavigation.CREATE_TEMPLATE_ROUTE}" +
+            "?${TemplateNavigation.EXERCISE_IDS_ARG}" +
+            "={${TemplateNavigation.EXERCISE_IDS_ARG}}",
         arguments = listOf(
             navArgument(TemplateNavigation.EXERCISE_IDS_ARG) {
                 type = NavType.StringType

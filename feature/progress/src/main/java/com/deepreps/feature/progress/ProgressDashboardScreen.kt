@@ -74,6 +74,7 @@ fun ProgressDashboardScreen(
     )
 }
 
+@Suppress("LongMethod")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun ProgressDashboardContent(
@@ -176,6 +177,7 @@ internal fun ProgressDashboardContent(
  * - Line 2: muscle groups
  * - Line 3: set count + volume + chevron
  */
+@Suppress("LongMethod")
 @Composable
 private fun SessionHistoryItem(
     session: SessionSummaryUi,

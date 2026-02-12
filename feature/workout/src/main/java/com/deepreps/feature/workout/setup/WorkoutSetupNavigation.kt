@@ -25,7 +25,9 @@ object WorkoutSetupNavigation {
 fun NavGraphBuilder.muscleGroupSelectorScreen(
     onNavigateBack: () -> Unit,
     onNavigateToExerciseSelection: (groupIds: List<Long>) -> Unit,
-    viewModel: () -> WorkoutSetupViewModel = { throw IllegalStateException("Provide shared ViewModel") },
+    @Suppress("UnusedParameter") viewModel: () -> WorkoutSetupViewModel = {
+        throw IllegalStateException("Provide shared ViewModel")
+    },
 ) {
     composable(route = WorkoutSetupNavigation.MUSCLE_GROUP_SELECTOR_ROUTE) {
         val vm: WorkoutSetupViewModel = hiltViewModel()

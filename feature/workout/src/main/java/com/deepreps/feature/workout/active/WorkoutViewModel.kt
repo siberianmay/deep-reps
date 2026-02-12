@@ -50,6 +50,7 @@ import javax.inject.Inject
  * - workout_abandoned: (not triggered from here -- triggered from session recovery)
  * - workout_resumed: on resume after pause
  */
+@Suppress("TooManyFunctions", "LargeClass")
 @HiltViewModel
 class WorkoutViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle,
@@ -100,6 +101,7 @@ class WorkoutViewModel @Inject constructor(
 
     // ----- Public API -----
 
+    @Suppress("CyclomaticComplexMethod")
     fun onIntent(intent: WorkoutIntent) {
         when (intent) {
             is WorkoutIntent.CompleteSet -> handleCompleteSet(intent)
@@ -122,6 +124,7 @@ class WorkoutViewModel @Inject constructor(
 
     // ----- Session Loading -----
 
+    @Suppress("LongMethod")
     private fun loadSession() {
         viewModelScope.launch {
             try {
@@ -207,9 +210,9 @@ class WorkoutViewModel @Inject constructor(
                 if (activeIdx >= 0) {
                     _sideEffect.trySend(WorkoutSideEffect.ScrollToExercise(activeIdx))
                 }
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 _state.update {
-                    it.copy(phase = WorkoutPhaseUi.Error("Failed to load workout: ${e.message}"))
+                    it.copy(phase = WorkoutPhaseUi.Error("Failed to load workout."))
                 }
             }
         }
@@ -298,6 +301,7 @@ class WorkoutViewModel @Inject constructor(
 
     // ----- Intent Handlers -----
 
+    @Suppress("LongMethod")
     private fun handleCompleteSet(intent: WorkoutIntent.CompleteSet) {
         viewModelScope.launch {
             // CRITICAL: Write to Room immediately (defensive persistence)
@@ -569,6 +573,7 @@ class WorkoutViewModel @Inject constructor(
         _state.update { it.copy(showFinishDialog = false) }
     }
 
+    @Suppress("LongMethod")
     private fun handleConfirmFinish() {
         val sessionId = _state.value.sessionId
         val event = WorkoutEvent.FinishWorkout(sessionId = sessionId)

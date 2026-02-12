@@ -31,6 +31,7 @@ import com.deepreps.core.ui.theme.DeepRepsTheme
  * @param singleLine Whether to restrict to a single line.
  * @param modifier External modifier.
  */
+@Suppress("LongMethod")
 @Composable
 fun DeepRepsTextField(
     value: String,
@@ -53,7 +54,9 @@ fun DeepRepsTextField(
             onValueChange = onValueChange,
             modifier = Modifier.fillMaxWidth(),
             label = label?.let {
-                { Text(text = it, style = typography.bodyMedium) }
+                {
+                    Text(text = it, style = typography.bodyMedium)
+                }
             },
             placeholder = placeholder?.let {
                 {

@@ -63,6 +63,7 @@ interface WorkoutSetDao {
         WHERE workout_exercise_id = :workoutExerciseId AND set_index = :setIndex
         """
     )
+    @Suppress("LongParameterList")
     suspend fun updateActuals(
         workoutExerciseId: Long,
         setIndex: Int,

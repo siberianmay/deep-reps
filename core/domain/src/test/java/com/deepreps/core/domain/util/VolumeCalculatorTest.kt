@@ -82,16 +82,22 @@ class VolumeCalculatorTest {
         fun `calculates weight x reps for completed working sets`() {
             val sets = listOf(
                 makeSet(
-                    type = SetType.WORKING, status = SetStatus.COMPLETED,
-                    actualWeight = 100.0, actualReps = 8,
+                    type = SetType.WORKING,
+                    status = SetStatus.COMPLETED,
+                    actualWeight = 100.0,
+                    actualReps = 8,
                 ),
                 makeSet(
-                    type = SetType.WORKING, status = SetStatus.COMPLETED,
-                    actualWeight = 100.0, actualReps = 8,
+                    type = SetType.WORKING,
+                    status = SetStatus.COMPLETED,
+                    actualWeight = 100.0,
+                    actualReps = 8,
                 ),
                 makeSet(
-                    type = SetType.WORKING, status = SetStatus.COMPLETED,
-                    actualWeight = 100.0, actualReps = 6,
+                    type = SetType.WORKING,
+                    status = SetStatus.COMPLETED,
+                    actualWeight = 100.0,
+                    actualReps = 6,
                 ),
             )
             // 100*8 + 100*8 + 100*6 = 800 + 800 + 600 = 2200
@@ -102,12 +108,16 @@ class VolumeCalculatorTest {
         fun `excludes warmup sets from tonnage`() {
             val sets = listOf(
                 makeSet(
-                    type = SetType.WARMUP, status = SetStatus.COMPLETED,
-                    actualWeight = 60.0, actualReps = 12,
+                    type = SetType.WARMUP,
+                    status = SetStatus.COMPLETED,
+                    actualWeight = 60.0,
+                    actualReps = 12,
                 ),
                 makeSet(
-                    type = SetType.WORKING, status = SetStatus.COMPLETED,
-                    actualWeight = 100.0, actualReps = 8,
+                    type = SetType.WORKING,
+                    status = SetStatus.COMPLETED,
+                    actualWeight = 100.0,
+                    actualReps = 8,
                 ),
             )
             assertThat(VolumeCalculator.tonnage(sets)).isWithin(0.01).of(800.0)
@@ -117,12 +127,16 @@ class VolumeCalculatorTest {
         fun `excludes incomplete sets from tonnage`() {
             val sets = listOf(
                 makeSet(
-                    type = SetType.WORKING, status = SetStatus.PLANNED,
-                    actualWeight = null, actualReps = null,
+                    type = SetType.WORKING,
+                    status = SetStatus.PLANNED,
+                    actualWeight = null,
+                    actualReps = null,
                 ),
                 makeSet(
-                    type = SetType.WORKING, status = SetStatus.COMPLETED,
-                    actualWeight = 80.0, actualReps = 10,
+                    type = SetType.WORKING,
+                    status = SetStatus.COMPLETED,
+                    actualWeight = 80.0,
+                    actualReps = 10,
                 ),
             )
             assertThat(VolumeCalculator.tonnage(sets)).isWithin(0.01).of(800.0)
@@ -132,8 +146,10 @@ class VolumeCalculatorTest {
         fun `handles null weights gracefully (treats as zero)`() {
             val sets = listOf(
                 makeSet(
-                    type = SetType.WORKING, status = SetStatus.COMPLETED,
-                    actualWeight = null, actualReps = 10,
+                    type = SetType.WORKING,
+                    status = SetStatus.COMPLETED,
+                    actualWeight = null,
+                    actualReps = 10,
                 ),
             )
             assertThat(VolumeCalculator.tonnage(sets)).isWithin(0.01).of(0.0)

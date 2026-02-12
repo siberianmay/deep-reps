@@ -25,6 +25,7 @@ import androidx.room.PrimaryKey
         Index("template_id"),
     ],
 )
+@Suppress("ForbiddenPublicDataClass")
 data class WorkoutSessionEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,

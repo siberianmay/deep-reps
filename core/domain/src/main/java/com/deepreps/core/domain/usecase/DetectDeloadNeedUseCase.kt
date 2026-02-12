@@ -27,6 +27,7 @@ class DetectDeloadNeedUseCase @Inject constructor() {
      * @param exerciseHistories training history for exercises being programmed
      * @param userRequestedDeload true if user manually asked for deload
      */
+    @Suppress("ReturnCount")
     fun execute(
         experienceLevel: Int,
         weeksSinceLastDeload: Int?,
@@ -122,6 +123,7 @@ class DetectDeloadNeedUseCase @Inject constructor() {
      * Intermediate/Advanced regression: 2+ consecutive sessions with decreasing
      * estimated 1RM (Epley formula).
      */
+    @Suppress("ReturnCount")
     private fun hasConsecutiveRegression(history: ExerciseHistory): Boolean {
         val sessions = history.sessions
         if (sessions.size < 3) return false

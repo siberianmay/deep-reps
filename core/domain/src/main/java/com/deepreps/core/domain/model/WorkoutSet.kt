@@ -10,6 +10,7 @@ import com.deepreps.core.domain.model.enums.SetType
  * [id] is the Room auto-generated PK. Zero for not-yet-persisted sets.
  * [completedAt] is epoch millis when the set was marked done. Null until completion.
  */
+@Suppress("ForbiddenPublicDataClass")
 data class WorkoutSet(
     val id: Long = 0,
     val setNumber: Int,

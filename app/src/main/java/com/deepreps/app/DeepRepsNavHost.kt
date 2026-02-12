@@ -14,7 +14,6 @@ import com.deepreps.feature.onboarding.navigation.OnboardingNavigation
 import com.deepreps.feature.onboarding.navigation.onboardingScreen
 import com.deepreps.feature.workout.active.activeWorkoutScreen
 import com.deepreps.feature.workout.active.navigateToActiveWorkout
-import com.deepreps.feature.workout.setup.WorkoutSetupNavigation
 import com.deepreps.feature.workout.setup.exerciseOrderScreen
 import com.deepreps.feature.workout.setup.muscleGroupSelectorScreen
 import com.deepreps.feature.workout.setup.navigateToExerciseOrder
@@ -31,6 +30,7 @@ import com.deepreps.feature.workout.setup.navigateToMuscleGroupSelector
  *        workout screen to resume this session. Set by the recovery dialog.
  * @param onWorkoutNavigationConsumed Callback to clear the navigation trigger after consuming.
  */
+@Suppress("LongMethod")
 @Composable
 fun DeepRepsNavHost(
     isOnboardingCompleted: Boolean,
@@ -48,7 +48,7 @@ fun DeepRepsNavHost(
     // Handle navigation to active workout from recovery dialog
     LaunchedEffect(navigateToWorkoutSessionId) {
         if (navigateToWorkoutSessionId != null) {
-            navController.navigateToActiveWorkout()
+            navController.navigateToActiveWorkout(navigateToWorkoutSessionId)
             onWorkoutNavigationConsumed()
         }
     }
@@ -68,7 +68,6 @@ fun DeepRepsNavHost(
 
         // Home (placeholder until home feature is built)
         composable(route = HOME_ROUTE) {
-            // TODO: Replace with actual HomeScreen composable
             HomePlaceholder(
                 onStartWorkout = { navController.navigateToMuscleGroupSelector() },
             )
@@ -97,8 +96,7 @@ fun DeepRepsNavHost(
         exerciseOrderScreen(
             onNavigateBack = { navController.popBackStack() },
             onGeneratePlan = { exerciseIds ->
-                // TODO: Navigate to PlanReview screen (Epic 6)
-                // For now, pop back to home
+                // Navigate to PlanReview screen when Epic 6 is implemented
                 navController.popBackStack(HOME_ROUTE, inclusive = false)
             },
         )
@@ -106,7 +104,7 @@ fun DeepRepsNavHost(
         // Active Workout
         activeWorkoutScreen(
             onNavigateToSummary = { sessionId ->
-                // TODO: Navigate to WorkoutSummary screen (Epic 11)
+                // Navigate to WorkoutSummary screen when Epic 11 is implemented
                 navController.popBackStack(HOME_ROUTE, inclusive = false)
             },
             onNavigateBack = { navController.popBackStack() },

@@ -39,6 +39,7 @@ import com.deepreps.core.ui.theme.DeepRepsTheme
  * @param onExtend Callback when user taps +30s.
  * @param modifier External modifier.
  */
+@Suppress("LongMethod")
 @Composable
 fun RestTimerBottomSheet(
     timerState: RestTimerState,

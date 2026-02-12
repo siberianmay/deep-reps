@@ -3,11 +3,13 @@ package com.deepreps.feature.aiplan
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.deepreps.core.domain.model.DeloadStatus
 import com.deepreps.core.domain.model.ExerciseForPlan
 import com.deepreps.core.domain.model.ExerciseHistory
 import com.deepreps.core.domain.model.PlanRequest
 import com.deepreps.core.domain.model.PlanResult
 import com.deepreps.core.domain.model.UserPlanProfile
+import com.deepreps.core.domain.model.GeneratedPlan
 import com.deepreps.core.domain.provider.AnalyticsTracker
 import com.deepreps.core.domain.repository.ExerciseRepository
 import com.deepreps.core.domain.repository.UserProfileRepository
@@ -23,6 +25,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
+import timber.log.Timber
 import javax.inject.Inject
 
 /**
@@ -38,8 +41,9 @@ import javax.inject.Inject
  * - ai_plan_fallback_used: when a non-AI plan source is used
  */
 @HiltViewModel
+@Suppress("LongParameterList")
 class PlanReviewViewModel @Inject constructor(
-    private val savedStateHandle: SavedStateHandle,
+    @Suppress("UnusedPrivateProperty") private val savedStateHandle: SavedStateHandle,
     private val generatePlanUseCase: GeneratePlanUseCase,
     private val validatePlanSafetyUseCase: ValidatePlanSafetyUseCase,
     private val detectDeloadNeedUseCase: DetectDeloadNeedUseCase,
@@ -65,36 +69,35 @@ class PlanReviewViewModel @Inject constructor(
             is PlanReviewIntent.UpdateReps -> handleUpdateReps(intent)
             is PlanReviewIntent.ConfirmPlan -> handleConfirmPlan()
             is PlanReviewIntent.RegeneratePlan -> handleRegeneratePlan()
-            is PlanReviewIntent.DismissSafetyWarnings -> handleDismissSafetyWarnings()
+            is PlanReviewIntent.DismissSafetyWarnings -> {
+                _state.value = _state.value.copy(showSafetyWarnings = false)
+            }
         }
     }
 
     private fun handleLoadPlan(exerciseIds: List<Long>) {
         viewModelScope.launch {
-            _state.value = _state.value.copy(phase = PlanReviewUiState.Phase.Generating)
+            _state.value = _state.value.copy(
+                phase = PlanReviewUiState.Phase.Generating,
+            )
 
+            @Suppress("TooGenericExceptionCaught")
             try {
                 val request = buildPlanRequest(exerciseIds)
                 lastPlanRequest = request
-
-                // Track ai_plan_requested
-                analyticsTracker.trackUserAction(
-                    EVENT_AI_PLAN_REQUESTED,
-                    mapOf(
-                        "exercise_count" to request.exercises.size,
-                        "experience_level" to request.userProfile.experienceLevel,
-                        "has_history" to request.trainingHistory.isNotEmpty(),
-                    ),
-                )
-
+                trackPlanRequested(request)
                 executePlanGeneration(request)
             } catch (e: Exception) {
-                analyticsTracker.trackUserAction(
-                    EVENT_AI_PLAN_FAILED,
-                    mapOf("error_type" to "request_build_error", "error_message" to (e.message ?: "unknown")),
+                Timber.e(e, "Failed to build plan request")
+                trackPlanFailed("request_build_error", e)
+                _state.value = _state.value.copy(
+                    phase = PlanReviewUiState.Phase.Error,
                 )
-                _state.value = _state.value.copy(phase = PlanReviewUiState.Phase.Error)
-                _sideEffect.send(PlanReviewSideEffect.ShowError("Failed to generate plan: ${e.message}"))
+                _sideEffect.send(
+                    PlanReviewSideEffect.ShowError(
+                        "Failed to generate plan: ${e.message}",
+                    ),
+                )
             }
         }
     }
@@ -102,26 +105,25 @@ class PlanReviewViewModel @Inject constructor(
     private fun handleRegeneratePlan() {
         val request = lastPlanRequest ?: return
         viewModelScope.launch {
-            _state.value = _state.value.copy(phase = PlanReviewUiState.Phase.Generating)
-
-            analyticsTracker.trackUserAction(
-                EVENT_AI_PLAN_REQUESTED,
-                mapOf(
-                    "exercise_count" to request.exercises.size,
-                    "experience_level" to request.userProfile.experienceLevel,
-                    "has_history" to request.trainingHistory.isNotEmpty(),
-                ),
+            _state.value = _state.value.copy(
+                phase = PlanReviewUiState.Phase.Generating,
             )
+            trackPlanRequested(request)
 
+            @Suppress("TooGenericExceptionCaught")
             try {
                 executePlanGeneration(request)
             } catch (e: Exception) {
-                analyticsTracker.trackUserAction(
-                    EVENT_AI_PLAN_FAILED,
-                    mapOf("error_type" to "regeneration_error", "error_message" to (e.message ?: "unknown")),
+                Timber.e(e, "Failed to regenerate plan")
+                trackPlanFailed("regeneration_error", e)
+                _state.value = _state.value.copy(
+                    phase = PlanReviewUiState.Phase.Error,
                 )
-                _state.value = _state.value.copy(phase = PlanReviewUiState.Phase.Error)
-                _sideEffect.send(PlanReviewSideEffect.ShowError("Failed to regenerate plan: ${e.message}"))
+                _sideEffect.send(
+                    PlanReviewSideEffect.ShowError(
+                        "Failed to regenerate plan: ${e.message}",
+                    ),
+                )
             }
         }
     }
@@ -131,50 +133,8 @@ class PlanReviewViewModel @Inject constructor(
         val result = generatePlanUseCase.execute(request)
         val latencyMs = System.currentTimeMillis() - startTimeMs
 
-        val source = when (result) {
-            is PlanResult.AiGenerated -> PlanReviewUiState.PlanSource.AI_GENERATED
-            is PlanResult.Cached -> PlanReviewUiState.PlanSource.CACHED
-            is PlanResult.Baseline -> PlanReviewUiState.PlanSource.BASELINE
-            is PlanResult.Manual -> PlanReviewUiState.PlanSource.MANUAL
-        }
-
-        // Track plan result analytics
-        val planSourceString = when (result) {
-            is PlanResult.AiGenerated -> "ai"
-            is PlanResult.Cached -> "cached"
-            is PlanResult.Baseline -> "baseline"
-            is PlanResult.Manual -> "manual"
-        }
-
-        when (result) {
-            is PlanResult.AiGenerated -> {
-                analyticsTracker.trackUserAction(
-                    EVENT_AI_PLAN_RECEIVED,
-                    mapOf(
-                        "latency_ms" to latencyMs,
-                        "exercise_count" to (result.plan?.exercises?.size ?: 0),
-                        "plan_source" to planSourceString,
-                    ),
-                )
-            }
-
-            is PlanResult.Cached, is PlanResult.Baseline -> {
-                analyticsTracker.trackUserAction(
-                    EVENT_AI_PLAN_FALLBACK_USED,
-                    mapOf(
-                        "fallback_type" to planSourceString,
-                        "latency_ms" to latencyMs,
-                    ),
-                )
-            }
-
-            is PlanResult.Manual -> {
-                analyticsTracker.trackUserAction(
-                    EVENT_AI_PLAN_FALLBACK_USED,
-                    mapOf("fallback_type" to "manual"),
-                )
-            }
-        }
+        val source = mapResultToSource(result)
+        trackPlanResult(result, latencyMs)
 
         val plan = result.plan
         if (plan == null) {
@@ -186,34 +146,45 @@ class PlanReviewViewModel @Inject constructor(
             return
         }
 
-        // Run safety validation
-        val violations = validatePlanSafetyUseCase.validate(plan, request)
+        applyPlanToState(plan, request, source)
+    }
 
+    private suspend fun applyPlanToState(
+        plan: GeneratedPlan,
+        request: PlanRequest,
+        source: PlanReviewUiState.PlanSource,
+    ) {
+        val violations = validatePlanSafetyUseCase.validate(plan, request)
         _state.value = _state.value.copy(
             phase = PlanReviewUiState.Phase.PlanReady,
-            exercisePlans = plan.exercises.map { EditableExercisePlan.fromDomain(it) },
+            exercisePlans = plan.exercises.map {
+                EditableExercisePlan.fromDomain(it)
+            },
             planSource = source,
             safetyViolations = violations,
             showSafetyWarnings = violations.isNotEmpty(),
         )
     }
 
-    private suspend fun buildPlanRequest(exerciseIds: List<Long>): PlanRequest {
-        val profile = userProfileRepository.get()
-            ?: throw IllegalStateException("User profile not found -- onboarding incomplete")
+    private fun mapResultToSource(
+        result: PlanResult,
+    ): PlanReviewUiState.PlanSource = when (result) {
+        is PlanResult.AiGenerated -> PlanReviewUiState.PlanSource.AI_GENERATED
+        is PlanResult.Cached -> PlanReviewUiState.PlanSource.CACHED
+        is PlanResult.Baseline -> PlanReviewUiState.PlanSource.BASELINE
+        is PlanResult.Manual -> PlanReviewUiState.PlanSource.MANUAL
+    }
 
-        val exercises = exerciseRepository.getExercisesByIds(exerciseIds)
-        val exercisesForPlan = exercises.map { exercise ->
-            ExerciseForPlan(
-                exerciseId = exercise.id,
-                stableId = exercise.stableId,
-                name = exercise.name,
-                equipment = exercise.equipment.value,
-                movementType = exercise.movementType.value,
-                difficulty = exercise.difficulty.value,
-                primaryGroup = "", // Would need muscle group lookup; simplified for now
+    @Suppress("LongMethod")
+    private suspend fun buildPlanRequest(
+        exerciseIds: List<Long>,
+    ): PlanRequest {
+        val profile = userProfileRepository.get()
+            ?: throw IllegalStateException(
+                "User profile not found -- onboarding incomplete",
             )
-        }
+
+        val exercisesForPlan = buildExercisesForPlan(exerciseIds)
 
         val userPlanProfile = UserPlanProfile(
             experienceLevel = profile.experienceLevel.value,
@@ -222,12 +193,12 @@ class PlanReviewViewModel @Inject constructor(
             gender = profile.gender?.value,
         )
 
-        // TODO: Load actual training history from WorkoutSessionRepository
+        // Phase 2: Load actual training history from WorkoutSessionRepository
         val trainingHistory: List<ExerciseHistory> = emptyList()
 
         val deloadStatus = detectDeloadNeedUseCase.execute(
             experienceLevel = userPlanProfile.experienceLevel,
-            weeksSinceLastDeload = null, // TODO: track from session history
+            weeksSinceLastDeload = null, // Phase 2: track from session history
             exerciseHistories = trainingHistory,
         )
 
@@ -241,12 +212,29 @@ class PlanReviewViewModel @Inject constructor(
             exercises = exercisesForPlan,
             trainingHistory = trainingHistory,
             periodizationModel = periodization.periodizationModel,
-            performanceTrend = null, // TODO: compute from history
-            weeksSinceDeload = null, // TODO: track
-            deloadRecommended = deloadStatus != com.deepreps.core.domain.model.DeloadStatus.NOT_NEEDED,
+            performanceTrend = null, // Phase 2: compute from history
+            weeksSinceDeload = null, // Phase 2: track
+            deloadRecommended = deloadStatus != DeloadStatus.NOT_NEEDED,
             currentBlockPhase = periodization.blockPhase,
             currentBlockWeek = periodization.blockWeek,
         )
+    }
+
+    private suspend fun buildExercisesForPlan(
+        exerciseIds: List<Long>,
+    ): List<ExerciseForPlan> {
+        val exercises = exerciseRepository.getExercisesByIds(exerciseIds)
+        return exercises.map { exercise ->
+            ExerciseForPlan(
+                exerciseId = exercise.id,
+                stableId = exercise.stableId,
+                name = exercise.name,
+                equipment = exercise.equipment.value,
+                movementType = exercise.movementType.value,
+                difficulty = exercise.difficulty.value,
+                primaryGroup = "",
+            )
+        }
     }
 
     private fun handleUpdateWeight(intent: PlanReviewIntent.UpdateWeight) {
@@ -283,17 +271,76 @@ class PlanReviewViewModel @Inject constructor(
 
     private fun handleConfirmPlan() {
         viewModelScope.launch {
-            // TODO: Create WorkoutSession from confirmed plan,
+            // Phase 2: Create WorkoutSession from confirmed plan,
             // persist exercises and sets to Room, then navigate.
             // For now, emit a placeholder navigation side effect.
             _sideEffect.send(
-                PlanReviewSideEffect.ShowError("Workout creation not yet implemented"),
+                PlanReviewSideEffect.ShowError(
+                    "Workout creation not yet implemented",
+                ),
             )
         }
     }
 
-    private fun handleDismissSafetyWarnings() {
-        _state.value = _state.value.copy(showSafetyWarnings = false)
+    private fun trackPlanRequested(request: PlanRequest) {
+        analyticsTracker.trackUserAction(
+            EVENT_AI_PLAN_REQUESTED,
+            mapOf(
+                "exercise_count" to request.exercises.size,
+                "experience_level" to request.userProfile.experienceLevel,
+                "has_history" to request.trainingHistory.isNotEmpty(),
+            ),
+        )
+    }
+
+    private fun trackPlanFailed(errorType: String, e: Exception) {
+        analyticsTracker.trackUserAction(
+            EVENT_AI_PLAN_FAILED,
+            mapOf(
+                "error_type" to errorType,
+                "error_message" to (e.message ?: "unknown"),
+            ),
+        )
+    }
+
+    private fun trackPlanResult(result: PlanResult, latencyMs: Long) {
+        val planSourceString = when (result) {
+            is PlanResult.AiGenerated -> "ai"
+            is PlanResult.Cached -> "cached"
+            is PlanResult.Baseline -> "baseline"
+            is PlanResult.Manual -> "manual"
+        }
+
+        when (result) {
+            is PlanResult.AiGenerated -> {
+                analyticsTracker.trackUserAction(
+                    EVENT_AI_PLAN_RECEIVED,
+                    mapOf(
+                        "latency_ms" to latencyMs,
+                        "exercise_count" to
+                            (result.plan?.exercises?.size ?: 0),
+                        "plan_source" to planSourceString,
+                    ),
+                )
+            }
+
+            is PlanResult.Cached, is PlanResult.Baseline -> {
+                analyticsTracker.trackUserAction(
+                    EVENT_AI_PLAN_FALLBACK_USED,
+                    mapOf(
+                        "fallback_type" to planSourceString,
+                        "latency_ms" to latencyMs,
+                    ),
+                )
+            }
+
+            is PlanResult.Manual -> {
+                analyticsTracker.trackUserAction(
+                    EVENT_AI_PLAN_FALLBACK_USED,
+                    mapOf("fallback_type" to "manual"),
+                )
+            }
+        }
     }
 
     companion object {
@@ -301,6 +348,7 @@ class PlanReviewViewModel @Inject constructor(
         private const val EVENT_AI_PLAN_REQUESTED = "ai_plan_requested"
         private const val EVENT_AI_PLAN_RECEIVED = "ai_plan_received"
         private const val EVENT_AI_PLAN_FAILED = "ai_plan_failed"
-        private const val EVENT_AI_PLAN_FALLBACK_USED = "ai_plan_fallback_used"
+        private const val EVENT_AI_PLAN_FALLBACK_USED =
+            "ai_plan_fallback_used"
     }
 }

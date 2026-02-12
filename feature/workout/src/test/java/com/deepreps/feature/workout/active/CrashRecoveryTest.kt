@@ -16,6 +16,7 @@ import com.deepreps.core.domain.model.enums.SetStatus
 import com.deepreps.core.domain.model.enums.SetType
 import com.deepreps.core.domain.repository.ExerciseRepository
 import com.deepreps.core.domain.repository.WorkoutSessionRepository
+import com.deepreps.core.domain.provider.AnalyticsTracker
 import com.deepreps.core.domain.statemachine.WorkoutStateMachine
 import com.google.common.truth.Truth.assertThat
 import io.mockk.Runs
@@ -58,6 +59,7 @@ class CrashRecoveryTest {
     private lateinit var exerciseRepository: ExerciseRepository
     private lateinit var restTimerManager: RestTimerManager
     private lateinit var stateMachine: WorkoutStateMachine
+    private lateinit var analyticsTracker: AnalyticsTracker
 
     private val restTimerStateFlow = MutableStateFlow(RestTimerState.IDLE)
 
@@ -89,12 +91,22 @@ class CrashRecoveryTest {
 
     private val exercises = listOf(
         WorkoutExercise(
-            id = 100L, sessionId = 42L, exerciseId = 1L,
-            orderIndex = 0, supersetGroupId = null, restTimerSeconds = 120, notes = null,
+            id = 100L,
+            sessionId = 42L,
+            exerciseId = 1L,
+            orderIndex = 0,
+            supersetGroupId = null,
+            restTimerSeconds = 120,
+            notes = null,
         ),
         WorkoutExercise(
-            id = 101L, sessionId = 42L, exerciseId = 2L,
-            orderIndex = 1, supersetGroupId = null, restTimerSeconds = 90, notes = null,
+            id = 101L,
+            sessionId = 42L,
+            exerciseId = 2L,
+            orderIndex = 1,
+            supersetGroupId = null,
+            restTimerSeconds = 90,
+            notes = null,
         ),
     )
 
@@ -110,19 +122,37 @@ class CrashRecoveryTest {
             completedAt = fiveMinutesAgo + 180_000,
         ),
         WorkoutSet(
-            id = 3L, setNumber = 3, type = SetType.WORKING, status = SetStatus.PLANNED,
-            plannedWeightKg = 100.0, plannedReps = 5, actualWeightKg = null, actualReps = null,
+            id = 3L,
+            setNumber = 3,
+            type = SetType.WORKING,
+            status = SetStatus.PLANNED,
+            plannedWeightKg = 100.0,
+            plannedReps = 5,
+            actualWeightKg = null,
+            actualReps = null,
         ),
     )
 
     private val setsForExercise2 = listOf(
         WorkoutSet(
-            id = 4L, setNumber = 1, type = SetType.WORKING, status = SetStatus.PLANNED,
-            plannedWeightKg = 40.0, plannedReps = 12, actualWeightKg = null, actualReps = null,
+            id = 4L,
+            setNumber = 1,
+            type = SetType.WORKING,
+            status = SetStatus.PLANNED,
+            plannedWeightKg = 40.0,
+            plannedReps = 12,
+            actualWeightKg = null,
+            actualReps = null,
         ),
         WorkoutSet(
-            id = 5L, setNumber = 2, type = SetType.WORKING, status = SetStatus.PLANNED,
-            plannedWeightKg = 40.0, plannedReps = 12, actualWeightKg = null, actualReps = null,
+            id = 5L,
+            setNumber = 2,
+            type = SetType.WORKING,
+            status = SetStatus.PLANNED,
+            plannedWeightKg = 40.0,
+            plannedReps = 12,
+            actualWeightKg = null,
+            actualReps = null,
         ),
     )
 
@@ -152,6 +182,7 @@ class CrashRecoveryTest {
         exerciseRepository = mockk(relaxed = true)
         restTimerManager = mockk(relaxed = true)
         stateMachine = WorkoutStateMachine()
+        analyticsTracker = mockk(relaxed = true)
 
         every { restTimerManager.state } returns restTimerStateFlow
 
@@ -191,6 +222,7 @@ class CrashRecoveryTest {
             exerciseRepository = exerciseRepository,
             restTimerManager = restTimerManager,
             stateMachine = stateMachine,
+            analyticsTracker = analyticsTracker,
         )
     }
 
@@ -342,6 +374,7 @@ class CrashRecoveryTest {
                 exerciseRepository = exerciseRepository,
                 restTimerManager = restTimerManager,
                 stateMachine = stateMachine,
+                analyticsTracker = analyticsTracker,
             )
 
             viewModel.state.test {
@@ -424,6 +457,7 @@ class CrashRecoveryTest {
             }
         }
 
+        @Suppress("LongMethod")
         @Test
         fun `each set completion is an individual Room write, not batched`() = runTest {
             val viewModel = createViewModel(
@@ -436,30 +470,40 @@ class CrashRecoveryTest {
             // Complete set 3 of exercise 1
             viewModel.onIntent(
                 WorkoutIntent.CompleteSet(
-                    workoutExerciseId = 100L, setId = 3L, setIndex = 3,
-                    weight = 100.0, reps = 5,
+                    workoutExerciseId = 100L,
+                    setId = 3L,
+                    setIndex = 3,
+                    weight = 100.0,
+                    reps = 5,
                 ),
             )
 
             // Complete set 1 of exercise 2
             viewModel.onIntent(
                 WorkoutIntent.CompleteSet(
-                    workoutExerciseId = 101L, setId = 4L, setIndex = 1,
-                    weight = 40.0, reps = 12,
+                    workoutExerciseId = 101L,
+                    setId = 4L,
+                    setIndex = 1,
+                    weight = 40.0,
+                    reps = 12,
                 ),
             )
 
             // Two separate writes, not batched
             coVerify(exactly = 1) {
                 workoutSessionRepository.completeSet(
-                    workoutExerciseId = 100L, setIndex = 3,
-                    weight = 100.0, reps = 5,
+                    workoutExerciseId = 100L,
+                    setIndex = 3,
+                    weight = 100.0,
+                    reps = 5,
                 )
             }
             coVerify(exactly = 1) {
                 workoutSessionRepository.completeSet(
-                    workoutExerciseId = 101L, setIndex = 1,
-                    weight = 40.0, reps = 12,
+                    workoutExerciseId = 101L,
+                    setIndex = 1,
+                    weight = 40.0,
+                    reps = 12,
                 )
             }
         }

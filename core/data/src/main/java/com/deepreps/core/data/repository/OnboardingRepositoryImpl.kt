@@ -13,7 +13,7 @@ import javax.inject.Inject
  * because this flag contains no sensitive data and must be readable
  * synchronously on cold start to determine the navigation start destination.
  */
-internal class OnboardingRepositoryImpl @Inject constructor(
+class OnboardingRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context,
 ) : OnboardingRepository {
 

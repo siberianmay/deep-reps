@@ -7,6 +7,7 @@ import com.deepreps.core.domain.model.enums.MovementType
 /**
  * UI state for the exercise detail screen / bottom sheet.
  */
+@Suppress("ForbiddenPublicDataClass")
 data class ExerciseDetailUiState(
     val isLoading: Boolean = true,
     val exercise: ExerciseDetailUi? = null,
@@ -17,6 +18,7 @@ data class ExerciseDetailUiState(
  * Full detail UI model for a single exercise.
  * Includes all fields needed by the detail card per design-system.md Section 4.5.
  */
+@Suppress("ForbiddenPublicDataClass")
 data class ExerciseDetailUi(
     val id: Long,
     val name: String,

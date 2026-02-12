@@ -82,6 +82,9 @@ kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-cor
 # Image
 coil-compose = { group = "io.coil-kt.coil3", name = "coil-compose", version.ref = "coil" }
 
+# DI (lightweight JSR-330 annotation for domain layer)
+javax-inject = { group = "javax.inject", name = "javax.inject", version = "1" }
+
 # Logging
 timber = { group = "com.jakewharton.timber", name = "timber", version.ref = "timber" }
 

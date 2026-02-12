@@ -4,7 +4,6 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.deepreps.core.domain.model.WorkoutSet
-import com.deepreps.core.domain.model.enums.SessionStatus
 import com.deepreps.core.domain.model.enums.SetStatus
 import com.deepreps.core.domain.repository.ExerciseRepository
 import com.deepreps.core.domain.repository.UserProfileRepository
@@ -89,6 +88,7 @@ class ExerciseProgressViewModel @Inject constructor(
         }
     }
 
+    @Suppress("LongMethod")
     private fun loadChartData() {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true) }

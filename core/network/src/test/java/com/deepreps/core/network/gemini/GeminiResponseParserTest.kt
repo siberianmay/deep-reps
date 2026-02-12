@@ -43,6 +43,7 @@ class GeminiResponseParserTest {
         parser = GeminiResponseParser(json)
     }
 
+    @Suppress("LongMethod")
     @Test
     fun `parses valid JSON with warmup and working sets`() {
         val json = """

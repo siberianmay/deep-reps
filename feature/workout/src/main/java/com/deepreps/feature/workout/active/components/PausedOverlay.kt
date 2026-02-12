@@ -46,6 +46,7 @@ import com.deepreps.core.ui.theme.DeepRepsTheme
  * @param onResume Callback when user taps Resume.
  * @param onEndWorkout Callback when user taps End Workout.
  */
+@Suppress("LongMethod")
 @Composable
 fun PausedOverlay(
     pausedDurationText: String,

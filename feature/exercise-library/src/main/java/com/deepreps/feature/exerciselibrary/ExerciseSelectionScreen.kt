@@ -81,6 +81,7 @@ fun ExerciseSelectionScreen(
     )
 }
 
+@Suppress("LongMethod")
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 internal fun ExerciseSelectionContent(
@@ -115,105 +116,172 @@ internal fun ExerciseSelectionContent(
             ),
         )
 
-        // Search bar
-        DeepRepsTextField(
-            value = state.searchQuery,
-            onValueChange = { onIntent(ExerciseSelectionIntent.Search(it)) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = spacing.space4, vertical = spacing.space2),
-            placeholder = "Search exercises...",
-            singleLine = true,
+        SelectionSearchBar(
+            query = state.searchQuery,
+            onSearch = { onIntent(ExerciseSelectionIntent.Search(it)) },
         )
 
-        // Muscle group chips
-        FlowRow(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = spacing.space4, vertical = spacing.space2),
-            horizontalArrangement = Arrangement.spacedBy(spacing.space2),
-            verticalArrangement = Arrangement.spacedBy(spacing.space2),
-        ) {
-            MuscleGroup.entries.forEach { group ->
-                MuscleGroupChip(
-                    muscleGroup = group,
-                    isSelected = group == state.activeGroup,
-                    onClick = { onIntent(ExerciseSelectionIntent.SelectGroup(group)) },
-                )
-            }
-        }
+        SelectionGroupChips(
+            activeGroup = state.activeGroup,
+            onSelectGroup = {
+                onIntent(ExerciseSelectionIntent.SelectGroup(it))
+            },
+        )
 
         HorizontalDivider(color = colors.borderSubtle, thickness = 1.dp)
 
-        // Content area
         Box(modifier = Modifier.weight(1f)) {
-            when {
-                state.isLoading -> {
-                    LoadingIndicator(message = "Loading exercises...")
-                }
-
-                state.errorType != null -> {
-                    ErrorState(
-                        message = when (state.errorType) {
-                            ExerciseSelectionError.LoadFailed -> "Failed to load exercises."
-                        },
-                        onRetry = { onIntent(ExerciseSelectionIntent.Retry) },
-                    )
-                }
-
-                state.exercises.isEmpty() -> {
-                    EmptyState(
-                        title = "No exercises found",
-                        message = if (state.searchQuery.isNotBlank()) {
-                            "No exercises match \"${state.searchQuery}\""
-                        } else {
-                            "No exercises available for this muscle group"
-                        },
-                        icon = Icons.Filled.Search,
-                    )
-                }
-
-                else -> {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(vertical = spacing.space2),
-                    ) {
-                        items(
-                            items = state.exercises,
-                            key = { it.id },
-                        ) { exercise ->
-                            ExerciseListItem(
-                                exercise = exercise,
-                                onClick = {
-                                    onIntent(
-                                        ExerciseSelectionIntent.ViewDetail(exercise.id),
-                                    )
-                                },
-                                isCheckable = true,
-                                isChecked = exercise.id in state.selectedExerciseIds,
-                                onCheckedChange = {
-                                    onIntent(
-                                        ExerciseSelectionIntent.ToggleExercise(exercise.id),
-                                    )
-                                },
-                            )
-                            HorizontalDivider(
-                                color = colors.borderSubtle,
-                                thickness = 1.dp,
-                                modifier = Modifier.padding(horizontal = spacing.space4),
-                            )
-                        }
-                    }
-                }
-            }
+            SelectionContentArea(
+                state = state,
+                onIntent = onIntent,
+            )
         }
 
-        // Bottom action area per design-system.md Section 4.4
         HorizontalDivider(color = colors.borderSubtle, thickness = 1.dp)
         BottomActionBar(
             selectedCount = state.selectedCount,
-            onConfirm = { onIntent(ExerciseSelectionIntent.ConfirmSelection) },
+            onConfirm = {
+                onIntent(ExerciseSelectionIntent.ConfirmSelection)
+            },
         )
+    }
+}
+
+@Composable
+private fun SelectionSearchBar(
+    query: String,
+    onSearch: (String) -> Unit,
+) {
+    val spacing = DeepRepsTheme.spacing
+
+    DeepRepsTextField(
+        value = query,
+        onValueChange = onSearch,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(
+                horizontal = spacing.space4,
+                vertical = spacing.space2,
+            ),
+        placeholder = "Search exercises...",
+        singleLine = true,
+    )
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun SelectionGroupChips(
+    activeGroup: MuscleGroup,
+    onSelectGroup: (MuscleGroup) -> Unit,
+) {
+    val spacing = DeepRepsTheme.spacing
+
+    FlowRow(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(
+                horizontal = spacing.space4,
+                vertical = spacing.space2,
+            ),
+        horizontalArrangement = Arrangement.spacedBy(spacing.space2),
+        verticalArrangement = Arrangement.spacedBy(spacing.space2),
+    ) {
+        MuscleGroup.entries.forEach { group ->
+            MuscleGroupChip(
+                muscleGroup = group,
+                isSelected = group == activeGroup,
+                onClick = { onSelectGroup(group) },
+            )
+        }
+    }
+}
+
+@Composable
+private fun SelectionContentArea(
+    state: ExerciseSelectionUiState,
+    onIntent: (ExerciseSelectionIntent) -> Unit,
+) {
+    when {
+        state.isLoading -> {
+            LoadingIndicator(message = "Loading exercises...")
+        }
+
+        state.errorType != null -> {
+            ErrorState(
+                message = when (state.errorType) {
+                    ExerciseSelectionError.LoadFailed ->
+                        "Failed to load exercises."
+                },
+                onRetry = {
+                    onIntent(ExerciseSelectionIntent.Retry)
+                },
+            )
+        }
+
+        state.exercises.isEmpty() -> {
+            EmptyState(
+                title = "No exercises found",
+                message = if (state.searchQuery.isNotBlank()) {
+                    "No exercises match \"${state.searchQuery}\""
+                } else {
+                    "No exercises available for this muscle group"
+                },
+                icon = Icons.Filled.Search,
+            )
+        }
+
+        else -> {
+            SelectionExerciseList(
+                exercises = state.exercises,
+                selectedIds = state.selectedExerciseIds,
+                onIntent = onIntent,
+            )
+        }
+    }
+}
+
+@Composable
+private fun SelectionExerciseList(
+    exercises: List<ExerciseUi>,
+    selectedIds: Set<Long>,
+    onIntent: (ExerciseSelectionIntent) -> Unit,
+) {
+    val colors = DeepRepsTheme.colors
+    val spacing = DeepRepsTheme.spacing
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(vertical = spacing.space2),
+    ) {
+        items(
+            items = exercises,
+            key = { it.id },
+        ) { exercise ->
+            ExerciseListItem(
+                exercise = exercise,
+                onClick = {
+                    onIntent(
+                        ExerciseSelectionIntent.ViewDetail(exercise.id),
+                    )
+                },
+                isCheckable = true,
+                isChecked = exercise.id in selectedIds,
+                onCheckedChange = {
+                    onIntent(
+                        ExerciseSelectionIntent.ToggleExercise(
+                            exercise.id,
+                        ),
+                    )
+                },
+            )
+            HorizontalDivider(
+                color = colors.borderSubtle,
+                thickness = 1.dp,
+                modifier = Modifier.padding(
+                    horizontal = spacing.space4,
+                ),
+            )
+        }
     }
 }
 
@@ -241,8 +309,9 @@ private fun BottomActionBar(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
+        val suffix = if (selectedCount != 1) "s" else ""
         Text(
-            text = "$selectedCount exercise${if (selectedCount != 1) "s" else ""} selected",
+            text = "$selectedCount exercise$suffix selected",
             style = typography.bodyLarge,
             color = colors.onSurfacePrimary,
         )

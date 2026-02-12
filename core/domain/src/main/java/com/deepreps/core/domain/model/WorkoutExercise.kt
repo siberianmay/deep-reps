@@ -6,6 +6,7 @@ package com.deepreps.core.domain.model
  * [supersetGroupId] links exercises in the same superset. Null means standalone.
  * [restTimerSeconds] is the per-exercise rest duration from the AI plan or user override.
  */
+@Suppress("ForbiddenPublicDataClass")
 data class WorkoutExercise(
     val id: Long,
     val sessionId: Long,

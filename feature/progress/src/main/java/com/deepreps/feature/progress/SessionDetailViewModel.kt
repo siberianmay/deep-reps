@@ -3,8 +3,6 @@ package com.deepreps.feature.progress
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.deepreps.core.domain.model.WorkoutExercise
-import com.deepreps.core.domain.model.WorkoutSet
 import com.deepreps.core.domain.model.enums.SetStatus
 import com.deepreps.core.domain.repository.ExerciseRepository
 import com.deepreps.core.domain.repository.UserProfileRepository
@@ -55,6 +53,7 @@ class SessionDetailViewModel @Inject constructor(
         }
     }
 
+    @Suppress("LongMethod")
     private fun loadSession() {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true) }
@@ -87,11 +86,13 @@ class SessionDetailViewModel @Inject constructor(
                         .first()
 
                     val setUiList = sets.map { set ->
+                        val weight = set.actualWeightKg
+                        val reps = set.actualReps
                         if (set.status == SetStatus.COMPLETED &&
-                            set.actualWeightKg != null &&
-                            set.actualReps != null
+                            weight != null &&
+                            reps != null
                         ) {
-                            totalVolume += set.actualWeightKg * set.actualReps
+                            totalVolume += weight * reps
                             totalSets++
                         }
                         SessionSetUi(

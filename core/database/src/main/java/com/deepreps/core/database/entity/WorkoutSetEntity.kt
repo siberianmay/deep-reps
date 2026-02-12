@@ -28,6 +28,7 @@ import androidx.room.PrimaryKey
         Index(value = ["workout_exercise_id", "is_completed"]),
     ],
 )
+@Suppress("ForbiddenPublicDataClass")
 data class WorkoutSetEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,

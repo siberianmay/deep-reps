@@ -10,19 +10,19 @@ import kotlinx.serialization.Serializable
  * POST v1beta/models/gemini-2.0-flash:generateContent
  */
 @Serializable
-data class GeminiRequestBody(
+internal data class GeminiRequestBody(
     val contents: List<GeminiContent>,
     @SerialName("generationConfig")
     val generationConfig: GeminiGenerationConfig,
 )
 
 @Serializable
-data class GeminiContent(
+internal data class GeminiContent(
     val parts: List<GeminiPart>,
     val role: String = "user",
 )
 
 @Serializable
-data class GeminiPart(
+internal data class GeminiPart(
     val text: String,
 )

@@ -15,7 +15,7 @@ import kotlinx.serialization.Serializable
  * ```
  */
 @Serializable
-data class GeminiPlanDto(
+internal data class GeminiPlanDto(
     @SerialName("exercise_plans")
     val exercisePlans: List<GeminiExercisePlanDto> = emptyList(),
     @SerialName("session_summary")
@@ -23,7 +23,7 @@ data class GeminiPlanDto(
 )
 
 @Serializable
-data class GeminiExercisePlanDto(
+internal data class GeminiExercisePlanDto(
     @SerialName("exercise_id")
     val exerciseId: String = "",
     @SerialName("warmup_sets")
@@ -36,7 +36,7 @@ data class GeminiExercisePlanDto(
 )
 
 @Serializable
-data class GeminiPlannedSetDto(
+internal data class GeminiPlannedSetDto(
     val weight: Double = 0.0,
     val reps: Int = 0,
     @SerialName("set_number")
@@ -44,7 +44,7 @@ data class GeminiPlannedSetDto(
 )
 
 @Serializable
-data class GeminiSessionSummaryDto(
+internal data class GeminiSessionSummaryDto(
     @SerialName("total_working_sets")
     val totalWorkingSets: Int = 0,
     @SerialName("estimated_duration_minutes")

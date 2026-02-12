@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
-internal class PersonalRecordRepositoryImpl @Inject constructor(
+class PersonalRecordRepositoryImpl @Inject constructor(
     private val personalRecordDao: PersonalRecordDao,
     private val dispatchers: DispatcherProvider,
 ) : PersonalRecordRepository {

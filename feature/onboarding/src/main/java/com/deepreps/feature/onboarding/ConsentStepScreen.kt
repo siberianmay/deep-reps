@@ -30,6 +30,7 @@ import com.deepreps.core.ui.theme.DeepRepsTheme
  * - Subtitle: "You can change these anytime in Settings"
  * - [Continue] button: bottom-pinned, always enabled
  */
+@Suppress("LongMethod")
 @Composable
 internal fun ConsentStepScreen(
     analyticsConsent: Boolean,

@@ -2,6 +2,7 @@ package com.deepreps.core.ui.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.ProvidableCompositionLocal
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
@@ -11,7 +12,7 @@ import androidx.compose.ui.unit.sp
 // ---------------------------------------------------------------------------
 // Font family
 // Design system specifies Inter (variable weight) for tabular numerals.
-// TODO: Add Inter .ttf files to core/ui/src/main/res/font/ and construct
+// Placeholder: Add Inter .ttf files to core/ui/src/main/res/font/ and construct
 //       a FontFamily from Font(R.font.inter_regular, ...) etc.
 //       Until then, FontFamily.Default (Roboto on most devices) is used.
 // ---------------------------------------------------------------------------
@@ -31,6 +32,7 @@ val InterFontFamily: FontFamily = FontFamily.Default
  * The three `number-*` tokens are custom (not part of M3 Typography)
  * and are accessed via [DeepRepsTheme.typography].
  */
+@Suppress("ForbiddenPublicDataClass")
 @Immutable
 data class DeepRepsTypography(
     val displayLarge: TextStyle,
@@ -51,7 +53,7 @@ data class DeepRepsTypography(
 )
 
 /** Canonical Deep Reps typography scale. */
-val DeepRepsTypographyTokens = DeepRepsTypography(
+val DeepRepsTypographyTokens: DeepRepsTypography = DeepRepsTypography(
     displayLarge = TextStyle(
         fontFamily = InterFontFamily,
         fontWeight = FontWeight.Bold,
@@ -183,4 +185,5 @@ internal fun deepRepsM3Typography(): Typography = Typography(
     titleSmall = DeepRepsTypographyTokens.headlineSmall,
 )
 
-val LocalDeepRepsTypography = staticCompositionLocalOf { DeepRepsTypographyTokens }
+val LocalDeepRepsTypography: ProvidableCompositionLocal<DeepRepsTypography> =
+    staticCompositionLocalOf { DeepRepsTypographyTokens }

@@ -2,7 +2,6 @@ package com.deepreps.feature.progress.components
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -61,6 +60,7 @@ import java.util.Locale
  * @param modifier External modifier.
  * @param lineColor Color for the chart line. Defaults to accent-primary.
  */
+@Suppress("LongMethod")
 @Composable
 fun ProgressChart(
     dataPoints: List<ChartDataPoint>,
@@ -157,6 +157,7 @@ fun ProgressChart(
  * - X-axis date labels at bottom (24dp height)
  * - Dashed grid lines
  */
+@Suppress("LongMethod")
 @Composable
 private fun ChartCanvas(
     dataPoints: List<ChartDataPoint>,
@@ -303,6 +304,7 @@ private fun ChartCanvas(
     }
 }
 
+@Suppress("LongParameterList")
 private fun DrawScope.drawAxisLabel(
     textMeasurer: TextMeasurer,
     text: String,

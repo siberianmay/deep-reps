@@ -1,6 +1,5 @@
 package com.deepreps.feature.workout.setup
 
-import com.deepreps.core.domain.model.Exercise
 import com.deepreps.core.domain.model.enums.MuscleGroup
 
 /**

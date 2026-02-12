@@ -585,7 +585,7 @@ style:
     active: true
   UnusedPrivateMember:
     active: true
-    allowedNames: '(_|ignored|expected|serialVersionUID)'
+    allowedNames: '(_|ignored|expected|serialVersionUID|.*Preview.*)'
   UseAnyOrNoneInsteadOfFind:
     active: true
   UseArrayLiteralsInAnnotations:

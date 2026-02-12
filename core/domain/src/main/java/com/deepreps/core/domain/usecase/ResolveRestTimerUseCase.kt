@@ -28,6 +28,7 @@ class ResolveRestTimerUseCase(
      * @param userOverrideSeconds Per-exercise user override, or null if not set.
      * @param userGlobalDefaultSeconds Global default from user settings, or null if not set.
      */
+    @Suppress("ReturnCount")
     suspend operator fun invoke(
         exercise: Exercise,
         aiPlanRestSeconds: Int? = null,

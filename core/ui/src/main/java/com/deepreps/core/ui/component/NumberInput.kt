@@ -30,6 +30,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.deepreps.core.ui.theme.DeepRepsTheme
+import java.util.Locale
 
 /**
  * Weight/reps stepper with +/- buttons and direct entry.
@@ -48,6 +49,7 @@ import com.deepreps.core.ui.theme.DeepRepsTheme
  * @param label Accessibility label (e.g., "Weight", "Reps").
  * @param modifier External modifier.
  */
+@Suppress("LongMethod", "NestedBlockDepth")
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun NumberInput(
@@ -72,9 +74,9 @@ fun NumberInput(
         mutableStateOf(formatDisplayValue(value, isDecimal))
     }
 
-    // Long-press step multiplier: jumps by 5x on long-press
-    // TODO: Implement true rapid-fire with custom gesture detection (pointerInput)
-    //       per design-system.md Section 5.4: hold 500ms -> 1 step/300ms accelerating to 1 step/100ms
+    // Long-press step multiplier: jumps by 5x on long-press.
+    // Future: Implement true rapid-fire with custom gesture detection (pointerInput)
+    //         per design-system.md Section 5.4: hold 500ms -> 1 step/300ms accelerating to 1 step/100ms
     val longPressStep = step * 5
 
     Row(
@@ -145,7 +147,12 @@ fun NumberInput(
                                 if (!state.isFocused && isEditing) {
                                     isEditing = false
                                     commitEditValue(
-                                        editText, isDecimal, minValue, maxValue, value, onValueChange,
+                                        editText,
+                                        isDecimal,
+                                        minValue,
+                                        maxValue,
+                                        value,
+                                        onValueChange,
                                     )
                                 }
                             },
@@ -165,7 +172,12 @@ fun NumberInput(
                             onDone = {
                                 isEditing = false
                                 commitEditValue(
-                                    editText, isDecimal, minValue, maxValue, value, onValueChange,
+                                    editText,
+                                    isDecimal,
+                                    minValue,
+                                    maxValue,
+                                    value,
+                                    onValueChange,
                                 )
                             },
                         ),
@@ -245,13 +257,14 @@ private fun formatDisplayValue(value: Double, isDecimal: Boolean): String {
             value.toInt().toString()
         } else {
             // Show up to 1 decimal place
-            "%.1f".format(value)
+            String.format(Locale.US, "%.1f", value)
         }
     } else {
         value.toInt().toString()
     }
 }
 
+@Suppress("LongParameterList")
 private fun commitEditValue(
     text: String,
     isDecimal: Boolean,

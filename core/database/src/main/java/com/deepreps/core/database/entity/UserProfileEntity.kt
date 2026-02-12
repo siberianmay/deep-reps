@@ -11,6 +11,7 @@ import androidx.room.PrimaryKey
  * All height/weight values stored in metric (cm, kg).
  */
 @Entity(tableName = "user_profile")
+@Suppress("ForbiddenPublicDataClass")
 data class UserProfileEntity(
     @PrimaryKey
     val id: Long = 1,

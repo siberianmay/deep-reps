@@ -6,6 +6,7 @@ package com.deepreps.core.domain.model
  * Violations are warnings, not hard blocks. The user sees them on the
  * plan review screen and can override.
  */
+@Suppress("ForbiddenPublicDataClass")
 data class SafetyViolation(
     val type: SafetyViolationType,
     val exerciseStableId: String?,

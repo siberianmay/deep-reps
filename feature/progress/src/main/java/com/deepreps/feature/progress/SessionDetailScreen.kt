@@ -1,6 +1,5 @@
 package com.deepreps.feature.progress
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -65,6 +64,7 @@ fun SessionDetailScreen(
     )
 }
 
+@Suppress("LongMethod")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun SessionDetailContent(
@@ -127,6 +127,7 @@ internal fun SessionDetailContent(
     }
 }
 
+@Suppress("LongMethod")
 @Composable
 private fun SessionDetailBody(state: SessionDetailUiState) {
     val colors = DeepRepsTheme.colors
@@ -252,6 +253,7 @@ private fun SummaryStatItem(
 /**
  * Exercise card showing the exercise name, notes, and set rows.
  */
+@Suppress("LongMethod")
 @Composable
 private fun SessionExerciseCard(
     exercise: SessionExerciseUi,
@@ -349,6 +351,7 @@ private fun SetHeaderRow() {
     }
 }
 
+@Suppress("LongMethod")
 @Composable
 private fun SessionSetRow(
     set: SessionSetUi,

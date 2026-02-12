@@ -9,6 +9,7 @@ import com.deepreps.core.domain.model.SafetyViolation
 import com.deepreps.core.domain.model.SafetyViolationType
 import com.deepreps.core.domain.model.ViolationSeverity
 import com.deepreps.core.domain.model.enums.SetType
+import java.util.Locale
 import javax.inject.Inject
 
 /**
@@ -62,6 +63,7 @@ class ValidatePlanSafetyUseCase @Inject constructor() {
      * Per Section 8.1: max 10% relative increase from last working weight.
      * Absolute caps: barbell compound 10kg, dumbbell compound 5kg, machine 10kg, isolation 5kg.
      */
+    @Suppress("ReturnCount")
     private fun checkWeightJump(
         exercisePlan: ExercisePlan,
         exerciseInfo: ExerciseForPlan,
@@ -93,8 +95,8 @@ class ValidatePlanSafetyUseCase @Inject constructor() {
                     exerciseStableId = exercisePlan.stableId,
                     message = "${exercisePlan.exerciseName}: weight jump from ${lastMaxWeight}kg to " +
                         "${plannedMaxWeight}kg exceeds safety limits " +
-                        "(${String.format("%.1f", relativeJump * 100)}% increase, " +
-                        "${String.format("%.1f", absoluteJump)}kg absolute)",
+                        "(${String.format(Locale.US, "%.1f", relativeJump * 100)}% increase, " +
+                        "${String.format(Locale.US, "%.1f", absoluteJump)}kg absolute)",
                     severity = ViolationSeverity.HIGH,
                 ),
             )
@@ -120,6 +122,7 @@ class ValidatePlanSafetyUseCase @Inject constructor() {
      * Per Section 8.2: volume ceilings per session.
      * Hard maximums: 30 total working sets, 16 per muscle group, 6 per exercise, 12 exercises.
      */
+    @Suppress("LongMethod")
     private fun checkVolumeCeilings(plan: GeneratedPlan, request: PlanRequest): List<SafetyViolation> {
         val violations = mutableListOf<SafetyViolation>()
 
@@ -132,7 +135,8 @@ class ValidatePlanSafetyUseCase @Inject constructor() {
                 SafetyViolation(
                     type = SafetyViolationType.VOLUME_CEILING_EXCEEDED,
                     exerciseStableId = null,
-                    message = "Total working sets ($totalWorkingSets) exceeds the hard maximum of $MAX_TOTAL_WORKING_SETS",
+                    message = "Total working sets ($totalWorkingSets) exceeds " +
+                        "the hard maximum of $MAX_TOTAL_WORKING_SETS",
                     severity = ViolationSeverity.HIGH,
                 ),
             )
@@ -143,7 +147,8 @@ class ValidatePlanSafetyUseCase @Inject constructor() {
                 SafetyViolation(
                     type = SafetyViolationType.VOLUME_CEILING_EXCEEDED,
                     exerciseStableId = null,
-                    message = "Exercise count (${plan.exercises.size}) exceeds the hard maximum of $MAX_EXERCISES_PER_SESSION",
+                    message = "Exercise count (${plan.exercises.size}) exceeds " +
+                        "the hard maximum of $MAX_EXERCISES_PER_SESSION",
                     severity = ViolationSeverity.WARNING,
                 ),
             )
@@ -205,6 +210,7 @@ class ValidatePlanSafetyUseCase @Inject constructor() {
     /**
      * Per Section 8.6: age-adjusted intensity caps.
      */
+    @Suppress("ReturnCount", "CyclomaticComplexMethod")
     private fun checkAgeIntensity(
         exercisePlan: ExercisePlan,
         age: Int?,
@@ -244,7 +250,7 @@ class ValidatePlanSafetyUseCase @Inject constructor() {
                     type = SafetyViolationType.AGE_INTENSITY_EXCEEDED,
                     exerciseStableId = exercisePlan.stableId,
                     message = "${exercisePlan.exerciseName}: planned weight ${plannedMax}kg exceeds " +
-                        "age-adjusted maximum (${String.format("%.1f", maxAllowed)}kg) " +
+                        "age-adjusted maximum (${String.format(Locale.US, "%.1f", maxAllowed)}kg) " +
                         "for age group $label",
                     severity = ViolationSeverity.WARNING,
                 ),

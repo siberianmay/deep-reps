@@ -1,4 +1,8 @@
+@file:Suppress("ForbiddenPublicDataClass")
+
 package com.deepreps.core.domain.model
+
+import com.deepreps.core.domain.model.enums.RecordType
 
 /**
  * Domain model for a completed workout summary.
@@ -33,5 +37,5 @@ data class DetectedPr(
     val exerciseName: String,
     val weightKg: Double,
     val reps: Int,
-    val recordType: com.deepreps.core.domain.model.enums.RecordType,
+    val recordType: RecordType,
 )

@@ -2,7 +2,6 @@ package com.deepreps.feature.exerciselibrary
 
 import app.cash.turbine.test
 import com.deepreps.core.domain.model.Exercise
-import com.deepreps.core.domain.model.MuscleGroupModel
 import com.deepreps.core.domain.model.enums.Difficulty
 import com.deepreps.core.domain.model.enums.Equipment
 import com.deepreps.core.domain.model.enums.MuscleGroup
@@ -12,8 +11,6 @@ import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -157,7 +154,7 @@ class ExerciseListViewModelTest {
     @Test
     fun `repository error sets error state`() = runTest {
         every { repository.getExercisesByGroup(3L) } returns flow {
-            throw RuntimeException("DB error")
+            throw IllegalStateException("DB error")
         }
 
         viewModel = ExerciseListViewModel(repository)

@@ -216,7 +216,7 @@ class ExerciseSelectionViewModelTest {
     @Test
     fun `repository error sets error state`() = runTest {
         every { repository.getExercisesByGroup(3L) } returns flow {
-            throw RuntimeException("DB error")
+            throw IllegalStateException("DB error")
         }
 
         viewModel = ExerciseSelectionViewModel(repository)

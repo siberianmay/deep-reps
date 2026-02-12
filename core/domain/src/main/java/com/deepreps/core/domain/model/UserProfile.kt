@@ -10,6 +10,7 @@ import com.deepreps.core.domain.model.enums.WeightUnit
  * Height in cm, body weight in kg (internal storage convention).
  * [gender] is nullable -- when null, baseline calculations use male ratios reduced by 15%.
  */
+@Suppress("ForbiddenPublicDataClass")
 data class UserProfile(
     val id: Long = 1,
     val experienceLevel: ExperienceLevel,

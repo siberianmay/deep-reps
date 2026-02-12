@@ -39,6 +39,7 @@ import com.deepreps.core.ui.theme.DeepRepsTheme
  * - Selection state: accent-primary border (2dp), accent-primary-container background
  * - [Continue] button: disabled until selection made
  */
+@Suppress("LongMethod")
 @Composable
 internal fun ExperienceLevelStepScreen(
     selectedLevel: ExperienceLevel?,
@@ -72,7 +73,6 @@ internal fun ExperienceLevelStepScreen(
         Spacer(modifier = Modifier.height(spacing.space6))
 
         ExperienceLevelCard(
-            level = ExperienceLevel.BEGINNER,
             title = "Total Beginner",
             description = "0-6 months of gym experience",
             icon = Icons.Filled.Person,
@@ -83,7 +83,6 @@ internal fun ExperienceLevelStepScreen(
         Spacer(modifier = Modifier.height(spacing.space4))
 
         ExperienceLevelCard(
-            level = ExperienceLevel.INTERMEDIATE,
             title = "Intermediate",
             description = "6-18 months, comfortable with main lifts",
             icon = Icons.Filled.FitnessCenter,
@@ -96,7 +95,6 @@ internal fun ExperienceLevelStepScreen(
         Spacer(modifier = Modifier.height(spacing.space4))
 
         ExperienceLevelCard(
-            level = ExperienceLevel.ADVANCED,
             title = "Advanced",
             description = "18+ months, structured programming",
             icon = Icons.Filled.Star,
@@ -123,9 +121,9 @@ internal fun ExperienceLevelStepScreen(
  * Per design spec: full width minus 32dp, 88dp height, radius-md.
  * Selected: accent-primary border (2dp), accent-primary-container background.
  */
+@Suppress("LongMethod")
 @Composable
 private fun ExperienceLevelCard(
-    level: ExperienceLevel,
     title: String,
     description: String,
     icon: ImageVector,

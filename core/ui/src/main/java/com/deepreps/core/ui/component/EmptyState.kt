@@ -29,6 +29,7 @@ import com.deepreps.core.ui.theme.DeepRepsTheme
  * @param modifier External modifier.
  * @param action Optional action composable (e.g., a button).
  */
+@Suppress("LongMethod")
 @Composable
 fun EmptyState(
     title: String,

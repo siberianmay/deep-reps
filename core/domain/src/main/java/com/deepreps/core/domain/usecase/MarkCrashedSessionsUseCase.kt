@@ -64,6 +64,7 @@ sealed interface CrashDetectionResult {
     data object NoCrash : CrashDetectionResult
 
     /** An active session was found after a fresh app launch (crash/kill). */
+    @Suppress("ForbiddenPublicDataClass")
     data class CrashedSessionFound(
         val sessionId: Long,
         val startedAt: Long,

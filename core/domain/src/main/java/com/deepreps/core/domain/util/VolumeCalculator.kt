@@ -1,6 +1,7 @@
 package com.deepreps.core.domain.util
 
 import com.deepreps.core.domain.model.WorkoutSet
+import com.deepreps.core.domain.model.enums.SetStatus
 import com.deepreps.core.domain.model.enums.SetType
 
 /**
@@ -64,6 +65,6 @@ object VolumeCalculator {
      * Extension to check if a SetStatus represents completion.
      * Uses string comparison against the enum value to avoid coupling to SetStatus internals.
      */
-    private fun com.deepreps.core.domain.model.enums.SetStatus.isCompleted(): Boolean =
-        this == com.deepreps.core.domain.model.enums.SetStatus.COMPLETED
+    private fun SetStatus.isCompleted(): Boolean =
+        this == SetStatus.COMPLETED
 }

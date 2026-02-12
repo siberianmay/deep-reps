@@ -89,26 +89,48 @@ class ExerciseProgressViewModelTest {
 
     private val session1Exercises = listOf(
         WorkoutExercise(
-            id = 10L, sessionId = 1L, exerciseId = 100L,
-            orderIndex = 0, supersetGroupId = null, restTimerSeconds = 120, notes = null,
+            id = 10L,
+            sessionId = 1L,
+            exerciseId = 100L,
+            orderIndex = 0,
+            supersetGroupId = null,
+            restTimerSeconds = 120,
+            notes = null,
         ),
     )
 
     private val session2Exercises = listOf(
         WorkoutExercise(
-            id = 20L, sessionId = 2L, exerciseId = 100L,
-            orderIndex = 0, supersetGroupId = null, restTimerSeconds = 120, notes = null,
+            id = 20L,
+            sessionId = 2L,
+            exerciseId = 100L,
+            orderIndex = 0,
+            supersetGroupId = null,
+            restTimerSeconds = 120,
+            notes = null,
         ),
     )
 
     private val session1Sets = listOf(
         WorkoutSet(
-            id = 1, setNumber = 1, type = SetType.WORKING, status = SetStatus.COMPLETED,
-            plannedWeightKg = 80.0, plannedReps = 8, actualWeightKg = 80.0, actualReps = 8,
+            id = 1,
+            setNumber = 1,
+            type = SetType.WORKING,
+            status = SetStatus.COMPLETED,
+            plannedWeightKg = 80.0,
+            plannedReps = 8,
+            actualWeightKg = 80.0,
+            actualReps = 8,
         ),
         WorkoutSet(
-            id = 2, setNumber = 2, type = SetType.WORKING, status = SetStatus.COMPLETED,
-            plannedWeightKg = 80.0, plannedReps = 8, actualWeightKg = 85.0, actualReps = 6,
+            id = 2,
+            setNumber = 2,
+            type = SetType.WORKING,
+            status = SetStatus.COMPLETED,
+            plannedWeightKg = 80.0,
+            plannedReps = 8,
+            actualWeightKg = 85.0,
+            actualReps = 6,
         ),
     )
 
@@ -264,7 +286,7 @@ class ExerciseProgressViewModelTest {
             listOf(testSessions[0]),
         )
         every { workoutSessionRepository.getExercisesForSession(1L) } answers {
-            throw RuntimeException("DB error")
+            throw IllegalStateException("DB error")
         }
 
         viewModel = createViewModel()
@@ -325,16 +347,34 @@ class ExerciseProgressViewModelTest {
     fun `findBestWeight returns heaviest completed set`() {
         val sets = listOf(
             WorkoutSet(
-                id = 1, setNumber = 1, type = SetType.WORKING, status = SetStatus.COMPLETED,
-                plannedWeightKg = 80.0, plannedReps = 8, actualWeightKg = 80.0, actualReps = 8,
+                id = 1,
+                setNumber = 1,
+                type = SetType.WORKING,
+                status = SetStatus.COMPLETED,
+                plannedWeightKg = 80.0,
+                plannedReps = 8,
+                actualWeightKg = 80.0,
+                actualReps = 8,
             ),
             WorkoutSet(
-                id = 2, setNumber = 2, type = SetType.WORKING, status = SetStatus.COMPLETED,
-                plannedWeightKg = 80.0, plannedReps = 8, actualWeightKg = 90.0, actualReps = 6,
+                id = 2,
+                setNumber = 2,
+                type = SetType.WORKING,
+                status = SetStatus.COMPLETED,
+                plannedWeightKg = 80.0,
+                plannedReps = 8,
+                actualWeightKg = 90.0,
+                actualReps = 6,
             ),
             WorkoutSet(
-                id = 3, setNumber = 3, type = SetType.WORKING, status = SetStatus.PLANNED,
-                plannedWeightKg = 100.0, plannedReps = 5, actualWeightKg = null, actualReps = null,
+                id = 3,
+                setNumber = 3,
+                type = SetType.WORKING,
+                status = SetStatus.PLANNED,
+                plannedWeightKg = 100.0,
+                plannedReps = 5,
+                actualWeightKg = null,
+                actualReps = null,
             ),
         )
         assertEquals(90.0, ExerciseProgressViewModel.findBestWeight(sets))
@@ -344,8 +384,14 @@ class ExerciseProgressViewModelTest {
     fun `findBestWeight returns null when no completed sets`() {
         val sets = listOf(
             WorkoutSet(
-                id = 1, setNumber = 1, type = SetType.WORKING, status = SetStatus.PLANNED,
-                plannedWeightKg = 80.0, plannedReps = 8, actualWeightKg = null, actualReps = null,
+                id = 1,
+                setNumber = 1,
+                type = SetType.WORKING,
+                status = SetStatus.PLANNED,
+                plannedWeightKg = 80.0,
+                plannedReps = 8,
+                actualWeightKg = null,
+                actualReps = null,
             ),
         )
         assertNull(ExerciseProgressViewModel.findBestWeight(sets))
