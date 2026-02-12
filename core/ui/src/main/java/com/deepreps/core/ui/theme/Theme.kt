@@ -1,7 +1,6 @@
 package com.deepreps.core.ui.theme
 
 import android.app.Activity
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
@@ -85,7 +84,7 @@ private val LightM3ColorScheme = lightColorScheme(
  */
 @Composable
 fun DeepRepsTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    darkTheme: Boolean = true,
     content: @Composable () -> Unit,
 ) {
     val deepRepsColors = if (darkTheme) DarkDeepRepsColorScheme else LightDeepRepsColorScheme

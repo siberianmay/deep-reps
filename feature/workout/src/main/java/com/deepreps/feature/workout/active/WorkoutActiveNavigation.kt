@@ -39,7 +39,7 @@ fun NavGraphBuilder.activeWorkoutScreen(
             },
         ),
         deepLinks = listOf(
-            navDeepLink { uriPattern = "deepreps://workout/active" },
+            navDeepLink { uriPattern = "deepreps://workout/active/{${WorkoutActiveNavigation.SESSION_ID_ARG}}" },
         ),
     ) {
         val viewModel: WorkoutViewModel = hiltViewModel()

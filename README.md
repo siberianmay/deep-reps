@@ -4,7 +4,7 @@ A free, AI-powered gym and strength training tracker for Android.
 
 ## Status
 
-**Phase 1 MVP — code complete.** 15 epics implemented across 14 Gradle modules. Pending first build verification and QA pass.
+**Phase 1 MVP — build verified.** 15 epics implemented across 14 Gradle modules. Debug build passes (compilation, detekt, lint, unit tests). Tested on emulator.
 
 ## What It Does
 
@@ -89,6 +89,38 @@ Prerequisites: JDK 21 (Zulu recommended), Android SDK 35.
 Firebase features require `app/google-services.json` from your Firebase project. The app compiles and runs without it (analytics falls back to no-op).
 
 Gemini API key: set `GEMINI_API_KEY` in `local.properties` or as a CI secret.
+
+## Local Emulator Testing
+
+Prerequisites: Android SDK with command-line tools, platform-tools, and emulator installed.
+
+```bash
+# 1. Install system image (API 35, x86_64)
+sdkmanager "system-images;android-35;google_apis;x86_64"
+
+# 2. Create AVD
+avdmanager create avd \
+  -n deep_reps_test \
+  -k "system-images;android-35;google_apis;x86_64" \
+  -d "medium_phone"
+
+# 3. Launch emulator
+emulator -avd deep_reps_test
+
+# 4. Build debug APK
+./gradlew :app:assembleDebug
+
+# 5. Install on emulator
+adb install -r app/build/outputs/apk/debug/app-debug.apk
+
+# 6. Launch
+adb shell am start -n com.deepreps.app.debug/com.deepreps.app.MainActivity
+
+# 7. View crash logs (if needed)
+adb logcat -s AndroidRuntime:E
+```
+
+Note: Release builds require a signing keystore. Use `assembleDebug` for local testing.
 
 ## Documentation
 
