@@ -1,23 +1,81 @@
-# IDE
+# Built application files
+*.apk
+*.aab
+*.ap_
+*.dex
+
+# Files for the ART/Dalvik VM
+*.odex
+
+# Java class files
+*.class
+
+# Generated files
+bin/
+gen/
+out/
+
+# Gradle files
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# Local configuration file (sdk path, etc)
+local.properties
+
+# Signing files
+*.jks
+*.keystore
+!debug.keystore
+
+# Google Services (Firebase)
+google-services.json
+
+# Android Studio
 .idea/
+*.iml
+*.iws
+*.ipr
+.navigation/
+captures/
+.externalNativeBuild/
+.cxx/
 
 # Claude Code
 .claude/
 
-# Environment
-.env
-.env.*
-
-# OS
-Thumbs.db
-Desktop.ini
+# OS-specific
 .DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+nul
+
+# Kotlin
+*.kotlin_module
+
+# Proguard
+proguard/
+
+# Log files
+*.log
+
+# Lint
+lint/intermediates/
+lint/generated/
+lint/outputs/
+lint/tmp/
+
+# LeakCanary
+leakcanary-deobfuscation-mapping/
+
+# Baseline Profiles
+**/src/main/generated/baselineProfiles/
+
+# Environment and secrets
+.env
+*.env.*
+credentials.json
 
 # Node (if used for tooling)
 node_modules/
-
-# Build outputs
-build/
-dist/
-*.apk
-*.aab

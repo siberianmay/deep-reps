@@ -1,0 +1,39 @@
+# .github/workflows/ci.yml
+name: CI
+
+on:
+  push:
+    branches: [develop, main]
+  pull_request:
+    branches: [develop]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+      - name: Lint
+        run: ./gradlew lintDebug
+      - name: Unit Tests
+        run: ./gradlew testDebugUnitTest
+      - name: Build
+        env:
+          GEMINI_DEV_API_KEY: ${{ secrets.GEMINI_DEV_API_KEY }}
+        run: ./gradlew assembleDebug
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: '**/build/reports/tests/'
