@@ -49,6 +49,7 @@ import com.deepreps.feature.exerciselibrary.components.ExerciseListItem
 fun ExerciseListScreen(
     onNavigateBack: () -> Unit,
     onNavigateToDetail: (exerciseId: Long) -> Unit,
+    showBackButton: Boolean = true,
     viewModel: ExerciseListViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -67,6 +68,7 @@ fun ExerciseListScreen(
         state = state,
         onIntent = viewModel::onIntent,
         onNavigateBack = onNavigateBack,
+        showBackButton = showBackButton,
     )
 }
 
@@ -77,6 +79,7 @@ internal fun ExerciseListContent(
     state: ExerciseListUiState,
     onIntent: (ExerciseListIntent) -> Unit,
     onNavigateBack: () -> Unit,
+    showBackButton: Boolean = true,
 ) {
     val colors = DeepRepsTheme.colors
     val spacing = DeepRepsTheme.spacing
@@ -92,11 +95,13 @@ internal fun ExerciseListContent(
                 )
             },
             navigationIcon = {
-                IconButton(onClick = onNavigateBack) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Navigate back",
-                    )
+                if (showBackButton) {
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Navigate back",
+                        )
+                    }
                 }
             },
             colors = TopAppBarDefaults.topAppBarColors(

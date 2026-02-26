@@ -38,15 +38,20 @@ object ExerciseLibraryNavigation {
 
 /**
  * Adds the exercise list screen to the navigation graph.
+ *
+ * @param showBackButton Whether to show the back button in the TopAppBar.
+ *                        Set to false when this screen is a top-level tab destination.
  */
 fun NavGraphBuilder.exerciseListScreen(
     onNavigateBack: () -> Unit,
     onNavigateToDetail: (exerciseId: Long) -> Unit,
+    showBackButton: Boolean = true,
 ) {
     composable(route = ExerciseLibraryNavigation.EXERCISE_LIST_ROUTE) {
         ExerciseListScreen(
             onNavigateBack = onNavigateBack,
             onNavigateToDetail = onNavigateToDetail,
+            showBackButton = showBackButton,
         )
     }
 }

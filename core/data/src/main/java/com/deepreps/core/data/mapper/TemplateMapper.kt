@@ -2,8 +2,10 @@ package com.deepreps.core.data.mapper
 
 import com.deepreps.core.database.entity.TemplateEntity
 import com.deepreps.core.database.entity.TemplateExerciseEntity
+import com.deepreps.core.database.entity.TemplateWithExerciseCountProjection
 import com.deepreps.core.domain.model.Template
 import com.deepreps.core.domain.model.TemplateExercise
+import com.deepreps.core.domain.model.TemplateWithCount
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.Json
@@ -42,6 +44,17 @@ fun TemplateExercise.toEntity(): TemplateExerciseEntity = TemplateExerciseEntity
     templateId = templateId,
     exerciseId = exerciseId,
     orderIndex = orderIndex,
+)
+
+// --- TemplateWithCount ---
+
+fun TemplateWithExerciseCountProjection.toDomain(): TemplateWithCount = TemplateWithCount(
+    id = id,
+    name = name,
+    createdAt = createdAt,
+    updatedAt = updatedAt,
+    muscleGroups = parseMuscleGroupIds(muscleGroupsJson),
+    exerciseCount = exerciseCount,
 )
 
 // --- JSON helpers ---

@@ -7,6 +7,7 @@ import androidx.room.Query
 import androidx.room.Update
 import com.deepreps.core.database.entity.TemplateEntity
 import com.deepreps.core.database.entity.TemplateExerciseEntity
+import com.deepreps.core.database.entity.TemplateWithExerciseCountProjection
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -43,4 +44,22 @@ interface TemplateDao {
 
     @Query("DELETE FROM template_exercises WHERE template_id = :templateId")
     suspend fun deleteTemplateExercises(templateId: Long)
+
+    // --- Template Projections ---
+
+    /**
+     * Returns all templates with exercise count, ordered by most recently updated first.
+     * Uses a LEFT JOIN to count exercises per template, ensuring empty templates show count 0.
+     */
+    @Query(
+        """
+        SELECT t.id, t.name, t.created_at, t.updated_at, t.muscle_groups_json,
+               COUNT(te.id) as exercise_count
+        FROM templates t
+        LEFT JOIN template_exercises te ON t.id = te.template_id
+        GROUP BY t.id
+        ORDER BY t.updated_at DESC
+        """,
+    )
+    fun getAllWithExerciseCount(): Flow<List<TemplateWithExerciseCountProjection>>
 }

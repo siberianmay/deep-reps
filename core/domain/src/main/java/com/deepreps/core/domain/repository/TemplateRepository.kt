@@ -2,6 +2,7 @@ package com.deepreps.core.domain.repository
 
 import com.deepreps.core.domain.model.Template
 import com.deepreps.core.domain.model.TemplateExercise
+import com.deepreps.core.domain.model.TemplateWithCount
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -13,6 +14,12 @@ interface TemplateRepository {
 
     /** Returns all templates, most recently updated first. */
     fun getAll(): Flow<List<Template>>
+
+    /**
+     * Returns all templates with their exercise counts, most recently updated first.
+     * Avoids N+1 queries by using a single JOIN + GROUP BY operation.
+     */
+    fun getAllWithExerciseCount(): Flow<List<TemplateWithCount>>
 
     /** Returns a template by ID. Null if not found. */
     suspend fun getById(id: Long): Template?

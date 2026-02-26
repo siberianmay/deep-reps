@@ -250,6 +250,7 @@ fun DeepRepsNavHost(
                 onNavigateToDetail = { exerciseId ->
                     navController.navigateToExerciseDetail(exerciseId)
                 },
+                showBackButton = false,
             )
 
             exerciseDetailScreen(

@@ -2,6 +2,7 @@ package com.deepreps.app
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.deepreps.core.domain.model.TemplateWithCount
 import com.deepreps.core.domain.model.WorkoutSession
 import com.deepreps.core.domain.model.enums.SessionStatus
 import com.deepreps.core.domain.repository.TemplateRepository
@@ -34,18 +35,14 @@ class HomeViewModel @Inject constructor(
         combine(
             workoutSessionRepository.getCompletedSessions(),
             workoutSessionRepository.observeActiveSession(),
-            templateRepository.getAll(),
+            templateRepository.getAllWithExerciseCount(),
         ) { completedSessions, activeSession, templates ->
             val lastWorkout = completedSessions.firstOrNull()?.let { session ->
                 mapToLastWorkoutInfo(session)
             }
 
             val recentTemplates = templates.take(MAX_RECENT_TEMPLATES).map { template ->
-                TemplateInfo(
-                    id = template.id,
-                    name = template.name,
-                    exerciseCount = 0,
-                )
+                mapToTemplateInfo(template)
             }
 
             val isActive = activeSession != null &&
@@ -77,6 +74,14 @@ class HomeViewModel @Inject constructor(
             sessionId = session.id,
             dateText = dateText,
             durationMinutes = durationMinutes,
+        )
+    }
+
+    private fun mapToTemplateInfo(template: TemplateWithCount): TemplateInfo {
+        return TemplateInfo(
+            id = template.id,
+            name = template.name,
+            exerciseCount = template.exerciseCount,
         )
     }
 

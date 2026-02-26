@@ -6,6 +6,7 @@ import com.deepreps.core.data.mapper.toEntity
 import com.deepreps.core.database.dao.TemplateDao
 import com.deepreps.core.domain.model.Template
 import com.deepreps.core.domain.model.TemplateExercise
+import com.deepreps.core.domain.model.TemplateWithCount
 import com.deepreps.core.domain.repository.TemplateRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
@@ -21,6 +22,11 @@ class TemplateRepositoryImpl @Inject constructor(
     override fun getAll(): Flow<List<Template>> =
         templateDao.getAll()
             .map { entities -> entities.map { it.toDomain() } }
+            .flowOn(dispatchers.io)
+
+    override fun getAllWithExerciseCount(): Flow<List<TemplateWithCount>> =
+        templateDao.getAllWithExerciseCount()
+            .map { projections -> projections.map { it.toDomain() } }
             .flowOn(dispatchers.io)
 
     override suspend fun getById(id: Long): Template? =
