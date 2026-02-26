@@ -27,7 +27,7 @@ import javax.inject.Inject
 class BaselinePlanGenerator @Inject constructor() {
 
     fun generate(request: PlanRequest): GeneratedPlan? {
-        val bodyWeightKg = request.userProfile.bodyWeightKg ?: return null
+        val bodyWeightKg = request.userProfile.bodyWeightKg ?: DEFAULT_BODY_WEIGHT_KG
         val level = request.userProfile.experienceLevel.coerceIn(1, 3)
         val gender = request.userProfile.gender
         val age = request.userProfile.age
@@ -253,6 +253,7 @@ class BaselinePlanGenerator @Inject constructor() {
         private const val WARMUP_REST = 60
         private const val DELOAD_INTENSITY_FACTOR = 0.575 // Midpoint of 50-65%
         private const val GENDER_UNKNOWN_FACTOR = 0.85
+        private const val DEFAULT_BODY_WEIGHT_KG = 75.0 // Conservative fallback for weight estimation
 
         /**
          * Heavy compound IDs for rest timer and warmup protocol.

@@ -33,4 +33,10 @@ sealed interface PlanReviewIntent {
 
     /** User dismissed safety warnings. */
     data object DismissSafetyWarnings : PlanReviewIntent
+
+    /** User tapped [+] to add a working set to an exercise. */
+    data class AddWorkingSet(val exerciseIndex: Int) : PlanReviewIntent
+
+    /** User tapped [-] to remove the last working set from an exercise. */
+    data class RemoveLastWorkingSet(val exerciseIndex: Int) : PlanReviewIntent
 }

@@ -42,7 +42,7 @@ import com.deepreps.core.database.entity.WorkoutSetEntity
         PersonalRecordEntity::class,
         CachedAiPlanEntity::class,
     ],
-    version = 1,
+    version = 2,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)

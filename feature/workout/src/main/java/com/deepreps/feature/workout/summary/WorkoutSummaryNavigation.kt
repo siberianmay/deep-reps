@@ -2,6 +2,7 @@ package com.deepreps.feature.workout.summary
 
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
+import androidx.navigation.NavOptionsBuilder
 import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
@@ -46,6 +47,9 @@ fun NavGraphBuilder.workoutSummaryScreen(
 /**
  * Navigate to the workout summary screen.
  */
-fun NavController.navigateToWorkoutSummary(sessionId: Long) {
-    navigate(WorkoutSummaryNavigation.createRoute(sessionId))
+fun NavController.navigateToWorkoutSummary(
+    sessionId: Long,
+    builder: NavOptionsBuilder.() -> Unit = {},
+) {
+    navigate(WorkoutSummaryNavigation.createRoute(sessionId), builder)
 }

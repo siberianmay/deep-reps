@@ -1,5 +1,6 @@
 package com.deepreps.feature.workout.setup
 
+import androidx.lifecycle.SavedStateHandle
 import app.cash.turbine.test
 import com.deepreps.core.domain.model.Exercise
 import com.deepreps.core.domain.model.Template
@@ -59,6 +60,7 @@ class WorkoutSetupViewModelTest {
         coEvery { exerciseRepository.getExercisesByIds(any()) } returns testExercises
 
         viewModel = WorkoutSetupViewModel(
+            savedStateHandle = SavedStateHandle(),
             exerciseRepository = exerciseRepository,
             templateRepository = templateRepository,
             orderExercisesUseCase = orderExercisesUseCase,

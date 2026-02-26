@@ -1,6 +1,7 @@
 package com.deepreps.feature.workout.active
 
 import com.deepreps.core.data.timer.RestTimerState
+import com.deepreps.core.domain.model.Exercise
 import com.deepreps.core.domain.model.WorkoutSet
 import com.deepreps.core.domain.model.enums.SetStatus
 
@@ -27,6 +28,12 @@ data class WorkoutUiState(
     val showFinishDialog: Boolean = false,
     /** Set of workout exercise IDs whose notes text field is expanded. */
     val notesExpandedExerciseIds: Set<Long> = emptySet(),
+    /** Active number input bottom sheet, or null when no sheet is showing. */
+    val activeInputSheet: InputSheetState? = null,
+    /** Exercise ID for which the info sheet is shown, or null if hidden. */
+    val exerciseInfoId: Long? = null,
+    /** Full exercise domain model for the info sheet, loaded from repository. */
+    val exerciseInfoData: Exercise? = null,
 ) {
     /** Index of the first exercise that has incomplete sets, or -1 if all done. */
     val activeExerciseIndex: Int
@@ -105,4 +112,27 @@ data class WorkoutExerciseUi(
             val completed = sets.count { it.status == SetStatus.COMPLETED }
             return "$completed/${sets.size} sets"
         }
+}
+
+/**
+ * State for the number input bottom sheet.
+ *
+ * Determines whether the weight or reps sheet is currently visible,
+ * and carries the context needed to apply the confirmed value.
+ */
+sealed interface InputSheetState {
+    /** Weight editing sheet. */
+    data class Weight(
+        val workoutExerciseId: Long,
+        val setId: Long,
+        val currentValue: Double,
+        val step: Double,
+    ) : InputSheetState
+
+    /** Reps editing sheet. */
+    data class Reps(
+        val workoutExerciseId: Long,
+        val setId: Long,
+        val currentValue: Int,
+    ) : InputSheetState
 }

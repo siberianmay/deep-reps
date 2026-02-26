@@ -54,4 +54,7 @@ data class WorkoutSetEntity(
     /** Epoch millis when set was completed. Null until completion. */
     @ColumnInfo(name = "completed_at")
     val completedAt: Long?,
+    /** Set status: "planned", "completed", "skipped". Defaults to "planned". */
+    @ColumnInfo(name = "status", defaultValue = "planned")
+    val status: String = "planned",
 )

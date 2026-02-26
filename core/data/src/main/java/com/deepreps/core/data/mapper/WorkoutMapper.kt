@@ -62,7 +62,7 @@ fun WorkoutSetEntity.toDomain(): WorkoutSet = WorkoutSet(
     id = id,
     setNumber = setIndex,
     type = SetType.fromValue(setType),
-    status = deriveSetStatus(isCompleted),
+    status = deriveSetStatus(status, isCompleted),
     plannedWeightKg = plannedWeight,
     plannedReps = plannedReps,
     actualWeightKg = actualWeight,
@@ -81,14 +81,20 @@ fun WorkoutSet.toEntity(workoutExerciseId: Long): WorkoutSetEntity = WorkoutSetE
     actualReps = actualReps,
     isCompleted = status == SetStatus.COMPLETED,
     completedAt = completedAt,
+    status = status.value,
 )
 
 /**
- * Derives the domain SetStatus from the entity's isCompleted boolean.
+ * Derives the domain SetStatus from the entity's status string column.
+ * Falls back to the legacy isCompleted boolean for forward-compatibility
+ * with rows that may not have the status column populated.
  *
- * The entity stores a simple boolean. The domain model has richer status semantics.
- * PLANNED and IN_PROGRESS are both represented as isCompleted=false in the entity.
- * We default to PLANNED here; the ViewModel determines IN_PROGRESS based on UI state.
+ * PLANNED and IN_PROGRESS are both stored as "planned" in the entity.
+ * The ViewModel determines IN_PROGRESS based on UI state.
  */
-private fun deriveSetStatus(isCompleted: Boolean): SetStatus =
-    if (isCompleted) SetStatus.COMPLETED else SetStatus.PLANNED
+private fun deriveSetStatus(status: String, isCompleted: Boolean): SetStatus =
+    when (status) {
+        SetStatus.COMPLETED.value -> SetStatus.COMPLETED
+        SetStatus.SKIPPED.value -> SetStatus.SKIPPED
+        else -> if (isCompleted) SetStatus.COMPLETED else SetStatus.PLANNED
+    }

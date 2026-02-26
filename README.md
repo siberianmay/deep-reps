@@ -99,16 +99,15 @@ Prerequisites: Android SDK with command-line tools, platform-tools, and emulator
 sdkmanager "system-images;android-35;google_apis;x86_64"
 
 # 2. Create AVD
-avdmanager create avd \
-  -n deep_reps_test \
-  -k "system-images;android-35;google_apis;x86_64" \
-  -d "medium_phone"
+avdmanager create avd -n deep_reps_test -k "system-images;android-35;google_apis;x86_64" -d "medium_phone"
 
 # 3. Launch emulator
 emulator -avd deep_reps_test
 
 # 4. Build debug APK
 ./gradlew :app:assembleDebug
+# or
+./gradlew assembleDebug testDebugUnitTest detekt lintDebug
 
 # 5. Install on emulator
 adb install -r app/build/outputs/apk/debug/app-debug.apk

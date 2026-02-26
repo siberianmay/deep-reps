@@ -608,4 +608,99 @@ class WorkoutViewModelTest {
     fun `formatElapsedTime exactly one hour`() {
         assertEquals("1:00:00", formatElapsedTime(3600))
     }
+
+    // --- Skip Set Auto-Advance ---
+
+    @Test
+    fun `skip last set of exercise auto-collapses it and expands next`() = runTest {
+        // Setup: exercise 1 has only one PLANNED set remaining (sets 1,2 completed, set 3 planned)
+        val setsWithTwoCompleted = listOf(
+            testSets1[0].copy(status = SetStatus.COMPLETED, actualWeightKg = 80.0, actualReps = 8),
+            testSets1[1].copy(status = SetStatus.COMPLETED, actualWeightKg = 80.0, actualReps = 8),
+            testSets1[2].copy(status = SetStatus.PLANNED),
+        )
+        every { workoutSessionRepository.getSetsForExercise(10L) } returns flowOf(setsWithTwoCompleted)
+
+        viewModel = createViewModel()
+
+        viewModel.state.test {
+            val initial = awaitItem()
+            // Exercise 1 should be expanded (has one planned set)
+            assertTrue(initial.exercises[0].isExpanded)
+
+            // Skip the last remaining set of exercise 1
+            viewModel.onIntent(WorkoutIntent.SkipSet(setId = 3L, workoutExerciseId = 10L))
+
+            val updated = awaitItem()
+            // Exercise 1 should be collapsed
+            assertFalse(updated.exercises[0].isExpanded)
+            // Exercise 2 should be expanded (it's the next incomplete exercise)
+            assertTrue(updated.exercises[1].isExpanded)
+        }
+    }
+
+    @Test
+    fun `skip last set does NOT start rest timer`() = runTest {
+        // Setup: exercise 1 has only one PLANNED set remaining
+        val setsWithTwoCompleted = listOf(
+            testSets1[0].copy(status = SetStatus.COMPLETED, actualWeightKg = 80.0, actualReps = 8),
+            testSets1[1].copy(status = SetStatus.COMPLETED, actualWeightKg = 80.0, actualReps = 8),
+            testSets1[2].copy(status = SetStatus.PLANNED),
+        )
+        every { workoutSessionRepository.getSetsForExercise(10L) } returns flowOf(setsWithTwoCompleted)
+
+        viewModel = createViewModel()
+
+        viewModel.state.test { awaitItem() }
+
+        // Skip the last remaining set
+        viewModel.onIntent(WorkoutIntent.SkipSet(setId = 3L, workoutExerciseId = 10L))
+
+        // Rest timer should NOT have been started (verify zero interactions with start)
+        verify(exactly = 0) { restTimerManager.start(any()) }
+    }
+
+    @Test
+    fun `skip non-last set does NOT auto-advance`() = runTest {
+        viewModel = createViewModel()
+
+        viewModel.state.test {
+            val initial = awaitItem()
+            assertTrue(initial.exercises[0].isExpanded)
+            assertTrue(initial.exercises[1].isExpanded)
+
+            // Skip the first set — exercise 1 still has 2 planned sets
+            viewModel.onIntent(WorkoutIntent.SkipSet(setId = 1L, workoutExerciseId = 10L))
+
+            val updated = awaitItem()
+            // Exercise 1 should still be expanded (has remaining sets)
+            assertTrue(updated.exercises[0].isExpanded)
+        }
+    }
+
+    @Test
+    fun `skip last set emits ScrollToExercise side effect`() = runTest {
+        // Setup: exercise 1 has only one PLANNED set remaining
+        val setsWithTwoCompleted = listOf(
+            testSets1[0].copy(status = SetStatus.COMPLETED, actualWeightKg = 80.0, actualReps = 8),
+            testSets1[1].copy(status = SetStatus.COMPLETED, actualWeightKg = 80.0, actualReps = 8),
+            testSets1[2].copy(status = SetStatus.PLANNED),
+        )
+        every { workoutSessionRepository.getSetsForExercise(10L) } returns flowOf(setsWithTwoCompleted)
+
+        viewModel = createViewModel()
+
+        viewModel.sideEffect.test {
+            // Initial ScrollToExercise from init
+            val initEffect = awaitItem()
+            assertTrue(initEffect is WorkoutSideEffect.ScrollToExercise)
+
+            // Skip the last set
+            viewModel.onIntent(WorkoutIntent.SkipSet(setId = 3L, workoutExerciseId = 10L))
+
+            val effect = awaitItem()
+            assertTrue(effect is WorkoutSideEffect.ScrollToExercise)
+            assertEquals(1, (effect as WorkoutSideEffect.ScrollToExercise).exerciseIndex)
+        }
+    }
 }

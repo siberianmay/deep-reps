@@ -6,6 +6,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.deepreps.core.domain.repository.OnboardingRepository
@@ -38,31 +39,33 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             DeepRepsTheme {
-                val mainState by mainViewModel.state.collectAsStateWithLifecycle()
+                Surface {
+                    val mainState by mainViewModel.state.collectAsStateWithLifecycle()
 
-                // Show recovery dialog if a recoverable session was found
-                val recoverableSession = mainState.recoverableSession
-                if (recoverableSession != null) {
-                    val startedAtFormatted = DateUtils.getRelativeTimeSpanString(
-                        recoverableSession.startedAt,
-                        System.currentTimeMillis(),
-                        DateUtils.MINUTE_IN_MILLIS,
-                    ).toString()
+                    // Show recovery dialog if a recoverable session was found
+                    val recoverableSession = mainState.recoverableSession
+                    if (recoverableSession != null) {
+                        val startedAtFormatted = DateUtils.getRelativeTimeSpanString(
+                            recoverableSession.startedAt,
+                            System.currentTimeMillis(),
+                            DateUtils.MINUTE_IN_MILLIS,
+                        ).toString()
 
-                    ResumeOrDiscardDialog(
-                        startedAtFormatted = startedAtFormatted,
-                        completedSets = 0, // Will be populated when we have the data
-                        totalSets = 0,
-                        onResume = mainViewModel::onResumeSession,
-                        onDiscard = mainViewModel::onDiscardSession,
+                        ResumeOrDiscardDialog(
+                            startedAtFormatted = startedAtFormatted,
+                            completedSets = 0, // Will be populated when we have the data
+                            totalSets = 0,
+                            onResume = mainViewModel::onResumeSession,
+                            onDiscard = mainViewModel::onDiscardSession,
+                        )
+                    }
+
+                    DeepRepsNavHost(
+                        isOnboardingCompleted = isOnboardingCompleted,
+                        navigateToWorkoutSessionId = mainState.navigateToWorkout,
+                        onWorkoutNavigationConsumed = mainViewModel::onNavigationConsumed,
                     )
                 }
-
-                DeepRepsNavHost(
-                    isOnboardingCompleted = isOnboardingCompleted,
-                    navigateToWorkoutSessionId = mainState.navigateToWorkout,
-                    onWorkoutNavigationConsumed = mainViewModel::onNavigationConsumed,
-                )
             }
         }
     }

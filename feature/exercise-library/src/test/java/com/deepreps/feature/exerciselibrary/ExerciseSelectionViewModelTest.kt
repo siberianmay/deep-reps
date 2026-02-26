@@ -1,5 +1,6 @@
 package com.deepreps.feature.exerciselibrary
 
+import androidx.lifecycle.SavedStateHandle
 import app.cash.turbine.test
 import com.deepreps.core.domain.model.enums.Equipment
 import com.deepreps.core.domain.model.enums.MuscleGroup
@@ -61,7 +62,7 @@ class ExerciseSelectionViewModelTest {
 
     @Test
     fun `initial state loads with chest and no selections`() = runTest {
-        viewModel = ExerciseSelectionViewModel(repository)
+        viewModel = ExerciseSelectionViewModel(SavedStateHandle(), repository)
 
         viewModel.state.test {
             val state = awaitItem()
@@ -75,7 +76,7 @@ class ExerciseSelectionViewModelTest {
 
     @Test
     fun `toggle exercise adds to selection`() = runTest {
-        viewModel = ExerciseSelectionViewModel(repository)
+        viewModel = ExerciseSelectionViewModel(SavedStateHandle(), repository)
 
         viewModel.state.test {
             awaitItem() // initial
@@ -89,7 +90,7 @@ class ExerciseSelectionViewModelTest {
 
     @Test
     fun `toggle exercise twice removes from selection`() = runTest {
-        viewModel = ExerciseSelectionViewModel(repository)
+        viewModel = ExerciseSelectionViewModel(SavedStateHandle(), repository)
 
         viewModel.state.test {
             awaitItem() // initial
@@ -106,7 +107,7 @@ class ExerciseSelectionViewModelTest {
 
     @Test
     fun `toggle multiple exercises`() = runTest {
-        viewModel = ExerciseSelectionViewModel(repository)
+        viewModel = ExerciseSelectionViewModel(SavedStateHandle(), repository)
 
         viewModel.state.test {
             awaitItem() // initial
@@ -123,7 +124,7 @@ class ExerciseSelectionViewModelTest {
 
     @Test
     fun `selections persist across group switch`() = runTest {
-        viewModel = ExerciseSelectionViewModel(repository)
+        viewModel = ExerciseSelectionViewModel(SavedStateHandle(), repository)
 
         viewModel.state.test {
             awaitItem() // initial chest
@@ -145,7 +146,7 @@ class ExerciseSelectionViewModelTest {
 
     @Test
     fun `confirm selection emits side effect with selected IDs`() = runTest {
-        viewModel = ExerciseSelectionViewModel(repository)
+        viewModel = ExerciseSelectionViewModel(SavedStateHandle(), repository)
 
         // Wait for initial load
         viewModel.state.test {
@@ -169,7 +170,7 @@ class ExerciseSelectionViewModelTest {
 
     @Test
     fun `confirm with empty selection emits empty set`() = runTest {
-        viewModel = ExerciseSelectionViewModel(repository)
+        viewModel = ExerciseSelectionViewModel(SavedStateHandle(), repository)
 
         viewModel.state.test {
             awaitItem()
@@ -188,7 +189,7 @@ class ExerciseSelectionViewModelTest {
 
     @Test
     fun `search filters exercises in current group`() = runTest {
-        viewModel = ExerciseSelectionViewModel(repository)
+        viewModel = ExerciseSelectionViewModel(SavedStateHandle(), repository)
 
         viewModel.state.test {
             awaitItem() // initial
@@ -202,7 +203,7 @@ class ExerciseSelectionViewModelTest {
 
     @Test
     fun `view detail emits navigation side effect`() = runTest {
-        viewModel = ExerciseSelectionViewModel(repository)
+        viewModel = ExerciseSelectionViewModel(SavedStateHandle(), repository)
 
         viewModel.sideEffect.test {
             viewModel.onIntent(ExerciseSelectionIntent.ViewDetail(2L))
@@ -219,7 +220,7 @@ class ExerciseSelectionViewModelTest {
             throw IllegalStateException("DB error")
         }
 
-        viewModel = ExerciseSelectionViewModel(repository)
+        viewModel = ExerciseSelectionViewModel(SavedStateHandle(), repository)
 
         viewModel.state.test {
             val state = awaitItem()

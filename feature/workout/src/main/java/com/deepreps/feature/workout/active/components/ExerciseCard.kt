@@ -23,6 +23,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.StickyNote2
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -76,9 +77,13 @@ fun ExerciseCard(
     onWeightFieldClick: (set: WorkoutSet) -> Unit,
     onRepsFieldClick: (set: WorkoutSet) -> Unit,
     onAddSet: () -> Unit,
+    onSkipSet: (set: WorkoutSet) -> Unit = {},
+    onUnskipSet: (set: WorkoutSet) -> Unit = {},
+    onDeleteSet: (set: WorkoutSet) -> Unit = {},
     isNotesExpanded: Boolean = false,
     onToggleNotes: () -> Unit = {},
     onNotesChanged: (String) -> Unit = {},
+    onInfoClick: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val colors = DeepRepsTheme.colors
@@ -191,6 +196,20 @@ fun ExerciseCard(
                     )
                 }
 
+                // Info icon
+                Spacer(modifier = Modifier.width(spacing.space1))
+                IconButton(
+                    onClick = onInfoClick,
+                    modifier = Modifier.size(32.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Info,
+                        contentDescription = "Exercise information",
+                        modifier = Modifier.size(20.dp),
+                        tint = colors.onSurfaceTertiary,
+                    )
+                }
+
                 // Notes toggle icon
                 Spacer(modifier = Modifier.width(spacing.space1))
                 IconButton(
@@ -288,6 +307,9 @@ fun ExerciseCard(
                             onWeightFieldClick = { onWeightFieldClick(set) },
                             onRepsFieldClick = { onRepsFieldClick(set) },
                             onDoneClick = { onSetDone(set) },
+                            onSkipSet = { onSkipSet(set) },
+                            onUnskipSet = { onUnskipSet(set) },
+                            onDeleteSet = { onDeleteSet(set) },
                         )
                     }
 

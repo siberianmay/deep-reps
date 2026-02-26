@@ -1,5 +1,6 @@
 package com.deepreps.feature.workout.setup
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.deepreps.core.domain.model.Exercise
@@ -26,6 +27,7 @@ import javax.inject.Inject
  */
 @HiltViewModel
 class WorkoutSetupViewModel @Inject constructor(
+    savedStateHandle: SavedStateHandle,
     private val exerciseRepository: ExerciseRepository,
     private val templateRepository: TemplateRepository,
     private val orderExercisesUseCase: OrderExercisesUseCase,
@@ -36,6 +38,22 @@ class WorkoutSetupViewModel @Inject constructor(
 
     private val _sideEffect = Channel<WorkoutSetupSideEffect>(Channel.BUFFERED)
     val sideEffect: Flow<WorkoutSetupSideEffect> = _sideEffect.receiveAsFlow()
+
+    init {
+        val templateIdArg: String? = savedStateHandle[WorkoutSetupNavigation.TEMPLATE_ID_ARG]
+        val templateId = templateIdArg?.toLongOrNull()
+        if (templateId != null && templateId > 0) {
+            handleLoadTemplate(templateId)
+        } else {
+            val exerciseIdsArg: String? = savedStateHandle[WorkoutSetupNavigation.EXERCISE_IDS_ARG]
+            if (exerciseIdsArg != null) {
+                val ids = exerciseIdsArg.split(",").mapNotNull { it.toLongOrNull() }.toSet()
+                if (ids.isNotEmpty()) {
+                    handleSetExercises(ids)
+                }
+            }
+        }
+    }
 
     fun onIntent(intent: WorkoutSetupIntent) {
         when (intent) {

@@ -1,7 +1,9 @@
 package com.deepreps.feature.workout.setup
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -14,10 +16,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -28,20 +31,26 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import com.deepreps.core.ui.component.DeepRepsButton
 import com.deepreps.core.ui.component.DeepRepsCard
+import com.deepreps.core.ui.component.DragDropState
+import com.deepreps.core.ui.component.rememberDragDropState
 import com.deepreps.core.ui.theme.DeepRepsTheme
 
 /**
- * Exercise Order screen: shows the auto-ordered exercise list with reorder controls.
+ * Exercise Order screen: shows the auto-ordered exercise list with drag-to-reorder.
  *
  * Design spec: design-system.md Section 4.6 (simplified -- pre-plan ordering).
- * Uses simple move up/down buttons instead of drag-to-reorder for initial implementation.
+ * - Drag handle on left side for reordering
  * - Exercise name, equipment, difficulty for each item
- * - Up/Down arrow buttons for manual reordering
  * - "Generate Plan" CTA at bottom
  */
 @Suppress("LongMethod")
@@ -58,6 +67,13 @@ fun ExerciseOrderScreen(
     val colors = DeepRepsTheme.colors
     val typography = DeepRepsTheme.typography
     val spacing = DeepRepsTheme.spacing
+
+    val lazyListState = rememberLazyListState()
+    val dragDropState = rememberDragDropState(
+        lazyListState = lazyListState,
+        onMove = onMoveExercise,
+    )
+    val hapticFeedback = LocalHapticFeedback.current
 
     Column(modifier = Modifier.fillMaxSize()) {
         TopAppBar(
@@ -91,36 +107,23 @@ fun ExerciseOrderScreen(
             text = if (isFromTemplate) {
                 "Reorder exercises if needed, then generate your plan."
             } else {
-                "Exercises auto-ordered by type and difficulty. Reorder if needed."
+                "Exercises auto-ordered by type and difficulty. Drag to reorder."
             },
             style = typography.bodyMedium,
             color = colors.onSurfaceSecondary,
             modifier = Modifier.padding(horizontal = spacing.space4, vertical = spacing.space2),
         )
 
-        // Exercise list with reorder controls
-        LazyColumn(
+        // Exercise list with drag-to-reorder
+        ExerciseOrderList(
+            exercises = exercises,
+            lazyListState = lazyListState,
+            dragDropState = dragDropState,
+            onHapticFeedback = {
+                hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+            },
             modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(spacing.space2),
-            contentPadding = PaddingValues(
-                horizontal = spacing.space4,
-                vertical = spacing.space2,
-            ),
-        ) {
-            itemsIndexed(
-                items = exercises,
-                key = { _, item -> item.exerciseId },
-            ) { index, exercise ->
-                ExerciseOrderCard(
-                    exercise = exercise,
-                    index = index,
-                    isFirst = index == 0,
-                    isLast = index == exercises.lastIndex,
-                    onMoveUp = { onMoveExercise(index, index - 1) },
-                    onMoveDown = { onMoveExercise(index, index + 1) },
-                )
-            }
-        }
+        )
 
         // Bottom action area
         HorizontalDivider(color = colors.borderSubtle, thickness = 1.dp)
@@ -150,25 +153,95 @@ fun ExerciseOrderScreen(
 }
 
 /**
- * Individual exercise card in the ordering list.
+ * LazyColumn containing draggable exercise cards.
  *
- * Shows exercise name, equipment, difficulty, and move up/down buttons.
+ * Separated to keep [ExerciseOrderScreen] focused on overall layout.
+ * Items use graphicsLayer for drag visual feedback (translation, scale, opacity).
  */
 @Suppress("LongMethod")
 @Composable
-private fun ExerciseOrderCard(
+private fun ExerciseOrderList(
+    exercises: List<ExerciseOrderItem>,
+    lazyListState: LazyListState,
+    dragDropState: DragDropState,
+    onHapticFeedback: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val spacing = DeepRepsTheme.spacing
+
+    LazyColumn(
+        state = lazyListState,
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(spacing.space2),
+        contentPadding = PaddingValues(
+            horizontal = spacing.space4,
+            vertical = spacing.space2,
+        ),
+    ) {
+        itemsIndexed(
+            items = exercises,
+            key = { _, item -> item.exerciseId },
+        ) { index, exercise ->
+            val isDragged = dragDropState.isDragging && dragDropState.draggedItemIndex == index
+            val dragOffset = if (isDragged) dragDropState.dragOffset else 0f
+
+            Box(
+                modifier = Modifier
+                    .zIndex(if (isDragged) 1f else 0f)
+                    .graphicsLayer {
+                        translationY = dragOffset
+                        scaleX = if (isDragged) 1.05f else 1f
+                        scaleY = if (isDragged) 1.05f else 1f
+                        alpha = if (isDragged) 0.9f else 1f
+                        shadowElevation = if (isDragged) 8f else 0f
+                    }
+                    .pointerInput(index) {
+                        detectVerticalDragGestures(
+                            onDragStart = {
+                                dragDropState.onDragStart(index)
+                                onHapticFeedback()
+                            },
+                            onVerticalDrag = { change, dragAmount ->
+                                change.consume()
+                                dragDropState.onDrag(dragAmount)
+                            },
+                            onDragEnd = {
+                                onHapticFeedback()
+                                dragDropState.onDragEnd()
+                            },
+                            onDragCancel = {
+                                dragDropState.onDragCancel()
+                            },
+                        )
+                    },
+            ) {
+                ExerciseOrderCardContent(
+                    exercise = exercise,
+                    index = index,
+                    isDragged = isDragged,
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Visual content of a single exercise card in the ordering list.
+ *
+ * Layout: [DragHandle] [OrderNumber] [ExerciseInfo]
+ */
+@Suppress("LongMethod")
+@Composable
+private fun ExerciseOrderCardContent(
     exercise: ExerciseOrderItem,
     index: Int,
-    isFirst: Boolean,
-    isLast: Boolean,
-    onMoveUp: () -> Unit,
-    onMoveDown: () -> Unit,
+    isDragged: Boolean,
 ) {
     val colors = DeepRepsTheme.colors
     val typography = DeepRepsTheme.typography
     val spacing = DeepRepsTheme.spacing
 
-    val accessibilityText = "${exercise.name}, position ${index + 1}, " +
+    val accessibilityText = "Drag to reorder ${exercise.name}, position ${index + 1}, " +
         "${exercise.equipment}, ${exercise.difficulty}"
 
     DeepRepsCard(
@@ -182,6 +255,23 @@ private fun ExerciseOrderCard(
                 .padding(spacing.space3),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            // Drag handle
+            Box(
+                modifier = Modifier.size(48.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.Default.DragHandle,
+                    contentDescription = "Drag to reorder ${exercise.name}",
+                    modifier = Modifier.size(24.dp),
+                    tint = if (isDragged) {
+                        colors.accentPrimary
+                    } else {
+                        colors.onSurfaceTertiary
+                    },
+                )
+            }
+
             // Order number
             Text(
                 text = "${index + 1}",
@@ -189,6 +279,8 @@ private fun ExerciseOrderCard(
                 color = colors.accentPrimary,
                 modifier = Modifier.width(32.dp),
             )
+
+            Spacer(modifier = Modifier.width(spacing.space1))
 
             // Exercise info
             Column(
@@ -214,41 +306,6 @@ private fun ExerciseOrderCard(
                         text = exercise.difficulty,
                         style = typography.labelMedium,
                         color = colors.onSurfaceTertiary,
-                    )
-                }
-            }
-
-            // Reorder buttons
-            Column {
-                IconButton(
-                    onClick = onMoveUp,
-                    enabled = !isFirst,
-                    modifier = Modifier.size(48.dp),
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.KeyboardArrowUp,
-                        contentDescription = "Move up",
-                        tint = if (!isFirst) {
-                            colors.onSurfacePrimary
-                        } else {
-                            colors.onSurfaceTertiary
-                        },
-                    )
-                }
-
-                IconButton(
-                    onClick = onMoveDown,
-                    enabled = !isLast,
-                    modifier = Modifier.size(48.dp),
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.KeyboardArrowDown,
-                        contentDescription = "Move down",
-                        tint = if (!isLast) {
-                            colors.onSurfacePrimary
-                        } else {
-                            colors.onSurfaceTertiary
-                        },
                     )
                 }
             }

@@ -3,6 +3,7 @@ package com.deepreps.core.domain.repository
 import com.deepreps.core.domain.model.WorkoutExercise
 import com.deepreps.core.domain.model.WorkoutSession
 import com.deepreps.core.domain.model.WorkoutSet
+import com.deepreps.core.domain.model.enums.SetStatus
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -60,6 +61,9 @@ interface WorkoutSessionRepository {
      * in the entity layer. Returns the Room-generated set ID.
      */
     suspend fun insertSet(workoutExerciseId: Long, set: WorkoutSet): Long
+
+    /** Updates just the status of a set (used for skip/unskip). */
+    suspend fun updateSetStatus(setId: Long, status: SetStatus)
 
     /** Deletes a set by ID. Only non-completed sets should be deleted. */
     suspend fun deleteSet(setId: Long)

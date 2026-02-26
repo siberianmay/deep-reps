@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -16,6 +17,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -28,6 +30,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -182,6 +185,18 @@ private fun PlanReadyContent(
                             ),
                         )
                     },
+                    onAddWorkingSet = {
+                        onIntent(
+                            PlanReviewIntent.AddWorkingSet(exerciseIndex),
+                        )
+                    },
+                    onRemoveLastWorkingSet = {
+                        onIntent(
+                            PlanReviewIntent.RemoveLastWorkingSet(
+                                exerciseIndex,
+                            ),
+                        )
+                    },
                 )
             }
             item {
@@ -262,6 +277,8 @@ private fun ExercisePlanCard(
     @Suppress("UnusedParameter") exerciseIndex: Int,
     onWeightChange: (setIndex: Int, weight: Double) -> Unit,
     onRepsChange: (setIndex: Int, reps: Int) -> Unit,
+    onAddWorkingSet: () -> Unit,
+    onRemoveLastWorkingSet: () -> Unit,
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -308,6 +325,84 @@ private fun ExercisePlanCard(
                     onRepsChange = { onRepsChange(setIndex, it) },
                 )
             }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            val workingSetCount = exercisePlan.sets.count {
+                it.setType == "working"
+            }
+            WorkingSetStepper(
+                count = workingSetCount,
+                onIncrement = onAddWorkingSet,
+                onDecrement = onRemoveLastWorkingSet,
+                minCount = MIN_WORKING_SETS,
+                maxCount = MAX_WORKING_SETS,
+            )
+        }
+    }
+}
+
+private const val MIN_WORKING_SETS = 2
+private const val MAX_WORKING_SETS = 6
+
+@Suppress("LongMethod")
+@Composable
+private fun WorkingSetStepper(
+    count: Int,
+    onIncrement: () -> Unit,
+    onDecrement: () -> Unit,
+    minCount: Int,
+    maxCount: Int,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center,
+    ) {
+        Text(
+            text = "Working sets:",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(modifier = Modifier.width(12.dp))
+
+        IconButton(
+            onClick = onDecrement,
+            enabled = count > minCount,
+            modifier = Modifier.size(40.dp),
+        ) {
+            Text(
+                text = "\u2212",
+                style = MaterialTheme.typography.titleLarge,
+                color = if (count > minCount) {
+                    MaterialTheme.colorScheme.onSurface
+                } else {
+                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                },
+            )
+        }
+
+        Text(
+            text = "$count",
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.width(32.dp),
+            textAlign = TextAlign.Center,
+        )
+
+        IconButton(
+            onClick = onIncrement,
+            enabled = count < maxCount,
+            modifier = Modifier.size(40.dp),
+        ) {
+            Text(
+                text = "+",
+                style = MaterialTheme.typography.titleLarge,
+                color = if (count < maxCount) {
+                    MaterialTheme.colorScheme.onSurface
+                } else {
+                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                },
+            )
         }
     }
 }

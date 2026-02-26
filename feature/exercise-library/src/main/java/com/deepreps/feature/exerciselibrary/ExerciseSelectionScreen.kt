@@ -122,6 +122,7 @@ internal fun ExerciseSelectionContent(
         )
 
         SelectionGroupChips(
+            allowedGroups = state.allowedGroups,
             activeGroup = state.activeGroup,
             onSelectGroup = {
                 onIntent(ExerciseSelectionIntent.SelectGroup(it))
@@ -171,6 +172,7 @@ private fun SelectionSearchBar(
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun SelectionGroupChips(
+    allowedGroups: Set<MuscleGroup>,
     activeGroup: MuscleGroup,
     onSelectGroup: (MuscleGroup) -> Unit,
 ) {
@@ -186,7 +188,7 @@ private fun SelectionGroupChips(
         horizontalArrangement = Arrangement.spacedBy(spacing.space2),
         verticalArrangement = Arrangement.spacedBy(spacing.space2),
     ) {
-        MuscleGroup.entries.forEach { group ->
+        allowedGroups.forEach { group ->
             MuscleGroupChip(
                 muscleGroup = group,
                 isSelected = group == activeGroup,

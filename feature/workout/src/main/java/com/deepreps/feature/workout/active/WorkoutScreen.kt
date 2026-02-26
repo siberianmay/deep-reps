@@ -19,6 +19,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
@@ -37,8 +38,10 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.deepreps.core.ui.component.ErrorState
 import com.deepreps.core.ui.component.LoadingIndicator
+import com.deepreps.core.ui.component.NumberInputSheet
 import com.deepreps.core.ui.theme.DeepRepsTheme
 import com.deepreps.feature.workout.active.components.ExerciseCard
+import com.deepreps.feature.workout.active.components.ExerciseInfoSheet
 import com.deepreps.feature.workout.active.components.PausedOverlay
 import com.deepreps.feature.workout.active.components.RestTimerBottomSheet
 
@@ -117,7 +120,8 @@ fun WorkoutScreen(
     }
 }
 
-@Suppress("LongMethod")
+@Suppress("LongMethod", "CyclomaticComplexMethod")
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ActiveWorkoutContent(
     state: WorkoutUiState,
@@ -178,14 +182,65 @@ private fun ActiveWorkoutContent(
                                 ),
                             )
                         },
-                        onWeightFieldClick = { _ ->
-                            // Phase 2: Open weight stepper (NumberInput in a dialog/sheet)
+                        onWeightFieldClick = { set ->
+                            onIntent(
+                                WorkoutIntent.OpenWeightSheet(
+                                    workoutExerciseId = exercise.id,
+                                    setId = set.id,
+                                    currentWeight = set.actualWeightKg
+                                        ?: set.plannedWeightKg
+                                        ?: 0.0,
+                                    step = 2.5,
+                                ),
+                            )
                         },
-                        onRepsFieldClick = { _ ->
-                            // Phase 2: Open reps stepper (NumberInput in a dialog/sheet)
+                        onRepsFieldClick = { set ->
+                            onIntent(
+                                WorkoutIntent.OpenRepsSheet(
+                                    workoutExerciseId = exercise.id,
+                                    setId = set.id,
+                                    currentReps = set.actualReps
+                                        ?: set.plannedReps
+                                        ?: 0,
+                                ),
+                            )
+                        },
+                        onSkipSet = { set ->
+                            onIntent(
+                                WorkoutIntent.SkipSet(
+                                    setId = set.id,
+                                    workoutExerciseId = exercise.id,
+                                ),
+                            )
+                        },
+                        onUnskipSet = { set ->
+                            onIntent(
+                                WorkoutIntent.UnskipSet(
+                                    setId = set.id,
+                                    workoutExerciseId = exercise.id,
+                                ),
+                            )
+                        },
+                        onDeleteSet = { set ->
+                            onIntent(
+                                WorkoutIntent.DeleteSet(
+                                    setId = set.id,
+                                    workoutExerciseId = exercise.id,
+                                ),
+                            )
                         },
                         onAddSet = {
                             onIntent(WorkoutIntent.AddSet(exercise.id))
+                        },
+                        isNotesExpanded = exercise.id in state.notesExpandedExerciseIds,
+                        onToggleNotes = {
+                            onIntent(WorkoutIntent.ToggleNotes(exercise.id))
+                        },
+                        onNotesChanged = { text ->
+                            onIntent(WorkoutIntent.UpdateNotes(exercise.id, text))
+                        },
+                        onInfoClick = {
+                            onIntent(WorkoutIntent.ShowExerciseInfo(exercise.exerciseId))
                         },
                     )
                 }
@@ -227,6 +282,64 @@ private fun ActiveWorkoutContent(
             FinishWorkoutDialog(
                 onConfirm = { onIntent(WorkoutIntent.ConfirmFinishWorkout) },
                 onDismiss = { onIntent(WorkoutIntent.DismissFinishDialog) },
+            )
+        }
+
+        // --- Number Input Bottom Sheet ---
+        state.activeInputSheet?.let { sheetState ->
+            when (sheetState) {
+                is InputSheetState.Weight -> {
+                    NumberInputSheet(
+                        title = "Weight",
+                        value = sheetState.currentValue,
+                        step = sheetState.step,
+                        minValue = 0.0,
+                        maxValue = 500.0,
+                        isDecimal = true,
+                        unitLabel = "kg",
+                        onConfirm = { newWeight ->
+                            onIntent(
+                                WorkoutIntent.UpdateSetWeight(
+                                    workoutExerciseId = sheetState.workoutExerciseId,
+                                    setId = sheetState.setId,
+                                    weight = newWeight,
+                                ),
+                            )
+                            onIntent(WorkoutIntent.CloseInputSheet)
+                        },
+                        onDismiss = { onIntent(WorkoutIntent.CloseInputSheet) },
+                    )
+                }
+
+                is InputSheetState.Reps -> {
+                    NumberInputSheet(
+                        title = "Reps",
+                        value = sheetState.currentValue.toDouble(),
+                        step = 1.0,
+                        minValue = 1.0,
+                        maxValue = 50.0,
+                        isDecimal = false,
+                        onConfirm = { newReps ->
+                            onIntent(
+                                WorkoutIntent.UpdateSetReps(
+                                    workoutExerciseId = sheetState.workoutExerciseId,
+                                    setId = sheetState.setId,
+                                    reps = newReps.toInt(),
+                                ),
+                            )
+                            onIntent(WorkoutIntent.CloseInputSheet)
+                        },
+                        onDismiss = { onIntent(WorkoutIntent.CloseInputSheet) },
+                    )
+                }
+            }
+        }
+
+        // --- Exercise Info Bottom Sheet ---
+        state.exerciseInfoData?.let { exercise ->
+            ExerciseInfoSheet(
+                exercise = exercise,
+                onDismiss = { onIntent(WorkoutIntent.DismissExerciseInfo) },
             )
         }
     }

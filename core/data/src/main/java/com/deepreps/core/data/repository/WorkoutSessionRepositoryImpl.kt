@@ -11,6 +11,7 @@ import com.deepreps.core.database.dao.WorkoutSetDao
 import com.deepreps.core.domain.model.WorkoutExercise
 import com.deepreps.core.domain.model.WorkoutSession
 import com.deepreps.core.domain.model.WorkoutSet
+import com.deepreps.core.domain.model.enums.SetStatus
 import com.deepreps.core.domain.repository.WorkoutSessionRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
@@ -97,6 +98,11 @@ class WorkoutSessionRepositoryImpl @Inject constructor(
             // In practice, the caller should use the entity mapper directly with the correct ID.
             // This is a convenience that works when sets have been constructed with proper context.
             setDao.insertAll(sets.map { it.toEntity(workoutExerciseId = 0) })
+        }
+
+    override suspend fun updateSetStatus(setId: Long, status: SetStatus) =
+        withContext(dispatchers.io) {
+            setDao.updateStatus(setId, status.value)
         }
 
     override suspend fun deleteSet(setId: Long) =

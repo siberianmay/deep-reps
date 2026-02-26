@@ -10,9 +10,17 @@ import com.deepreps.core.domain.model.PlanRequest
 import com.deepreps.core.domain.model.PlanResult
 import com.deepreps.core.domain.model.UserPlanProfile
 import com.deepreps.core.domain.model.GeneratedPlan
+import com.deepreps.core.domain.model.WorkoutExercise
+import com.deepreps.core.domain.model.WorkoutSession
+import com.deepreps.core.domain.model.WorkoutSet
+import com.deepreps.core.domain.model.enums.MuscleGroup
+import com.deepreps.core.domain.model.enums.SessionStatus
+import com.deepreps.core.domain.model.enums.SetStatus
+import com.deepreps.core.domain.model.enums.SetType
 import com.deepreps.core.domain.provider.AnalyticsTracker
 import com.deepreps.core.domain.repository.ExerciseRepository
 import com.deepreps.core.domain.repository.UserProfileRepository
+import com.deepreps.core.domain.repository.WorkoutSessionRepository
 import com.deepreps.core.domain.usecase.DetectDeloadNeedUseCase
 import com.deepreps.core.domain.usecase.DetermineSessionDayTypeUseCase
 import com.deepreps.core.domain.usecase.GeneratePlanUseCase
@@ -41,7 +49,7 @@ import javax.inject.Inject
  * - ai_plan_fallback_used: when a non-AI plan source is used
  */
 @HiltViewModel
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "TooManyFunctions")
 class PlanReviewViewModel @Inject constructor(
     @Suppress("UnusedPrivateProperty") private val savedStateHandle: SavedStateHandle,
     private val generatePlanUseCase: GeneratePlanUseCase,
@@ -50,6 +58,7 @@ class PlanReviewViewModel @Inject constructor(
     private val determineSessionDayTypeUseCase: DetermineSessionDayTypeUseCase,
     private val exerciseRepository: ExerciseRepository,
     private val userProfileRepository: UserProfileRepository,
+    private val workoutSessionRepository: WorkoutSessionRepository,
     private val analyticsTracker: AnalyticsTracker,
 ) : ViewModel() {
 
@@ -61,6 +70,7 @@ class PlanReviewViewModel @Inject constructor(
 
     // Cached request for regeneration
     private var lastPlanRequest: PlanRequest? = null
+    private var lastExerciseIds: List<Long> = emptyList()
 
     fun onIntent(intent: PlanReviewIntent) {
         when (intent) {
@@ -72,10 +82,14 @@ class PlanReviewViewModel @Inject constructor(
             is PlanReviewIntent.DismissSafetyWarnings -> {
                 _state.value = _state.value.copy(showSafetyWarnings = false)
             }
+            is PlanReviewIntent.AddWorkingSet -> handleAddWorkingSet(intent)
+            is PlanReviewIntent.RemoveLastWorkingSet ->
+                handleRemoveLastWorkingSet(intent)
         }
     }
 
     private fun handleLoadPlan(exerciseIds: List<Long>) {
+        lastExerciseIds = exerciseIds
         viewModelScope.launch {
             _state.value = _state.value.copy(
                 phase = PlanReviewUiState.Phase.Generating,
@@ -103,16 +117,18 @@ class PlanReviewViewModel @Inject constructor(
     }
 
     private fun handleRegeneratePlan() {
-        val request = lastPlanRequest ?: return
         viewModelScope.launch {
             _state.value = _state.value.copy(
                 phase = PlanReviewUiState.Phase.Generating,
             )
-            trackPlanRequested(request)
 
             @Suppress("TooGenericExceptionCaught")
             try {
-                executePlanGeneration(request)
+                val actualRequest = lastPlanRequest
+                    ?: buildPlanRequest(lastExerciseIds)
+                lastPlanRequest = actualRequest
+                trackPlanRequested(actualRequest)
+                executePlanGeneration(actualRequest)
             } catch (e: Exception) {
                 Timber.e(e, "Failed to regenerate plan")
                 trackPlanFailed("regeneration_error", e)
@@ -139,9 +155,12 @@ class PlanReviewViewModel @Inject constructor(
         val plan = result.plan
         if (plan == null) {
             _state.value = _state.value.copy(
-                phase = PlanReviewUiState.Phase.PlanReady,
-                exercisePlans = emptyList(),
-                planSource = source,
+                phase = PlanReviewUiState.Phase.Error,
+            )
+            _sideEffect.send(
+                PlanReviewSideEffect.ShowError(
+                    "Could not generate a plan. Please try again.",
+                ),
             )
             return
         }
@@ -225,6 +244,9 @@ class PlanReviewViewModel @Inject constructor(
     ): List<ExerciseForPlan> {
         val exercises = exerciseRepository.getExercisesByIds(exerciseIds)
         return exercises.map { exercise ->
+            val muscleGroupIndex = (exercise.primaryGroupId - 1).toInt()
+            val primaryGroup = MuscleGroup.entries
+                .getOrNull(muscleGroupIndex)?.value ?: ""
             ExerciseForPlan(
                 exerciseId = exercise.id,
                 stableId = exercise.stableId,
@@ -232,9 +254,57 @@ class PlanReviewViewModel @Inject constructor(
                 equipment = exercise.equipment.value,
                 movementType = exercise.movementType.value,
                 difficulty = exercise.difficulty.value,
-                primaryGroup = "",
+                primaryGroup = primaryGroup,
             )
         }
+    }
+
+    private fun handleAddWorkingSet(intent: PlanReviewIntent.AddWorkingSet) {
+        val currentPlans = _state.value.exercisePlans.toMutableList()
+        if (intent.exerciseIndex !in currentPlans.indices) return
+
+        val exercise = currentPlans[intent.exerciseIndex]
+        val workingSets = exercise.sets.filter { it.setType == "working" }
+
+        if (workingSets.size >= MAX_WORKING_SETS) return
+
+        val lastWorkingSet = workingSets.lastOrNull() ?: return
+        val newSet = EditableSet(
+            index = exercise.sets.size,
+            setType = "working",
+            weight = lastWorkingSet.weight,
+            reps = lastWorkingSet.reps,
+            restSeconds = lastWorkingSet.restSeconds,
+        )
+
+        val updatedSets = exercise.sets + newSet
+        currentPlans[intent.exerciseIndex] = exercise.copy(sets = updatedSets)
+        _state.value = _state.value.copy(exercisePlans = currentPlans)
+    }
+
+    private fun handleRemoveLastWorkingSet(
+        intent: PlanReviewIntent.RemoveLastWorkingSet,
+    ) {
+        val currentPlans = _state.value.exercisePlans.toMutableList()
+        if (intent.exerciseIndex !in currentPlans.indices) return
+
+        val exercise = currentPlans[intent.exerciseIndex]
+        val workingSets = exercise.sets.filter { it.setType == "working" }
+
+        if (workingSets.size <= MIN_WORKING_SETS) return
+
+        val lastWorkingSetIndex =
+            exercise.sets.indexOfLast { it.setType == "working" }
+        if (lastWorkingSetIndex < 0) return
+
+        val updatedSets = exercise.sets.toMutableList()
+            .apply { removeAt(lastWorkingSetIndex) }
+        val reindexed = updatedSets.mapIndexed { index, set ->
+            set.copy(index = index)
+        }
+        currentPlans[intent.exerciseIndex] =
+            exercise.copy(sets = reindexed)
+        _state.value = _state.value.copy(exercisePlans = currentPlans)
     }
 
     private fun handleUpdateWeight(intent: PlanReviewIntent.UpdateWeight) {
@@ -269,17 +339,93 @@ class PlanReviewViewModel @Inject constructor(
         _state.value = _state.value.copy(exercisePlans = currentPlans)
     }
 
+    @Suppress("LongMethod")
     private fun handleConfirmPlan() {
+        val exercisePlans = _state.value.exercisePlans
+        if (exercisePlans.isEmpty()) return
+
         viewModelScope.launch {
-            // Phase 2: Create WorkoutSession from confirmed plan,
-            // persist exercises and sets to Room, then navigate.
-            // For now, emit a placeholder navigation side effect.
-            _sideEffect.send(
-                PlanReviewSideEffect.ShowError(
-                    "Workout creation not yet implemented",
-                ),
+            _state.value = _state.value.copy(
+                phase = PlanReviewUiState.Phase.Generating,
             )
+
+            @Suppress("TooGenericExceptionCaught")
+            try {
+                val sessionId = createSessionFromPlan(exercisePlans)
+                _sideEffect.send(
+                    PlanReviewSideEffect.NavigateToWorkout(sessionId),
+                )
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to create workout session from plan")
+                _state.value = _state.value.copy(
+                    phase = PlanReviewUiState.Phase.PlanReady,
+                )
+                _sideEffect.send(
+                    PlanReviewSideEffect.ShowError(
+                        "Failed to start workout: ${e.message}",
+                    ),
+                )
+            }
         }
+    }
+
+    /**
+     * Persists the confirmed plan as a WorkoutSession with exercises and sets in Room.
+     *
+     * Uses [WorkoutSessionRepository.insertExerciseWithSets] for transactional writes
+     * per exercise (exercise + its sets atomically).
+     *
+     * @return The Room-generated session ID.
+     */
+    @Suppress("LongMethod")
+    private suspend fun createSessionFromPlan(
+        exercisePlans: List<EditableExercisePlan>,
+    ): Long {
+        val now = System.currentTimeMillis()
+
+        val session = WorkoutSession(
+            id = 0,
+            startedAt = now,
+            completedAt = null,
+            durationSeconds = null,
+            pausedDurationSeconds = 0,
+            status = SessionStatus.ACTIVE,
+            notes = null,
+            templateId = null,
+        )
+
+        val sessionId = workoutSessionRepository.createSession(session)
+
+        exercisePlans.forEachIndexed { orderIndex, plan ->
+            val exercise = WorkoutExercise(
+                id = 0,
+                sessionId = sessionId,
+                exerciseId = plan.exerciseId,
+                orderIndex = orderIndex,
+                supersetGroupId = null,
+                restTimerSeconds = plan.restSeconds,
+                notes = plan.notes,
+            )
+
+            val sets = plan.sets.mapIndexed { setIndex, editableSet ->
+                WorkoutSet(
+                    id = 0,
+                    setNumber = setIndex + 1,
+                    type = SetType.fromValue(editableSet.setType),
+                    status = SetStatus.PLANNED,
+                    plannedWeightKg = editableSet.weight,
+                    plannedReps = editableSet.reps,
+                    actualWeightKg = null,
+                    actualReps = null,
+                    completedAt = null,
+                    isPersonalRecord = false,
+                )
+            }
+
+            workoutSessionRepository.insertExerciseWithSets(exercise, sets)
+        }
+
+        return sessionId
     }
 
     private fun trackPlanRequested(request: PlanRequest) {
@@ -344,6 +490,9 @@ class PlanReviewViewModel @Inject constructor(
     }
 
     companion object {
+        private const val MIN_WORKING_SETS = 2
+        private const val MAX_WORKING_SETS = 6
+
         // Event names matching analytics-plan.md taxonomy (Section 1.4)
         private const val EVENT_AI_PLAN_REQUESTED = "ai_plan_requested"
         private const val EVENT_AI_PLAN_RECEIVED = "ai_plan_received"

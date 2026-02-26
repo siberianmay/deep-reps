@@ -7,6 +7,7 @@ import com.deepreps.core.domain.model.enums.MuscleGroup
  */
 @Suppress("ForbiddenPublicDataClass")
 data class ExerciseSelectionUiState(
+    val allowedGroups: Set<MuscleGroup> = MuscleGroup.entries.toSet(),
     val activeGroup: MuscleGroup = MuscleGroup.CHEST,
     val exercises: List<ExerciseUi> = emptyList(),
     val selectedExerciseIds: Set<Long> = emptySet(),

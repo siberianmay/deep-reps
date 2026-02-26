@@ -41,11 +41,15 @@ interface WorkoutSetDao {
         """
         UPDATE workout_sets
         SET actual_weight = :actualWeight, actual_reps = :actualReps,
-            is_completed = 1, completed_at = :completedAt
+            is_completed = 1, completed_at = :completedAt, status = 'completed'
         WHERE id = :id
         """
     )
     suspend fun markCompleted(id: Long, actualWeight: Double, actualReps: Int, completedAt: Long)
+
+    /** Updates only the status column for a set (e.g. skip/unskip). */
+    @Query("UPDATE workout_sets SET status = :status WHERE id = :setId")
+    suspend fun updateStatus(setId: Long, status: String)
 
     /** Deletes a set by its primary key. Only non-completed sets should be deleted. */
     @Query("DELETE FROM workout_sets WHERE id = :setId")
@@ -59,7 +63,8 @@ interface WorkoutSetDao {
         """
         UPDATE workout_sets
         SET actual_weight = :actualWeight, actual_reps = :actualReps,
-            is_completed = :isCompleted, completed_at = :completedAt
+            is_completed = :isCompleted, completed_at = :completedAt,
+            status = CASE WHEN :isCompleted THEN 'completed' ELSE 'planned' END
         WHERE workout_exercise_id = :workoutExerciseId AND set_index = :setIndex
         """
     )

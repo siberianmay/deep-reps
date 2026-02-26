@@ -20,13 +20,20 @@ object ExerciseLibraryNavigation {
 
     const val EXERCISE_LIST_ROUTE = "exercise_list"
     const val EXERCISE_DETAIL_ROUTE = "exercise_detail/{exerciseId}"
-    const val EXERCISE_SELECTION_ROUTE = "exercise_selection"
+    const val EXERCISE_SELECTION_ROUTE = "exercise_selection/{selectedGroupIds}"
 
     /** Navigation argument key for exercise ID. */
     const val EXERCISE_ID_ARG = "exerciseId"
 
+    /** Navigation argument key for selected muscle group IDs (comma-separated). */
+    const val SELECTED_GROUP_IDS_ARG = "selectedGroupIds"
+
     /** Build the route string for navigating to exercise detail with a specific ID. */
     fun exerciseDetailRoute(exerciseId: Long): String = "exercise_detail/$exerciseId"
+
+    /** Build the route string for navigating to exercise selection with pre-selected groups. */
+    fun exerciseSelectionRoute(groupIds: List<Long>): String =
+        "exercise_selection/${groupIds.joinToString(",")}"
 }
 
 /**
@@ -72,7 +79,14 @@ fun NavGraphBuilder.exerciseSelectionScreen(
     onSelectionConfirmed: (Set<Long>) -> Unit,
     onNavigateToDetail: (exerciseId: Long) -> Unit,
 ) {
-    composable(route = ExerciseLibraryNavigation.EXERCISE_SELECTION_ROUTE) {
+    composable(
+        route = ExerciseLibraryNavigation.EXERCISE_SELECTION_ROUTE,
+        arguments = listOf(
+            navArgument(ExerciseLibraryNavigation.SELECTED_GROUP_IDS_ARG) {
+                type = NavType.StringType
+            },
+        ),
+    ) {
         ExerciseSelectionScreen(
             onNavigateBack = onNavigateBack,
             onSelectionConfirmed = onSelectionConfirmed,
@@ -98,6 +112,6 @@ fun NavController.navigateToExerciseDetail(exerciseId: Long) {
 /**
  * NavController extension for navigating to the exercise selection screen.
  */
-fun NavController.navigateToExerciseSelection() {
-    navigate(ExerciseLibraryNavigation.EXERCISE_SELECTION_ROUTE)
+fun NavController.navigateToExerciseSelection(groupIds: List<Long>) {
+    navigate(ExerciseLibraryNavigation.exerciseSelectionRoute(groupIds))
 }

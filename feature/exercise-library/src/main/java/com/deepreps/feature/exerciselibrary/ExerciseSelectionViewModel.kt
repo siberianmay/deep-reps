@@ -1,10 +1,12 @@
 package com.deepreps.feature.exerciselibrary
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.deepreps.core.domain.model.Exercise
 import com.deepreps.core.domain.model.enums.MuscleGroup
 import com.deepreps.core.domain.repository.ExerciseRepository
+import com.deepreps.feature.exerciselibrary.navigation.ExerciseLibraryNavigation
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
@@ -32,16 +34,28 @@ import javax.inject.Inject
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class ExerciseSelectionViewModel @Inject constructor(
+    savedStateHandle: SavedStateHandle,
     private val exerciseRepository: ExerciseRepository,
 ) : ViewModel() {
 
-    private val _state = MutableStateFlow(ExerciseSelectionUiState())
+    private val allowedGroups: Set<MuscleGroup> = parseAllowedGroups(
+        savedStateHandle[ExerciseLibraryNavigation.SELECTED_GROUP_IDS_ARG],
+    )
+
+    private val initialGroup: MuscleGroup = allowedGroups.firstOrNull() ?: MuscleGroup.CHEST
+
+    private val _state = MutableStateFlow(
+        ExerciseSelectionUiState(
+            allowedGroups = allowedGroups,
+            activeGroup = initialGroup,
+        ),
+    )
     val state: StateFlow<ExerciseSelectionUiState> = _state.asStateFlow()
 
     private val _sideEffect = Channel<ExerciseSelectionSideEffect>(Channel.BUFFERED)
     val sideEffect: Flow<ExerciseSelectionSideEffect> = _sideEffect.receiveAsFlow()
 
-    private val activeGroup = MutableStateFlow(MuscleGroup.CHEST)
+    private val activeGroup = MutableStateFlow(initialGroup)
     private val searchQuery = MutableStateFlow("")
 
     init {
@@ -137,6 +151,16 @@ private fun filterByQuery(exercises: List<Exercise>, query: String): List<Exerci
     if (query.isBlank()) return exercises
     val lowerQuery = query.lowercase()
     return exercises.filter { it.name.lowercase().contains(lowerQuery) }
+}
+
+private fun parseAllowedGroups(groupIdsArg: String?): Set<MuscleGroup> {
+    if (groupIdsArg.isNullOrBlank()) return MuscleGroup.entries.toSet()
+    val groupIds = groupIdsArg.split(",").mapNotNull { it.toLongOrNull() }
+    if (groupIds.isEmpty()) return MuscleGroup.entries.toSet()
+    return groupIds.mapNotNull { id ->
+        val ordinal = (id - 1).toInt()
+        MuscleGroup.entries.getOrNull(ordinal)
+    }.toSet()
 }
 
 private fun Exercise.toSelectionUi(): ExerciseUi = ExerciseUi(

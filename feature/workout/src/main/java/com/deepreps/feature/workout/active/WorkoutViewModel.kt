@@ -109,6 +109,8 @@ class WorkoutViewModel @Inject constructor(
             is WorkoutIntent.UpdateSetReps -> handleUpdateSetReps(intent)
             is WorkoutIntent.AddSet -> handleAddSet(intent)
             is WorkoutIntent.DeleteSet -> handleDeleteSet(intent)
+            is WorkoutIntent.SkipSet -> handleSkipSet(intent)
+            is WorkoutIntent.UnskipSet -> handleUnskipSet(intent)
             is WorkoutIntent.SkipRestTimer -> handleSkipRestTimer()
             is WorkoutIntent.ExtendRestTimer -> handleExtendRestTimer()
             is WorkoutIntent.PauseWorkout -> handlePauseWorkout()
@@ -116,9 +118,14 @@ class WorkoutViewModel @Inject constructor(
             is WorkoutIntent.RequestFinishWorkout -> handleRequestFinish()
             is WorkoutIntent.ConfirmFinishWorkout -> handleConfirmFinish()
             is WorkoutIntent.DismissFinishDialog -> handleDismissFinishDialog()
+            is WorkoutIntent.OpenWeightSheet -> handleOpenWeightSheet(intent)
+            is WorkoutIntent.OpenRepsSheet -> handleOpenRepsSheet(intent)
+            is WorkoutIntent.CloseInputSheet -> handleCloseInputSheet()
             is WorkoutIntent.ToggleExerciseExpanded -> handleToggleExpanded(intent)
             is WorkoutIntent.ToggleNotes -> handleToggleNotes(intent)
             is WorkoutIntent.UpdateNotes -> handleUpdateNotes(intent)
+            is WorkoutIntent.ShowExerciseInfo -> handleShowExerciseInfo(intent)
+            is WorkoutIntent.DismissExerciseInfo -> handleDismissExerciseInfo()
         }
     }
 
@@ -362,24 +369,7 @@ class WorkoutViewModel @Inject constructor(
             if (hasMoreSets) {
                 restTimerManager.start(exerciseAfterUpdate?.restTimerSeconds ?: 120)
             } else {
-                // All sets of this exercise are done -- auto-advance
-                val nextIdx = _state.value.activeExerciseIndex
-                if (nextIdx >= 0) {
-                    // Expand next exercise, collapse completed
-                    _state.update { current ->
-                        val updated = current.exercises.mapIndexed { index, ex ->
-                            ex.copy(isExpanded = index == nextIdx)
-                        }
-                        current.copy(exercises = updated)
-                    }
-                    _sideEffect.trySend(WorkoutSideEffect.ScrollToExercise(nextIdx))
-                    // Start rest timer before next exercise
-                    val nextExercise = _state.value.exercises.getOrNull(nextIdx)
-                    if (nextExercise != null) {
-                        restTimerManager.start(nextExercise.restTimerSeconds)
-                    }
-                }
-                // If no more exercises, the user can tap Finish
+                maybeAutoAdvanceExercise(startRestTimer = true)
             }
         }
     }
@@ -496,6 +486,91 @@ class WorkoutViewModel @Inject constructor(
                 }
             }
             current.copy(exercises = updatedExercises)
+        }
+    }
+
+    private fun handleSkipSet(intent: WorkoutIntent.SkipSet) {
+        viewModelScope.launch {
+            workoutSessionRepository.updateSetStatus(intent.setId, SetStatus.SKIPPED)
+        }
+
+        _state.update { current ->
+            val updatedExercises = current.exercises.map { exercise ->
+                if (exercise.id == intent.workoutExerciseId) {
+                    val updatedSets = exercise.sets.map { set ->
+                        if (set.id == intent.setId) {
+                            set.copy(status = SetStatus.SKIPPED)
+                        } else {
+                            set
+                        }
+                    }
+                    exercise.copy(sets = markInProgressSet(updatedSets))
+                } else {
+                    exercise
+                }
+            }
+            current.copy(exercises = updatedExercises)
+        }
+
+        // Check if all sets of this exercise are now done
+        val exerciseAfterSkip = _state.value.exercises.find { it.id == intent.workoutExerciseId }
+        val hasRemainingSets = exerciseAfterSkip?.sets?.any {
+            it.status == SetStatus.PLANNED || it.status == SetStatus.IN_PROGRESS
+        } ?: false
+
+        if (!hasRemainingSets) {
+            maybeAutoAdvanceExercise(startRestTimer = false)
+        }
+    }
+
+    private fun handleUnskipSet(intent: WorkoutIntent.UnskipSet) {
+        viewModelScope.launch {
+            workoutSessionRepository.updateSetStatus(intent.setId, SetStatus.PLANNED)
+        }
+
+        _state.update { current ->
+            val updatedExercises = current.exercises.map { exercise ->
+                if (exercise.id == intent.workoutExerciseId) {
+                    val updatedSets = exercise.sets.map { set ->
+                        if (set.id == intent.setId) {
+                            set.copy(status = SetStatus.PLANNED)
+                        } else {
+                            set
+                        }
+                    }
+                    exercise.copy(sets = markInProgressSet(updatedSets))
+                } else {
+                    exercise
+                }
+            }
+            current.copy(exercises = updatedExercises)
+        }
+    }
+
+    /**
+     * If all sets of the current exercise are done (COMPLETED or SKIPPED),
+     * collapses it, expands the next incomplete exercise, and scrolls to it.
+     *
+     * @param startRestTimer whether to start the rest timer for the next exercise.
+     *   True after completing a set (user needs rest), false after skipping (user wants to move on).
+     */
+    private fun maybeAutoAdvanceExercise(startRestTimer: Boolean) {
+        val nextIdx = _state.value.activeExerciseIndex
+        if (nextIdx < 0) return // All exercises done — user can tap Finish
+
+        _state.update { current ->
+            val updated = current.exercises.mapIndexed { index, ex ->
+                ex.copy(isExpanded = index == nextIdx)
+            }
+            current.copy(exercises = updated)
+        }
+        _sideEffect.trySend(WorkoutSideEffect.ScrollToExercise(nextIdx))
+
+        if (startRestTimer) {
+            val nextExercise = _state.value.exercises.getOrNull(nextIdx)
+            if (nextExercise != null) {
+                restTimerManager.start(nextExercise.restTimerSeconds)
+            }
         }
     }
 
@@ -632,6 +707,35 @@ class WorkoutViewModel @Inject constructor(
         }
     }
 
+    private fun handleOpenWeightSheet(intent: WorkoutIntent.OpenWeightSheet) {
+        _state.update {
+            it.copy(
+                activeInputSheet = InputSheetState.Weight(
+                    workoutExerciseId = intent.workoutExerciseId,
+                    setId = intent.setId,
+                    currentValue = intent.currentWeight,
+                    step = intent.step,
+                ),
+            )
+        }
+    }
+
+    private fun handleOpenRepsSheet(intent: WorkoutIntent.OpenRepsSheet) {
+        _state.update {
+            it.copy(
+                activeInputSheet = InputSheetState.Reps(
+                    workoutExerciseId = intent.workoutExerciseId,
+                    setId = intent.setId,
+                    currentValue = intent.currentReps,
+                ),
+            )
+        }
+    }
+
+    private fun handleCloseInputSheet() {
+        _state.update { it.copy(activeInputSheet = null) }
+    }
+
     private fun handleToggleExpanded(intent: WorkoutIntent.ToggleExerciseExpanded) {
         _state.update { current ->
             val updatedExercises = current.exercises.map { ex ->
@@ -695,6 +799,26 @@ class WorkoutViewModel @Inject constructor(
                 // Silently fail -- notes are non-critical and the in-memory state is preserved
             }
         }
+    }
+
+    // ----- Exercise Info Handlers -----
+
+    private fun handleShowExerciseInfo(intent: WorkoutIntent.ShowExerciseInfo) {
+        viewModelScope.launch {
+            val exercise = exerciseRepository.getExerciseById(intent.exerciseId)
+            if (exercise != null) {
+                _state.update {
+                    it.copy(
+                        exerciseInfoId = intent.exerciseId,
+                        exerciseInfoData = exercise,
+                    )
+                }
+            }
+        }
+    }
+
+    private fun handleDismissExerciseInfo() {
+        _state.update { it.copy(exerciseInfoId = null, exerciseInfoData = null) }
     }
 
     // ----- Formatting Helpers -----
