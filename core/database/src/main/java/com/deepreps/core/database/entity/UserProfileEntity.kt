@@ -31,6 +31,21 @@ data class UserProfileEntity(
     /** Body weight in kg. */
     @ColumnInfo(name = "body_weight_kg")
     val bodyWeightKg: Double?,
+    /** Minimum reps for compound exercises. */
+    @ColumnInfo(name = "compound_rep_min", defaultValue = "6")
+    val compoundRepMin: Int = 6,
+    /** Maximum reps for compound exercises. */
+    @ColumnInfo(name = "compound_rep_max", defaultValue = "10")
+    val compoundRepMax: Int = 10,
+    /** Minimum reps for isolation exercises. */
+    @ColumnInfo(name = "isolation_rep_min", defaultValue = "10")
+    val isolationRepMin: Int = 10,
+    /** Maximum reps for isolation exercises. */
+    @ColumnInfo(name = "isolation_rep_max", defaultValue = "15")
+    val isolationRepMax: Int = 15,
+    /** 0 = use experience-level default. 1-10 = override working sets per exercise. */
+    @ColumnInfo(name = "default_working_sets", defaultValue = "0")
+    val defaultWorkingSets: Int = 0,
     /** Epoch millis. */
     @ColumnInfo(name = "created_at")
     val createdAt: Long,

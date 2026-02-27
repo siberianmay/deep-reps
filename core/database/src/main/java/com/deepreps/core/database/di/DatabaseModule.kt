@@ -5,6 +5,8 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.deepreps.core.database.DeepRepsDatabase
 import com.deepreps.core.database.PrepopulateCallback
+import com.deepreps.core.database.migration.MIGRATION_2_3
+import com.deepreps.core.database.migration.MIGRATION_3_4
 import com.deepreps.core.database.dao.BodyWeightDao
 import com.deepreps.core.database.dao.CachedAiPlanDao
 import com.deepreps.core.database.dao.ExerciseDao
@@ -36,6 +38,7 @@ internal object DatabaseModule {
         Room.databaseBuilder(context, DeepRepsDatabase::class.java, DATABASE_NAME)
             .setJournalMode(RoomDatabase.JournalMode.WRITE_AHEAD_LOGGING)
             .addCallback(PrepopulateCallback())
+            .addMigrations(MIGRATION_2_3, MIGRATION_3_4)
             .fallbackToDestructiveMigration()
             .build()
 

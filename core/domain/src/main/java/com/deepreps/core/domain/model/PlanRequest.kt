@@ -32,6 +32,11 @@ data class UserPlanProfile(
     val bodyWeightKg: Double?,
     val age: Int?,
     val gender: String?,
+    val compoundRepMin: Int = 8,
+    val compoundRepMax: Int = 12,
+    val isolationRepMin: Int = 12,
+    val isolationRepMax: Int = 15,
+    val defaultWorkingSets: Int = 0,
 )
 
 /**

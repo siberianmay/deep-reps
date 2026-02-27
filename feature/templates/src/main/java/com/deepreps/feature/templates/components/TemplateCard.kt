@@ -1,5 +1,7 @@
 package com.deepreps.feature.templates.components
 
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -36,12 +38,13 @@ import com.deepreps.feature.templates.TemplateUi
  * @param modifier External modifier.
  */
 @Suppress("LongMethod")
-@OptIn(ExperimentalLayoutApi::class)
+@OptIn(ExperimentalLayoutApi::class, ExperimentalFoundationApi::class)
 @Composable
 fun TemplateCard(
     template: TemplateUi,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    onLongClick: (() -> Unit)? = null,
 ) {
     val colors = DeepRepsTheme.colors
     val typography = DeepRepsTheme.typography
@@ -49,8 +52,12 @@ fun TemplateCard(
     val radius = DeepRepsTheme.radius
 
     Surface(
-        onClick = onClick,
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick,
+            ),
         shape = RoundedCornerShape(radius.md),
         color = colors.surfaceLow,
         border = androidx.compose.foundation.BorderStroke(1.dp, colors.borderSubtle),

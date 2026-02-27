@@ -29,6 +29,7 @@ data class ExerciseOrderItem(
     val name: String,
     val equipment: String,
     val difficulty: String,
+    val primaryGroupId: Long,
     val orderIndex: Int,
 )
 

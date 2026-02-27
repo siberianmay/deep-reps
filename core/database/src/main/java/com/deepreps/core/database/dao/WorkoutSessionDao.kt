@@ -8,6 +8,7 @@ import com.deepreps.core.database.entity.WorkoutSessionEntity
 import kotlinx.coroutines.flow.Flow
 
 @Dao
+@Suppress("TooManyFunctions")
 interface WorkoutSessionDao {
 
     @Insert
@@ -50,4 +51,13 @@ interface WorkoutSessionDao {
      */
     @Query("SELECT * FROM workout_sessions WHERE status = 'active' AND started_at < :cutoff")
     suspend fun getStaleActiveSessions(cutoff: Long): List<WorkoutSessionEntity>
+
+    @Query("SELECT * FROM workout_sessions ORDER BY started_at DESC")
+    suspend fun getAllOnce(): List<WorkoutSessionEntity>
+
+    @Insert
+    suspend fun insertAll(sessions: List<WorkoutSessionEntity>)
+
+    @Query("DELETE FROM workout_sessions")
+    suspend fun deleteAll()
 }

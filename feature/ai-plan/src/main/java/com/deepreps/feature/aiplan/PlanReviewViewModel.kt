@@ -210,10 +210,29 @@ class PlanReviewViewModel @Inject constructor(
             bodyWeightKg = profile.bodyWeightKg,
             age = profile.age,
             gender = profile.gender?.value,
+            compoundRepMin = profile.compoundRepMin,
+            compoundRepMax = profile.compoundRepMax,
+            isolationRepMin = profile.isolationRepMin,
+            isolationRepMax = profile.isolationRepMax,
+            defaultWorkingSets = profile.defaultWorkingSets,
         )
 
-        // Phase 2: Load actual training history from WorkoutSessionRepository
-        val trainingHistory: List<ExerciseHistory> = emptyList()
+        val exerciseNameMap = exercisesForPlan.associate { it.exerciseId to it.name }
+
+        val trainingHistory = exerciseIds.mapNotNull { exerciseId ->
+            val sessions = workoutSessionRepository
+                .getRecentWorkingSetsForExercise(exerciseId, sessionLimit = 3)
+            if (sessions.isEmpty()) {
+                null
+            } else {
+                ExerciseHistory(
+                    exerciseId = exerciseId,
+                    exerciseName = exerciseNameMap[exerciseId].orEmpty(),
+                    sessions = sessions,
+                    trend = null,
+                )
+            }
+        }
 
         val deloadStatus = detectDeloadNeedUseCase.execute(
             experienceLevel = userPlanProfile.experienceLevel,
@@ -243,7 +262,9 @@ class PlanReviewViewModel @Inject constructor(
         exerciseIds: List<Long>,
     ): List<ExerciseForPlan> {
         val exercises = exerciseRepository.getExercisesByIds(exerciseIds)
-        return exercises.map { exercise ->
+        val exerciseMap = exercises.associateBy { it.id }
+        val orderedExercises = exerciseIds.mapNotNull { id -> exerciseMap[id] }
+        return orderedExercises.map { exercise ->
             val muscleGroupIndex = (exercise.primaryGroupId - 1).toInt()
             val primaryGroup = MuscleGroup.entries
                 .getOrNull(muscleGroupIndex)?.value ?: ""

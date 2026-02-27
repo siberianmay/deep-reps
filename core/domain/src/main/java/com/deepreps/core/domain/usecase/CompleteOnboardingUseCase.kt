@@ -41,6 +41,7 @@ class CompleteOnboardingUseCase(
         bodyWeightKg: Double?,
     ) {
         val now = System.currentTimeMillis()
+        val repDefaults = ExperienceLevel.defaultRepRanges(experienceLevel)
         val profile = UserProfile(
             id = 1,
             experienceLevel = experienceLevel,
@@ -49,6 +50,10 @@ class CompleteOnboardingUseCase(
             heightCm = heightCm,
             gender = gender,
             bodyWeightKg = bodyWeightKg,
+            compoundRepMin = repDefaults.compoundRepMin,
+            compoundRepMax = repDefaults.compoundRepMax,
+            isolationRepMin = repDefaults.isolationRepMin,
+            isolationRepMax = repDefaults.isolationRepMax,
             createdAt = now,
             updatedAt = now,
         )

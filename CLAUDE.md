@@ -286,8 +286,8 @@ Plans:   DRAFT → APPROVED → IN PROGRESS → COMPLETED (date) or ABANDONED (r
 ### Current State
 
 As of 2026-02-26:
-- **Open bugs:** BUG-5 (P2), BUG-6 (P2), BUG-7 (P3) in `2026-02-26_bugs.md`
-- **Latest completed plan:** `2026-02-26_plan_nav-settings-core-loop.md` (bottom nav, settings, home upgrade, workout summary wiring, progress wiring, skipset fix)
+- **Open bugs:** None
+- **Latest completed plan:** `2026-02-26_plan_data-export-import.md` (CSV export + JSON import for data portability)
 - **Highest bug ID:** BUG-7
 
 ## Local Emulator Testing

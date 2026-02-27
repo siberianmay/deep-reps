@@ -11,6 +11,7 @@ import com.deepreps.core.database.entity.TemplateWithExerciseCountProjection
 import kotlinx.coroutines.flow.Flow
 
 @Dao
+@Suppress("TooManyFunctions")
 interface TemplateDao {
 
     @Insert
@@ -62,4 +63,19 @@ interface TemplateDao {
         """,
     )
     fun getAllWithExerciseCount(): Flow<List<TemplateWithExerciseCountProjection>>
+
+    @Query("SELECT * FROM templates ORDER BY updated_at DESC")
+    suspend fun getAllOnce(): List<TemplateEntity>
+
+    @Query("SELECT * FROM template_exercises ORDER BY template_id, order_index ASC")
+    suspend fun getAllTemplateExercisesOnce(): List<TemplateExerciseEntity>
+
+    @Insert
+    suspend fun insertAll(templates: List<TemplateEntity>)
+
+    @Query("DELETE FROM templates")
+    suspend fun deleteAll()
+
+    @Query("DELETE FROM template_exercises")
+    suspend fun deleteAllTemplateExercises()
 }

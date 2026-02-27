@@ -184,5 +184,6 @@ private fun Exercise.toOrderItem(index: Int): ExerciseOrderItem = ExerciseOrderI
     name = name,
     equipment = equipment.value,
     difficulty = difficulty.value,
+    primaryGroupId = primaryGroupId,
     orderIndex = index,
 )

@@ -13,10 +13,14 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
@@ -27,6 +31,9 @@ import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
@@ -116,6 +123,7 @@ internal fun TemplateListContent(
                             message = when (state.errorType) {
                                 TemplateListError.LoadFailed -> "Failed to load templates."
                                 TemplateListError.DeleteFailed -> "Failed to delete template."
+                                TemplateListError.RenameFailed -> "Failed to rename template."
                             },
                             onRetry = { onIntent(TemplateListIntent.Retry) },
                             modifier = Modifier.fillParentMaxSize(),
@@ -145,19 +153,9 @@ internal fun TemplateListContent(
                         items = state.templates,
                         key = { it.id },
                     ) { template ->
-                        SwipeToDeleteTemplateItem(
+                        TemplateItemWithContextMenu(
                             template = template,
-                            onTap = {
-                                onIntent(TemplateListIntent.LoadTemplate(template.id))
-                            },
-                            onSwipeDelete = {
-                                onIntent(
-                                    TemplateListIntent.RequestDelete(
-                                        templateId = template.id,
-                                        templateName = template.name,
-                                    ),
-                                )
-                            },
+                            onIntent = onIntent,
                         )
                     }
                 }
@@ -198,6 +196,87 @@ internal fun TemplateListContent(
             onDismiss = { onIntent(TemplateListIntent.DismissDelete) },
         )
     }
+
+    // Rename dialog
+    if (state.showRenameDialog != null) {
+        RenameTemplateDialog(
+            currentName = state.showRenameDialog.currentName,
+            onConfirm = { onIntent(TemplateListIntent.ConfirmRename(it)) },
+            onDismiss = { onIntent(TemplateListIntent.DismissRename) },
+        )
+    }
+}
+
+/**
+ * Template card with swipe-to-delete and long-press context menu.
+ *
+ * Long-press reveals a dropdown with Rename and Delete options.
+ */
+@Suppress("LongMethod")
+@Composable
+private fun TemplateItemWithContextMenu(
+    template: TemplateUi,
+    onIntent: (TemplateListIntent) -> Unit,
+) {
+    var showMenu by remember { mutableStateOf(false) }
+
+    Box {
+        SwipeToDeleteTemplateItem(
+            template = template,
+            onTap = { onIntent(TemplateListIntent.LoadTemplate(template.id)) },
+            onSwipeDelete = {
+                onIntent(
+                    TemplateListIntent.RequestDelete(
+                        templateId = template.id,
+                        templateName = template.name,
+                    ),
+                )
+            },
+            onLongPress = { showMenu = true },
+        )
+
+        DropdownMenu(
+            expanded = showMenu,
+            onDismissRequest = { showMenu = false },
+        ) {
+            DropdownMenuItem(
+                text = { Text("Rename") },
+                onClick = {
+                    showMenu = false
+                    onIntent(
+                        TemplateListIntent.RequestRename(
+                            templateId = template.id,
+                            currentName = template.name,
+                        ),
+                    )
+                },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = null,
+                    )
+                },
+            )
+            DropdownMenuItem(
+                text = { Text("Delete") },
+                onClick = {
+                    showMenu = false
+                    onIntent(
+                        TemplateListIntent.RequestDelete(
+                            templateId = template.id,
+                            templateName = template.name,
+                        ),
+                    )
+                },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = null,
+                    )
+                },
+            )
+        }
+    }
 }
 
 /**
@@ -214,6 +293,7 @@ private fun SwipeToDeleteTemplateItem(
     template: TemplateUi,
     onTap: () -> Unit,
     onSwipeDelete: () -> Unit,
+    onLongPress: () -> Unit = {},
 ) {
     val colors = DeepRepsTheme.colors
     val dismissState = rememberSwipeToDismissBoxState(
@@ -259,6 +339,7 @@ private fun SwipeToDeleteTemplateItem(
         TemplateCard(
             template = template,
             onClick = onTap,
+            onLongClick = onLongPress,
         )
     }
 }
@@ -300,6 +381,69 @@ private fun DeleteConfirmationDialog(
                     text = "Delete",
                     style = typography.labelLarge,
                     color = colors.statusError,
+                )
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(
+                    text = "Cancel",
+                    style = typography.labelLarge,
+                    color = colors.onSurfaceSecondary,
+                )
+            }
+        },
+        containerColor = colors.surfaceHigh,
+    )
+}
+
+/**
+ * Dialog for renaming a template.
+ *
+ * Pre-fills the current name. Confirm button is disabled when the field
+ * is blank or unchanged from the current name.
+ */
+@Suppress("LongMethod")
+@Composable
+private fun RenameTemplateDialog(
+    currentName: String,
+    onConfirm: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var name by remember { mutableStateOf(currentName) }
+    val colors = DeepRepsTheme.colors
+    val typography = DeepRepsTheme.typography
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "Rename Template",
+                style = typography.headlineMedium,
+                color = colors.onSurfacePrimary,
+            )
+        },
+        text = {
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = { Text("Template name") },
+                singleLine = true,
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onConfirm(name.trim()) },
+                enabled = name.isNotBlank() && name.trim() != currentName,
+            ) {
+                Text(
+                    text = "Rename",
+                    style = typography.labelLarge,
+                    color = if (name.isNotBlank() && name.trim() != currentName) {
+                        colors.accentPrimary
+                    } else {
+                        colors.onSurfaceTertiary
+                    },
                 )
             }
         },

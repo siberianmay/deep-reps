@@ -19,6 +19,11 @@ data class UserProfile(
     val heightCm: Double?,
     val gender: Gender?,
     val bodyWeightKg: Double?,
+    val compoundRepMin: Int,
+    val compoundRepMax: Int,
+    val isolationRepMin: Int,
+    val isolationRepMax: Int,
+    val defaultWorkingSets: Int = 0,
     val createdAt: Long,
     val updatedAt: Long,
 )

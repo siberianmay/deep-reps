@@ -5,6 +5,8 @@ import com.deepreps.core.common.dispatcher.DispatcherProvider
 import com.deepreps.core.data.mapper.toDomain
 import com.deepreps.core.data.mapper.toEntity
 import com.deepreps.core.database.DeepRepsDatabase
+import com.deepreps.core.domain.model.HistoricalSession
+import com.deepreps.core.domain.model.HistoricalSet
 import com.deepreps.core.database.dao.WorkoutExerciseDao
 import com.deepreps.core.database.dao.WorkoutSessionDao
 import com.deepreps.core.database.dao.WorkoutSetDao
@@ -151,4 +153,32 @@ class WorkoutSessionRepositoryImpl @Inject constructor(
         withContext(dispatchers.io) {
             exerciseDao.updateNotes(workoutExerciseId, notes)
         }
+
+    override suspend fun getRecentWorkingSetsForExercise(
+        exerciseId: Long,
+        sessionLimit: Int,
+    ): List<HistoricalSession> = withContext(dispatchers.io) {
+        val rows = setDao.getCompletedWorkingSetsByExercise(exerciseId)
+
+        rows
+            .groupBy { it.sessionDate }
+            .entries
+            .sortedByDescending { it.key }
+            .take(sessionLimit)
+            .map { (sessionDate, sets) ->
+                HistoricalSession(
+                    date = sessionDate,
+                    sets = sets.mapNotNull { row ->
+                        val weight = row.actualWeight ?: return@mapNotNull null
+                        val reps = row.actualReps ?: return@mapNotNull null
+                        HistoricalSet(
+                            weight = weight,
+                            reps = reps,
+                            setType = "working",
+                        )
+                    },
+                )
+            }
+            .filter { it.sets.isNotEmpty() }
+    }
 }

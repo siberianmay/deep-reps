@@ -8,6 +8,7 @@ data class TemplateListUiState(
     val isLoading: Boolean = true,
     val errorType: TemplateListError? = null,
     val showDeleteConfirmation: DeleteConfirmation? = null,
+    val showRenameDialog: RenameRequest? = null,
 )
 
 /**
@@ -32,9 +33,18 @@ data class DeleteConfirmation(
 )
 
 /**
+ * State for the rename dialog.
+ */
+data class RenameRequest(
+    val templateId: Long,
+    val currentName: String,
+)
+
+/**
  * Typed errors for the template list screen.
  */
 sealed interface TemplateListError {
     data object LoadFailed : TemplateListError
     data object DeleteFailed : TemplateListError
+    data object RenameFailed : TemplateListError
 }

@@ -23,6 +23,15 @@ sealed interface TemplateListIntent {
     /** User tapped edit on a template. */
     data class EditTemplate(val templateId: Long) : TemplateListIntent
 
+    /** User long-pressed a template and selected rename. */
+    data class RequestRename(val templateId: Long, val currentName: String) : TemplateListIntent
+
+    /** User confirmed the new name in the rename dialog. */
+    data class ConfirmRename(val newName: String) : TemplateListIntent
+
+    /** User dismissed the rename dialog. */
+    data object DismissRename : TemplateListIntent
+
     /** User requested a retry after an error. */
     data object Retry : TemplateListIntent
 }

@@ -30,6 +30,10 @@ class ResolveRestTimerUseCaseTest {
         heightCm = 178.0,
         gender = Gender.MALE,
         bodyWeightKg = 80.0,
+        compoundRepMin = 6,
+        compoundRepMax = 10,
+        isolationRepMin = 10,
+        isolationRepMax = 15,
         createdAt = 1000L,
         updatedAt = 1000L,
     )

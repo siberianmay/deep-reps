@@ -23,4 +23,7 @@ interface CachedAiPlanDao {
     /** Delete cached plans created before the given epoch millis. */
     @Query("DELETE FROM cached_ai_plans WHERE created_at < :before")
     suspend fun deleteExpired(before: Long)
+
+    @Query("DELETE FROM cached_ai_plans")
+    suspend fun deleteAll()
 }

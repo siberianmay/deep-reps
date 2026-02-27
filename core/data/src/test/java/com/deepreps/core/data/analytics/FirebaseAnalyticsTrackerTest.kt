@@ -1,10 +1,16 @@
 package com.deepreps.core.data.analytics
 
+import android.os.Bundle
 import com.deepreps.core.data.consent.ConsentManager
 import com.google.firebase.analytics.FirebaseAnalytics
+import io.mockk.Runs
 import io.mockk.every
+import io.mockk.just
 import io.mockk.mockk
+import io.mockk.mockkConstructor
+import io.mockk.unmockkConstructor
 import io.mockk.verify
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -30,10 +36,20 @@ class FirebaseAnalyticsTrackerTest {
 
     @BeforeEach
     fun setup() {
+        mockkConstructor(Bundle::class)
+        every { anyConstructed<Bundle>().putString(any(), any()) } just Runs
+        every { anyConstructed<Bundle>().putLong(any(), any()) } just Runs
+        every { anyConstructed<Bundle>().putDouble(any(), any()) } just Runs
+
         tracker = FirebaseAnalyticsTracker(
             firebaseAnalytics = firebaseAnalytics,
             consentManager = consentManager,
         )
+    }
+
+    @AfterEach
+    fun tearDown() {
+        unmockkConstructor(Bundle::class)
     }
 
     @Nested

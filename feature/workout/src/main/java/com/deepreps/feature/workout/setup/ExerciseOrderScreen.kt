@@ -5,15 +5,18 @@ import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.LazyListState
@@ -29,6 +32,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
@@ -39,6 +44,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import com.deepreps.core.domain.model.enums.MuscleGroup
 import com.deepreps.core.ui.component.DeepRepsButton
 import com.deepreps.core.ui.component.DeepRepsCard
 import com.deepreps.core.ui.component.DragDropState
@@ -184,6 +190,7 @@ private fun ExerciseOrderList(
         ) { index, exercise ->
             val isDragged = dragDropState.isDragging && dragDropState.draggedItemIndex == index
             val dragOffset = if (isDragged) dragDropState.dragOffset else 0f
+            val currentIndex by rememberUpdatedState(index)
 
             Box(
                 modifier = Modifier
@@ -195,10 +202,10 @@ private fun ExerciseOrderList(
                         alpha = if (isDragged) 0.9f else 1f
                         shadowElevation = if (isDragged) 8f else 0f
                     }
-                    .pointerInput(index) {
+                    .pointerInput(Unit) {
                         detectVerticalDragGestures(
                             onDragStart = {
-                                dragDropState.onDragStart(index)
+                                dragDropState.onDragStart(currentIndex)
                                 onHapticFeedback()
                             },
                             onVerticalDrag = { change, dragAmount ->
@@ -244,6 +251,14 @@ private fun ExerciseOrderCardContent(
     val accessibilityText = "Drag to reorder ${exercise.name}, position ${index + 1}, " +
         "${exercise.equipment}, ${exercise.difficulty}"
 
+    val muscleGroup = MuscleGroup.entries.getOrNull((exercise.primaryGroupId - 1).toInt())
+    val groupColor = if (muscleGroup != null) {
+        colors.colorForMuscleGroup(muscleGroup)
+    } else {
+        colors.onSurfaceTertiary
+    }
+    val radius = DeepRepsTheme.radius
+
     DeepRepsCard(
         modifier = Modifier
             .fillMaxWidth()
@@ -252,9 +267,23 @@ private fun ExerciseOrderCardContent(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(spacing.space3),
+                .height(IntrinsicSize.Min),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            // Muscle group color indicator
+            Box(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .width(4.dp)
+                    .background(
+                        color = groupColor,
+                        shape = RoundedCornerShape(
+                            topStart = radius.md,
+                            bottomStart = radius.md,
+                        ),
+                    ),
+            )
+
             // Drag handle
             Box(
                 modifier = Modifier.size(48.dp),
@@ -284,7 +313,9 @@ private fun ExerciseOrderCardContent(
 
             // Exercise info
             Column(
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(top = spacing.space3, end = spacing.space3, bottom = spacing.space3),
             ) {
                 Text(
                     text = exercise.name,

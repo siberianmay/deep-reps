@@ -1,10 +1,14 @@
 package com.deepreps.core.domain.provider
 
+import com.deepreps.core.domain.calculator.ProgressionCalculator
+import com.deepreps.core.domain.calculator.ProgressionResult
 import com.deepreps.core.domain.model.ExerciseForPlan
+import com.deepreps.core.domain.model.ExerciseHistory
 import com.deepreps.core.domain.model.ExercisePlan
 import com.deepreps.core.domain.model.GeneratedPlan
 import com.deepreps.core.domain.model.PlannedSet
 import com.deepreps.core.domain.model.PlanRequest
+import com.deepreps.core.domain.model.UserPlanProfile
 import com.deepreps.core.domain.model.enums.Equipment
 import com.deepreps.core.domain.model.enums.SetType
 import com.deepreps.core.domain.util.WeightStepProvider
@@ -24,6 +28,7 @@ import javax.inject.Inject
  * 5. Apply gender fallback (male ratios - 15% when gender unknown)
  * 6. Apply age modifiers (Section 8.6)
  */
+@Suppress("TooManyFunctions")
 class BaselinePlanGenerator @Inject constructor() {
 
     fun generate(request: PlanRequest): GeneratedPlan? {
@@ -31,9 +36,20 @@ class BaselinePlanGenerator @Inject constructor() {
         val level = request.userProfile.experienceLevel.coerceIn(1, 3)
         val gender = request.userProfile.gender
         val age = request.userProfile.age
+        val historyByExerciseId = request.trainingHistory.associateBy { it.exerciseId }
 
         val exercisePlans = request.exercises.map { exercise ->
-            generateExercisePlan(exercise, level, bodyWeightKg, gender, age, request.deloadRecommended)
+            val history = historyByExerciseId[exercise.exerciseId]
+            generateExercisePlan(
+                exercise = exercise,
+                level = level,
+                bodyWeightKg = bodyWeightKg,
+                gender = gender,
+                age = age,
+                deloadRecommended = request.deloadRecommended,
+                history = history,
+                userProfile = request.userProfile,
+            )
         }
 
         return GeneratedPlan(exercises = exercisePlans)
@@ -47,27 +63,45 @@ class BaselinePlanGenerator @Inject constructor() {
         gender: String?,
         age: Int?,
         deloadRecommended: Boolean,
+        history: ExerciseHistory?,
+        userProfile: UserPlanProfile,
     ): ExercisePlan {
         val equipment = tryParseEquipment(exercise.equipment)
         val isCompound = exercise.movementType == "compound"
         val isBw = exercise.equipment == "bodyweight"
+        val isLowerBody = ProgressionCalculator.isLowerBodyGroup(exercise.primaryGroup)
 
-        val rawWeight = calculateBaselineWeight(exercise.stableId, level, bodyWeightKg, gender)
-        var workingWeight = roundDown(rawWeight, equipment)
+        val baselineWeight = calculateBaselineWeight(exercise.stableId, level, bodyWeightKg, gender)
+        val fallbackWeight = applyModifiers(
+            roundDown(baselineWeight, equipment),
+            deloadRecommended,
+            age,
+            equipment,
+        )
 
-        // Apply deload reduction
-        if (deloadRecommended) {
+        val repRange = getRepRange(isCompound, userProfile)
+        val progression = computeProgression(
+            history,
+            repRange,
+            isCompound,
+            isLowerBody,
+            fallbackWeight,
+        )
+
+        var workingWeight = if (isBw) 0.0 else progression.weightKg
+        val targetReps = progression.targetReps
+
+        // Apply deload/age modifiers only for cold-start (no history).
+        // When history exists, ProgressionCalculator already accounts for actual performance.
+        if (history == null || history.sessions.isEmpty()) {
+            workingWeight = fallbackWeight
+        }
+
+        if (deloadRecommended && history != null && history.sessions.isNotEmpty()) {
             workingWeight = roundDown(workingWeight * DELOAD_INTENSITY_FACTOR, equipment)
         }
 
-        // Apply age modifier to intensity
-        val ageModifier = getAgeIntensityModifier(age)
-        if (ageModifier > 0.0) {
-            workingWeight = roundDown(workingWeight * (1.0 - ageModifier), equipment)
-        }
-
-        val workingSetsCount = getWorkingSetsCount(level, deloadRecommended)
-        val targetReps = getTargetReps(level, isCompound)
+        val workingSetsCount = getWorkingSetsCount(level, deloadRecommended, userProfile.defaultWorkingSets)
         val restSeconds = getRestSeconds(level, exercise)
 
         val warmupSets = generateWarmupSets(workingWeight, exercise, level, age, equipment)
@@ -80,14 +114,67 @@ class BaselinePlanGenerator @Inject constructor() {
             )
         }
 
+        val notes = buildNotes(deloadRecommended, progression.isStalled, progression.stallNote)
+
         return ExercisePlan(
             exerciseId = exercise.exerciseId,
             stableId = exercise.stableId,
             exerciseName = exercise.name,
             sets = warmupSets + workingSets,
             restSeconds = restSeconds,
-            notes = if (deloadRecommended) "Deload week: reduced volume and intensity" else null,
+            notes = notes,
         )
+    }
+
+    private fun applyModifiers(
+        weight: Double,
+        deloadRecommended: Boolean,
+        age: Int?,
+        equipment: Equipment,
+    ): Double {
+        var result = weight
+        if (deloadRecommended) {
+            result = roundDown(result * DELOAD_INTENSITY_FACTOR, equipment)
+        }
+        val ageModifier = getAgeIntensityModifier(age)
+        if (ageModifier > 0.0) {
+            result = roundDown(result * (1.0 - ageModifier), equipment)
+        }
+        return result
+    }
+
+    private fun computeProgression(
+        history: ExerciseHistory?,
+        repRange: Pair<Int, Int>,
+        isCompound: Boolean,
+        isLowerBody: Boolean,
+        fallbackWeightKg: Double,
+    ): ProgressionResult = ProgressionCalculator.compute(
+        lastSessions = history?.sessions.orEmpty(),
+        rangeMin = repRange.first,
+        rangeMax = repRange.second,
+        isCompound = isCompound,
+        isLowerBody = isLowerBody,
+        fallbackWeightKg = fallbackWeightKg,
+    )
+
+    private fun getRepRange(isCompound: Boolean, profile: UserPlanProfile): Pair<Int, Int> =
+        if (isCompound) {
+            profile.compoundRepMin to profile.compoundRepMax
+        } else {
+            profile.isolationRepMin to profile.isolationRepMax
+        }
+
+    private fun buildNotes(
+        deloadRecommended: Boolean,
+        isStalled: Boolean,
+        stallNote: String?,
+    ): String? = when {
+        deloadRecommended && isStalled ->
+            "Deload week: reduced volume and intensity. $stallNote"
+        deloadRecommended -> "Deload week: reduced volume and intensity"
+        isStalled -> stallNote
+        else -> null
     }
 
     @Suppress("LongMethod", "ComplexMethod")
@@ -155,21 +242,14 @@ class BaselinePlanGenerator @Inject constructor() {
         }
     }
 
-    private fun getWorkingSetsCount(level: Int, deloadRecommended: Boolean): Int {
-        val baseSets = when (level) {
+    private fun getWorkingSetsCount(level: Int, deloadRecommended: Boolean, userOverride: Int): Int {
+        val baseSets = if (userOverride > 0) userOverride else when (level) {
             1 -> 3
             2 -> 4
             3 -> 5
             else -> 3
         }
         return if (deloadRecommended) (baseSets * 0.5).toInt().coerceAtLeast(2) else baseSets
-    }
-
-    private fun getTargetReps(level: Int, isCompound: Boolean): Int = when (level) {
-        1 -> if (isCompound) 10 else 12
-        2 -> if (isCompound) 8 else 10
-        3 -> if (isCompound) 5 else 10
-        else -> 10
     }
 
     @Suppress("ComplexMethod")

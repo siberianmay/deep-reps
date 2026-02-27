@@ -52,6 +52,12 @@ class TemplateListViewModel @Inject constructor(
             )
             is TemplateListIntent.ConfirmDelete -> handleConfirmDelete()
             is TemplateListIntent.DismissDelete -> handleDismissDelete()
+            is TemplateListIntent.RequestRename -> handleRequestRename(
+                intent.templateId,
+                intent.currentName,
+            )
+            is TemplateListIntent.ConfirmRename -> handleConfirmRename(intent.newName)
+            is TemplateListIntent.DismissRename -> handleDismissRename()
             is TemplateListIntent.CreateTemplate -> handleCreateTemplate()
             is TemplateListIntent.EditTemplate -> handleEditTemplate(intent.templateId)
             is TemplateListIntent.Retry -> handleRetry()
@@ -92,6 +98,42 @@ class TemplateListViewModel @Inject constructor(
 
     private fun handleDismissDelete() {
         _state.update { it.copy(showDeleteConfirmation = null) }
+    }
+
+    private fun handleRequestRename(templateId: Long, currentName: String) {
+        _state.update {
+            it.copy(
+                showRenameDialog = RenameRequest(
+                    templateId = templateId,
+                    currentName = currentName,
+                ),
+            )
+        }
+    }
+
+    private fun handleConfirmRename(newName: String) {
+        val renameRequest = _state.value.showRenameDialog ?: return
+        _state.update { it.copy(showRenameDialog = null) }
+
+        viewModelScope.launch {
+            try {
+                val template = templateRepository.getById(renameRequest.templateId) ?: return@launch
+                val updated = template.copy(
+                    name = newName,
+                    updatedAt = System.currentTimeMillis(),
+                )
+                templateRepository.update(updated)
+                _sideEffect.trySend(
+                    TemplateListSideEffect.ShowSnackbar("Renamed to \"$newName\""),
+                )
+            } catch (_: Exception) {
+                _state.update { it.copy(errorType = TemplateListError.RenameFailed) }
+            }
+        }
+    }
+
+    private fun handleDismissRename() {
+        _state.update { it.copy(showRenameDialog = null) }
     }
 
     private fun handleCreateTemplate() {

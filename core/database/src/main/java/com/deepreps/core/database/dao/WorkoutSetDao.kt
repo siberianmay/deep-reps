@@ -5,9 +5,11 @@ import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.Update
 import com.deepreps.core.database.entity.WorkoutSetEntity
+import com.deepreps.core.database.relation.CompletedWorkingSetWithSession
 import kotlinx.coroutines.flow.Flow
 
 @Dao
+@Suppress("TooManyFunctions")
 interface WorkoutSetDao {
 
     @Insert
@@ -77,4 +79,34 @@ interface WorkoutSetDao {
         isCompleted: Boolean,
         completedAt: Long,
     )
+
+    /**
+     * Returns completed working sets for a given exercise, joined with the session start time.
+     *
+     * Filters to working sets only (excludes warm-up) and completed status only.
+     * Only includes sets from completed sessions. Ordered by session date descending
+     * so the caller can group and limit by session count in Kotlin.
+     */
+    @Query(
+        """
+        SELECT ws.actual_weight, ws.actual_reps, wse.started_at AS session_date
+        FROM workout_sets ws
+        INNER JOIN workout_exercises we ON ws.workout_exercise_id = we.id
+        INNER JOIN workout_sessions wse ON we.session_id = wse.id
+        WHERE we.exercise_id = :exerciseId
+          AND ws.set_type = 'working'
+          AND ws.status = 'completed'
+          AND wse.status = 'completed'
+        ORDER BY wse.started_at DESC, ws.set_index ASC
+        """
+    )
+    suspend fun getCompletedWorkingSetsByExercise(
+        exerciseId: Long,
+    ): List<CompletedWorkingSetWithSession>
+
+    @Query("SELECT * FROM workout_sets ORDER BY workout_exercise_id, set_index ASC")
+    suspend fun getAllOnce(): List<WorkoutSetEntity>
+
+    @Query("DELETE FROM workout_sets")
+    suspend fun deleteAll()
 }

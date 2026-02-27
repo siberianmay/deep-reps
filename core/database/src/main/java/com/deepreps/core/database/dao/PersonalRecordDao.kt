@@ -39,4 +39,10 @@ interface PersonalRecordDao {
 
     @Query("SELECT * FROM personal_records WHERE exercise_id = :exerciseId ORDER BY achieved_at DESC")
     fun observeByExercise(exerciseId: Long): Flow<List<PersonalRecordEntity>>
+
+    @Query("SELECT * FROM personal_records ORDER BY achieved_at DESC")
+    suspend fun getAllOnce(): List<PersonalRecordEntity>
+
+    @Query("DELETE FROM personal_records")
+    suspend fun deleteAll()
 }

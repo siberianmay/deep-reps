@@ -26,4 +26,10 @@ interface WorkoutExerciseDao {
 
     @Query("DELETE FROM workout_exercises WHERE id = :id")
     suspend fun deleteById(id: Long)
+
+    @Query("SELECT * FROM workout_exercises ORDER BY session_id, order_index ASC")
+    suspend fun getAllOnce(): List<WorkoutExerciseEntity>
+
+    @Query("DELETE FROM workout_exercises")
+    suspend fun deleteAll()
 }

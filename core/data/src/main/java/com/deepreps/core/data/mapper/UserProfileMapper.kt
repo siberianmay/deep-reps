@@ -14,6 +14,11 @@ fun UserProfileEntity.toDomain(): UserProfile = UserProfile(
     heightCm = heightCm,
     gender = gender?.let { Gender.fromValue(it) },
     bodyWeightKg = bodyWeightKg,
+    compoundRepMin = compoundRepMin,
+    compoundRepMax = compoundRepMax,
+    isolationRepMin = isolationRepMin,
+    isolationRepMax = isolationRepMax,
+    defaultWorkingSets = defaultWorkingSets,
     createdAt = createdAt,
     updatedAt = updatedAt,
 )
@@ -26,6 +31,11 @@ fun UserProfile.toEntity(): UserProfileEntity = UserProfileEntity(
     heightCm = heightCm,
     gender = gender?.value,
     bodyWeightKg = bodyWeightKg,
+    compoundRepMin = compoundRepMin,
+    compoundRepMax = compoundRepMax,
+    isolationRepMin = isolationRepMin,
+    isolationRepMax = isolationRepMax,
+    defaultWorkingSets = defaultWorkingSets,
     createdAt = createdAt,
     updatedAt = updatedAt,
 )

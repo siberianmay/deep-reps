@@ -3,8 +3,11 @@ package com.deepreps.core.data.di
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
+import androidx.room.withTransaction
 import com.deepreps.core.common.dispatcher.DefaultDispatcherProvider
 import com.deepreps.core.common.dispatcher.DispatcherProvider
+import com.deepreps.core.data.export.TransactionRunner
+import com.deepreps.core.database.DeepRepsDatabase
 import com.deepreps.core.domain.provider.ConnectivityChecker
 import dagger.Module
 import dagger.Provides
@@ -47,6 +50,16 @@ object DataModule {
     @Singleton
     fun provideDispatcherProvider(): DispatcherProvider =
         DefaultDispatcherProvider()
+
+    @Provides
+    @Singleton
+    fun provideTransactionRunner(
+        database: DeepRepsDatabase,
+    ): TransactionRunner = object : TransactionRunner {
+        override suspend fun runInTransaction(block: suspend () -> Unit) {
+            database.withTransaction { block() }
+        }
+    }
 
     @Provides
     @Singleton

@@ -338,6 +338,10 @@ class ProgressDashboardViewModelTest {
             heightCm = 180.0,
             gender = null,
             bodyWeightKg = 80.0,
+            compoundRepMin = 6,
+            compoundRepMax = 10,
+            isolationRepMin = 10,
+            isolationRepMax = 15,
             createdAt = now,
             updatedAt = now,
         )

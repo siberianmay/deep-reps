@@ -6,6 +6,11 @@ plugins {
 
 android {
     namespace = "com.deepreps.core.data"
+
+    @Suppress("UnstableApiUsage")
+    testOptions {
+        unitTests.all { it.useJUnitPlatform() }
+    }
 }
 
 dependencies {

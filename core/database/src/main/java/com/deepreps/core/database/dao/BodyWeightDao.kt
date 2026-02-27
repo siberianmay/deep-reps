@@ -20,4 +20,13 @@ interface BodyWeightDao {
 
     @Query("SELECT * FROM body_weight_entries ORDER BY recorded_at DESC LIMIT 1")
     fun observeLatest(): Flow<BodyWeightEntryEntity?>
+
+    @Query("SELECT * FROM body_weight_entries ORDER BY recorded_at DESC")
+    suspend fun getAllOnce(): List<BodyWeightEntryEntity>
+
+    @Insert
+    suspend fun insertAll(entries: List<BodyWeightEntryEntity>)
+
+    @Query("DELETE FROM body_weight_entries")
+    suspend fun deleteAll()
 }

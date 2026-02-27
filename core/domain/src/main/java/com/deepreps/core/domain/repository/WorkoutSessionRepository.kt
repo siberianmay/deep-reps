@@ -1,5 +1,6 @@
 package com.deepreps.core.domain.repository
 
+import com.deepreps.core.domain.model.HistoricalSession
 import com.deepreps.core.domain.model.WorkoutExercise
 import com.deepreps.core.domain.model.WorkoutSession
 import com.deepreps.core.domain.model.WorkoutSet
@@ -100,4 +101,21 @@ interface WorkoutSessionRepository {
      * @param notes The notes text, or null to clear.
      */
     suspend fun updateExerciseNotes(workoutExerciseId: Long, notes: String?)
+
+    /**
+     * Returns the last [sessionLimit] completed sessions of working sets for a given exercise.
+     *
+     * Each [HistoricalSession] contains the session date and all completed working sets
+     * from that session. Sessions are ordered newest first. Only includes sets from
+     * completed sessions (excludes active, discarded, abandoned, crashed).
+     *
+     * Used by the plan generator to access past workout performance for progressive overload.
+     *
+     * @param exerciseId The Room PK of the exercise definition (not workout_exercise).
+     * @param sessionLimit Maximum number of historical sessions to return. Defaults to 3.
+     */
+    suspend fun getRecentWorkingSetsForExercise(
+        exerciseId: Long,
+        sessionLimit: Int = 3,
+    ): List<HistoricalSession>
 }

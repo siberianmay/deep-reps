@@ -40,4 +40,7 @@ interface ExerciseDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAllMuscleLinks(links: List<ExerciseMuscleEntity>)
+
+    @Query("SELECT * FROM exercises ORDER BY display_order ASC")
+    suspend fun getAllOnce(): List<ExerciseEntity>
 }
