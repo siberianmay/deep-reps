@@ -111,6 +111,7 @@ class WorkoutViewModel @Inject constructor(
             is WorkoutIntent.DeleteSet -> handleDeleteSet(intent)
             is WorkoutIntent.SkipSet -> handleSkipSet(intent)
             is WorkoutIntent.UnskipSet -> handleUnskipSet(intent)
+            is WorkoutIntent.UncompleteSet -> handleUncompleteSet(intent)
             is WorkoutIntent.SkipRestTimer -> handleSkipRestTimer()
             is WorkoutIntent.ExtendRestTimer -> handleExtendRestTimer()
             is WorkoutIntent.PauseWorkout -> handlePauseWorkout()
@@ -310,6 +311,21 @@ class WorkoutViewModel @Inject constructor(
 
     @Suppress("LongMethod")
     private fun handleCompleteSet(intent: WorkoutIntent.CompleteSet) {
+        // If the set is already completed, uncomplete it instead (undo)
+        val currentSet = _state.value.exercises
+            .firstOrNull { it.id == intent.workoutExerciseId }
+            ?.sets?.firstOrNull { it.id == intent.setId }
+
+        if (currentSet?.status == SetStatus.COMPLETED) {
+            handleUncompleteSet(
+                WorkoutIntent.UncompleteSet(
+                    workoutExerciseId = intent.workoutExerciseId,
+                    setId = intent.setId,
+                ),
+            )
+            return
+        }
+
         viewModelScope.launch {
             // CRITICAL: Write to Room immediately (defensive persistence)
             workoutSessionRepository.completeSet(
@@ -544,6 +560,45 @@ class WorkoutViewModel @Inject constructor(
                 }
             }
             current.copy(exercises = updatedExercises)
+        }
+    }
+
+    private fun handleUncompleteSet(intent: WorkoutIntent.UncompleteSet) {
+        viewModelScope.launch {
+            // Persist to Room: clears actuals, reverts status to PLANNED
+            workoutSessionRepository.uncompleteSet(intent.setId)
+        }
+
+        // Update in-memory state: revert to IN_PROGRESS, keep weight/reps
+        // so the user sees previous values pre-filled for editing
+        _state.update { current ->
+            val updatedExercises = current.exercises.map { exercise ->
+                if (exercise.id == intent.workoutExerciseId) {
+                    val updatedSets = exercise.sets.map { set ->
+                        if (set.id == intent.setId) {
+                            set.copy(
+                                status = SetStatus.IN_PROGRESS,
+                                completedAt = null,
+                            )
+                        } else {
+                            set
+                        }
+                    }
+                    // Re-expand the exercise card since it now has an incomplete set
+                    exercise.copy(
+                        sets = markInProgressSet(updatedSets),
+                        isExpanded = true,
+                    )
+                } else {
+                    exercise
+                }
+            }
+            current.copy(exercises = updatedExercises)
+        }
+
+        // Cancel rest timer if one is running — the user is going back to edit
+        if (_state.value.activeRestTimer != null) {
+            restTimerManager.cancel()
         }
     }
 

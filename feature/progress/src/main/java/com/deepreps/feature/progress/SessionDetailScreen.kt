@@ -15,16 +15,20 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -58,9 +62,20 @@ fun SessionDetailScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
+    LaunchedEffect(Unit) {
+        viewModel.sideEffect.collect { effect ->
+            when (effect) {
+                is SessionDetailSideEffect.NavigateBackAfterDelete -> {
+                    onNavigateBack()
+                }
+            }
+        }
+    }
+
     SessionDetailContent(
         state = state,
         onNavigateBack = onNavigateBack,
+        onIntent = viewModel::onIntent,
     )
 }
 
@@ -70,6 +85,7 @@ fun SessionDetailScreen(
 internal fun SessionDetailContent(
     state: SessionDetailUiState,
     onNavigateBack: () -> Unit,
+    onIntent: (SessionDetailIntent) -> Unit = {},
 ) {
     val colors = DeepRepsTheme.colors
     val typography = DeepRepsTheme.typography
@@ -88,6 +104,17 @@ internal fun SessionDetailContent(
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Navigate back",
+                    )
+                }
+            },
+            actions = {
+                IconButton(
+                    onClick = { onIntent(SessionDetailIntent.RequestDelete) },
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Delete workout",
+                        tint = colors.onSurfacePrimary,
                     )
                 }
             },
@@ -124,6 +151,14 @@ internal fun SessionDetailContent(
                 SessionDetailBody(state = state)
             }
         }
+    }
+
+    // Delete confirmation dialog
+    if (state.showDeleteConfirmation) {
+        DeleteWorkoutConfirmationDialog(
+            onConfirm = { onIntent(SessionDetailIntent.ConfirmDelete) },
+            onDismiss = { onIntent(SessionDetailIntent.DismissDelete) },
+        )
     }
 }
 
@@ -412,6 +447,59 @@ private fun SessionSetRow(
             Spacer(modifier = Modifier.width(28.dp))
         }
     }
+}
+
+/**
+ * Confirmation dialog for workout session deletion.
+ *
+ * Design spec: Section 1.1 - "Every destructive action requires confirmation."
+ */
+@Suppress("LongMethod")
+@Composable
+private fun DeleteWorkoutConfirmationDialog(
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val colors = DeepRepsTheme.colors
+    val typography = DeepRepsTheme.typography
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "Delete Workout?",
+                style = typography.headlineMedium,
+                color = colors.onSurfacePrimary,
+            )
+        },
+        text = {
+            Text(
+                text = "This will permanently delete this workout and all its data. " +
+                    "This cannot be undone.",
+                style = typography.bodyLarge,
+                color = colors.onSurfaceSecondary,
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text(
+                    text = "Delete",
+                    style = typography.labelLarge,
+                    color = colors.statusError,
+                )
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(
+                    text = "Cancel",
+                    style = typography.labelLarge,
+                    color = colors.onSurfaceSecondary,
+                )
+            }
+        },
+        containerColor = colors.surfaceHigh,
+    )
 }
 
 // ---------------------------------------------------------------------------

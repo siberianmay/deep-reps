@@ -16,6 +16,7 @@ data class SessionDetailUiState(
     val weightUnit: WeightUnit = WeightUnit.KG,
     val isLoading: Boolean = true,
     val errorType: SessionDetailError? = null,
+    val showDeleteConfirmation: Boolean = false,
 )
 
 /**

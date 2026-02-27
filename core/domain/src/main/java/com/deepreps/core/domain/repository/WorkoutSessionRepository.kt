@@ -86,6 +86,12 @@ interface WorkoutSessionRepository {
      */
     suspend fun getStaleActiveSessions(cutoffMillis: Long): List<WorkoutSession>
 
+    /** Deletes a completed workout session and all associated exercises/sets. */
+    suspend fun deleteSession(id: Long)
+
+    /** Reverts a completed set back to planned status, clearing actual values. */
+    suspend fun uncompleteSet(setId: Long)
+
     /**
      * Atomically inserts a workout exercise and all its sets in a single transaction.
      * Either all rows are written or none. Required for data integrity when adding

@@ -229,6 +229,24 @@ private fun ActiveWorkoutContent(
                                 ),
                             )
                         },
+                        onWeightChange = { set, newWeight ->
+                            onIntent(
+                                WorkoutIntent.UpdateSetWeight(
+                                    workoutExerciseId = exercise.id,
+                                    setId = set.id,
+                                    weight = newWeight,
+                                ),
+                            )
+                        },
+                        onRepsChange = { set, newReps ->
+                            onIntent(
+                                WorkoutIntent.UpdateSetReps(
+                                    workoutExerciseId = exercise.id,
+                                    setId = set.id,
+                                    reps = newReps,
+                                ),
+                            )
+                        },
                         onAddSet = {
                             onIntent(WorkoutIntent.AddSet(exercise.id))
                         },

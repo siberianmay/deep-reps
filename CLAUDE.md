@@ -288,7 +288,7 @@ Plans:   DRAFT → APPROVED → IN PROGRESS → COMPLETED (date) or ABANDONED (r
 As of 2026-02-26:
 - **Open bugs:** None
 - **Latest completed plan:** `2026-02-26_plan_data-export-import.md` (CSV export + JSON import for data portability)
-- **Highest bug ID:** BUG-7
+- **Highest bug ID:** BUG-11
 
 ## Local Emulator Testing
 

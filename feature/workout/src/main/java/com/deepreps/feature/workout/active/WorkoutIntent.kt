@@ -45,6 +45,12 @@ sealed interface WorkoutIntent {
     /** User chose to unskip (revert to planned) from the context menu. */
     data class UnskipSet(val setId: Long, val workoutExerciseId: Long) : WorkoutIntent
 
+    /** User tapped the checkmark on an already-completed set to revert it. */
+    data class UncompleteSet(
+        val workoutExerciseId: Long,
+        val setId: Long,
+    ) : WorkoutIntent
+
     // --- Rest timer ---
 
     /** User tapped "Skip" on the rest timer bottom sheet. */

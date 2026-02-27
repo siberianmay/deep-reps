@@ -8,10 +8,13 @@ import com.deepreps.core.domain.repository.ExerciseRepository
 import com.deepreps.core.domain.repository.UserProfileRepository
 import com.deepreps.core.domain.repository.WorkoutSessionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -34,6 +37,9 @@ class SessionDetailViewModel @Inject constructor(
 
     private val _state = MutableStateFlow(SessionDetailUiState())
     val state: StateFlow<SessionDetailUiState> = _state.asStateFlow()
+
+    private val _sideEffect = Channel<SessionDetailSideEffect>(Channel.BUFFERED)
+    val sideEffect: Flow<SessionDetailSideEffect> = _sideEffect.receiveAsFlow()
 
     init {
         loadWeightUnit()
@@ -137,6 +143,36 @@ class SessionDetailViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    fun onIntent(intent: SessionDetailIntent) {
+        when (intent) {
+            is SessionDetailIntent.RequestDelete -> handleRequestDelete()
+            is SessionDetailIntent.ConfirmDelete -> handleConfirmDelete()
+            is SessionDetailIntent.DismissDelete -> handleDismissDelete()
+        }
+    }
+
+    private fun handleRequestDelete() {
+        _state.update { it.copy(showDeleteConfirmation = true) }
+    }
+
+    private fun handleConfirmDelete() {
+        _state.update { it.copy(showDeleteConfirmation = false) }
+        viewModelScope.launch {
+            try {
+                workoutSessionRepository.deleteSession(sessionId)
+                _sideEffect.trySend(SessionDetailSideEffect.NavigateBackAfterDelete)
+            } catch (_: Exception) {
+                _state.update {
+                    it.copy(errorType = SessionDetailError.LoadFailed)
+                }
+            }
+        }
+    }
+
+    private fun handleDismissDelete() {
+        _state.update { it.copy(showDeleteConfirmation = false) }
     }
 
     companion object {

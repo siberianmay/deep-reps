@@ -6,8 +6,8 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -42,6 +42,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -55,6 +56,7 @@ import com.deepreps.core.domain.model.enums.SetType
 import com.deepreps.core.ui.theme.DeepRepsTheme
 import com.deepreps.core.ui.theme.PrGold
 import java.util.Locale
+import kotlin.math.abs
 
 /**
  * The atomic unit of workout logging.
@@ -80,9 +82,11 @@ import java.util.Locale
  * @param onSkipSet Callback when user selects "Skip this set" from context menu. Null hides the option.
  * @param onUnskipSet Callback when user selects "Unskip set" from context menu. Null hides the option.
  * @param onDeleteSet Callback when user selects "Delete set" from context menu. Null hides the option.
+ * @param onWeightChange Callback for drag-to-adjust weight. Null disables drag gesture on weight cell.
+ * @param onRepsChange Callback for drag-to-adjust reps. Null disables drag gesture on reps cell.
  */
 @OptIn(ExperimentalFoundationApi::class)
-@Suppress("LongMethod", "CyclomaticComplexMethod")
+@Suppress("LongMethod", "CyclomaticComplexMethod", "LongParameterList")
 @Composable
 fun SetRow(
     set: WorkoutSet,
@@ -93,6 +97,8 @@ fun SetRow(
     onSkipSet: (() -> Unit)? = null,
     onUnskipSet: (() -> Unit)? = null,
     onDeleteSet: (() -> Unit)? = null,
+    onWeightChange: ((Double) -> Unit)? = null,
+    onRepsChange: ((Int) -> Unit)? = null,
 ) {
     val colors = DeepRepsTheme.colors
     val typography = DeepRepsTheme.typography
@@ -222,6 +228,13 @@ fun SetRow(
                 textAlpha = textAlpha,
                 textDecoration = textDecoration,
                 onClick = onWeightFieldClick,
+                onDragStepChange = if (onWeightChange != null) { steps ->
+                    val weightStep = 2.5
+                    val newWeight = (displayWeight + steps * weightStep).coerceIn(0.0, 500.0)
+                    onWeightChange(newWeight)
+                } else {
+                    null
+                },
                 modifier = Modifier.width(80.dp),
             )
 
@@ -246,6 +259,12 @@ fun SetRow(
                 textAlpha = textAlpha,
                 textDecoration = textDecoration,
                 onClick = onRepsFieldClick,
+                onDragStepChange = if (onRepsChange != null) { steps ->
+                    val newReps = (displayReps + steps).coerceIn(1, 100)
+                    onRepsChange(newReps)
+                } else {
+                    null
+                },
                 modifier = Modifier.width(64.dp),
             )
 
@@ -367,8 +386,12 @@ private fun SetRowContextMenu(
  *
  * When interactive, shows a tappable surface with focus ring when focused.
  * When non-interactive, shows static text.
+ * Supports long-press + drag to continuously adjust the value via [onDragStepChange].
+ *
+ * @param onDragStepChange Emits step increments (-1 or +1) during drag. Null disables drag gesture.
  */
-@Suppress("LongMethod")
+@OptIn(ExperimentalFoundationApi::class)
+@Suppress("LongMethod", "LongParameterList")
 @Composable
 private fun ValueCell(
     value: String,
@@ -378,11 +401,13 @@ private fun ValueCell(
     textAlpha: Float,
     textDecoration: TextDecoration?,
     onClick: () -> Unit,
+    onDragStepChange: ((Int) -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val colors = DeepRepsTheme.colors
     val typography = DeepRepsTheme.typography
     val radius = DeepRepsTheme.radius
+    val view = LocalView.current
 
     val cellModifier = modifier
         .height(48.dp)
@@ -400,7 +425,39 @@ private fun ValueCell(
         )
         .then(
             if (isInteractive) {
-                Modifier.clickable(onClick = onClick)
+                Modifier.combinedClickable(onClick = onClick)
+            } else {
+                Modifier
+            },
+        )
+        .then(
+            if (isInteractive && onDragStepChange != null) {
+                Modifier.pointerInput(Unit) {
+                    var dragAccumulator = 0f
+                    detectDragGesturesAfterLongPress(
+                        onDragStart = {
+                            dragAccumulator = 0f
+                            view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
+                        },
+                        onDrag = { change, offset ->
+                            change.consume()
+                            dragAccumulator += offset.y
+                            val threshold = 30.dp.toPx()
+                            while (abs(dragAccumulator) >= threshold) {
+                                if (dragAccumulator < 0) {
+                                    onDragStepChange(1) // drag up = increase
+                                    dragAccumulator += threshold
+                                } else {
+                                    onDragStepChange(-1) // drag down = decrease
+                                    dragAccumulator -= threshold
+                                }
+                                view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+                            }
+                        },
+                        onDragEnd = { dragAccumulator = 0f },
+                        onDragCancel = { dragAccumulator = 0f },
+                    )
+                }
             } else {
                 Modifier
             },

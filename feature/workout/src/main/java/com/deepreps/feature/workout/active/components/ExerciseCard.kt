@@ -80,6 +80,8 @@ fun ExerciseCard(
     onSkipSet: (set: WorkoutSet) -> Unit = {},
     onUnskipSet: (set: WorkoutSet) -> Unit = {},
     onDeleteSet: (set: WorkoutSet) -> Unit = {},
+    onWeightChange: ((set: WorkoutSet, newWeight: Double) -> Unit)? = null,
+    onRepsChange: ((set: WorkoutSet, newReps: Int) -> Unit)? = null,
     isNotesExpanded: Boolean = false,
     onToggleNotes: () -> Unit = {},
     onNotesChanged: (String) -> Unit = {},
@@ -310,6 +312,18 @@ fun ExerciseCard(
                             onSkipSet = { onSkipSet(set) },
                             onUnskipSet = { onUnskipSet(set) },
                             onDeleteSet = { onDeleteSet(set) },
+                            onWeightChange = onWeightChange?.let { cb ->
+                                {
+                                    newWeight ->
+                                        cb(set, newWeight)
+                                    }
+                            },
+                            onRepsChange = onRepsChange?.let { cb ->
+                                {
+                                    newReps ->
+                                        cb(set, newReps)
+                                    }
+                            },
                         )
                     }
 

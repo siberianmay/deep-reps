@@ -104,6 +104,12 @@ interface WorkoutSetDao {
         exerciseId: Long,
     ): List<CompletedWorkingSetWithSession>
 
+    @Query(
+        "UPDATE workout_sets SET status = 'planned', actual_weight = NULL, " +
+            "actual_reps = NULL, completed_at = NULL WHERE id = :setId"
+    )
+    suspend fun uncompleteSet(setId: Long)
+
     @Query("SELECT * FROM workout_sets ORDER BY workout_exercise_id, set_index ASC")
     suspend fun getAllOnce(): List<WorkoutSetEntity>
 

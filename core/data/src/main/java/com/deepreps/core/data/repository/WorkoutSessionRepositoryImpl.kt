@@ -138,6 +138,14 @@ class WorkoutSessionRepositoryImpl @Inject constructor(
             sessionDao.getStaleActiveSessions(cutoffMillis).map { it.toDomain() }
         }
 
+    override suspend fun deleteSession(id: Long) = withContext(dispatchers.io) {
+        sessionDao.deleteById(id)
+    }
+
+    override suspend fun uncompleteSet(setId: Long) = withContext(dispatchers.io) {
+        setDao.uncompleteSet(setId)
+    }
+
     override suspend fun insertExerciseWithSets(
         exercise: WorkoutExercise,
         sets: List<WorkoutSet>,
