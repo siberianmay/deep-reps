@@ -36,6 +36,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
@@ -57,6 +58,33 @@ import com.deepreps.core.ui.theme.DeepRepsTheme
 import com.deepreps.core.ui.theme.PrGold
 import java.util.Locale
 import kotlin.math.abs
+
+private const val WEIGHT_STEP_THRESHOLD = 10.0
+private const val WEIGHT_STEP_SMALL = 1.0
+private const val WEIGHT_STEP_LARGE = 2.5
+
+/** Returns drag step size for weight: 1kg below 10kg, 2.5kg at 10kg and above. */
+private fun weightDragStep(currentValue: Double): Double =
+    if (currentValue < WEIGHT_STEP_THRESHOLD) WEIGHT_STEP_SMALL else WEIGHT_STEP_LARGE
+
+/**
+ * Walks [totalSteps] from [start], applying variable step sizes via [stepFn].
+ * Positive totalSteps = increase, negative = decrease.
+ */
+private fun walkSteps(
+    start: Double,
+    totalSteps: Int,
+    stepFn: (Double) -> Double,
+    min: Double,
+    max: Double,
+): Double {
+    var value = start
+    val direction = if (totalSteps >= 0) 1 else -1
+    repeat(abs(totalSteps)) {
+        value = (value + direction * stepFn(value)).coerceIn(min, max)
+    }
+    return value
+}
 
 /**
  * The atomic unit of workout logging.
@@ -228,13 +256,11 @@ fun SetRow(
                 textAlpha = textAlpha,
                 textDecoration = textDecoration,
                 onClick = onWeightFieldClick,
-                onDragStepChange = if (onWeightChange != null) { steps ->
-                    val weightStep = 2.5
-                    val newWeight = (displayWeight + steps * weightStep).coerceIn(0.0, 500.0)
-                    onWeightChange(newWeight)
-                } else {
-                    null
-                },
+                currentNumericValue = displayWeight,
+                dragStepFn = ::weightDragStep,
+                dragMinValue = 0.0,
+                dragMaxValue = 500.0,
+                onDragValueChange = onWeightChange,
                 modifier = Modifier.width(80.dp),
             )
 
@@ -259,9 +285,12 @@ fun SetRow(
                 textAlpha = textAlpha,
                 textDecoration = textDecoration,
                 onClick = onRepsFieldClick,
-                onDragStepChange = if (onRepsChange != null) { steps ->
-                    val newReps = (displayReps + steps).coerceIn(1, 100)
-                    onRepsChange(newReps)
+                currentNumericValue = displayReps.toDouble(),
+                dragStepFn = { 1.0 },
+                dragMinValue = 1.0,
+                dragMaxValue = 100.0,
+                onDragValueChange = if (onRepsChange != null) { newValue ->
+                    onRepsChange(newValue.toInt())
                 } else {
                     null
                 },
@@ -386,9 +415,16 @@ private fun SetRowContextMenu(
  *
  * When interactive, shows a tappable surface with focus ring when focused.
  * When non-interactive, shows static text.
- * Supports long-press + drag to continuously adjust the value via [onDragStepChange].
+ * Supports long-press + drag to continuously adjust the value.
  *
- * @param onDragStepChange Emits step increments (-1 or +1) during drag. Null disables drag gesture.
+ * The drag gesture captures [currentNumericValue] at drag start and computes
+ * new values from cumulative displacement, avoiding stale closure issues.
+ *
+ * @param currentNumericValue The current numeric value for drag-start snapshot.
+ * @param dragStepFn Returns step size for a given value (e.g., 1.0 below 15kg, 2.5 above).
+ * @param dragMinValue Minimum allowed value during drag.
+ * @param dragMaxValue Maximum allowed value during drag.
+ * @param onDragValueChange Callback with the new computed value. Null disables drag gesture.
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Suppress("LongMethod", "LongParameterList")
@@ -401,13 +437,22 @@ private fun ValueCell(
     textAlpha: Float,
     textDecoration: TextDecoration?,
     onClick: () -> Unit,
-    onDragStepChange: ((Int) -> Unit)? = null,
+    currentNumericValue: Double = 0.0,
+    dragStepFn: (Double) -> Double = { 1.0 },
+    dragMinValue: Double = 0.0,
+    dragMaxValue: Double = 100.0,
+    onDragValueChange: ((Double) -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val colors = DeepRepsTheme.colors
     val typography = DeepRepsTheme.typography
     val radius = DeepRepsTheme.radius
     val view = LocalView.current
+
+    // Keep references fresh across recompositions so pointerInput(Unit) always
+    // sees the latest values without needing to restart.
+    val currentValueState by rememberUpdatedState(currentNumericValue)
+    val currentCallbackState by rememberUpdatedState(onDragValueChange)
 
     val cellModifier = modifier
         .height(48.dp)
@@ -431,31 +476,51 @@ private fun ValueCell(
             },
         )
         .then(
-            if (isInteractive && onDragStepChange != null) {
+            if (isInteractive && onDragValueChange != null) {
                 Modifier.pointerInput(Unit) {
-                    var dragAccumulator = 0f
+                    val thresholdPx = 30.dp.toPx()
+                    var dragAccumulatorPx = 0f
+                    var startValue = 0.0
+                    var lastEmittedSteps = 0
                     detectDragGesturesAfterLongPress(
                         onDragStart = {
-                            dragAccumulator = 0f
+                            dragAccumulatorPx = 0f
+                            startValue = currentValueState
+                            lastEmittedSteps = 0
                             view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
                         },
                         onDrag = { change, offset ->
                             change.consume()
-                            dragAccumulator += offset.y
-                            val threshold = 30.dp.toPx()
-                            while (abs(dragAccumulator) >= threshold) {
-                                if (dragAccumulator < 0) {
-                                    onDragStepChange(1) // drag up = increase
-                                    dragAccumulator += threshold
-                                } else {
-                                    onDragStepChange(-1) // drag down = decrease
-                                    dragAccumulator -= threshold
+                            // Negative Y = drag up = increase value
+                            dragAccumulatorPx -= offset.y
+                            val totalSteps = (dragAccumulatorPx / thresholdPx).toInt()
+                            if (totalSteps != lastEmittedSteps) {
+                                // Walk from startValue applying variable step sizes
+                                val newValue = walkSteps(
+                                    startValue,
+                                    totalSteps,
+                                    dragStepFn,
+                                    dragMinValue,
+                                    dragMaxValue,
+                                )
+                                currentCallbackState?.invoke(newValue)
+                                val stepDelta = abs(totalSteps - lastEmittedSteps)
+                                repeat(stepDelta) {
+                                    view.performHapticFeedback(
+                                        HapticFeedbackConstants.CLOCK_TICK,
+                                    )
                                 }
-                                view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+                                lastEmittedSteps = totalSteps
                             }
                         },
-                        onDragEnd = { dragAccumulator = 0f },
-                        onDragCancel = { dragAccumulator = 0f },
+                        onDragEnd = {
+                            dragAccumulatorPx = 0f
+                            lastEmittedSteps = 0
+                        },
+                        onDragCancel = {
+                            dragAccumulatorPx = 0f
+                            lastEmittedSteps = 0
+                        },
                     )
                 }
             } else {

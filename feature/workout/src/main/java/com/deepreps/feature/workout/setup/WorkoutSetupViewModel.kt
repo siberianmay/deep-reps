@@ -146,6 +146,7 @@ class WorkoutSetupViewModel @Inject constructor(
                 _state.update { current ->
                     current.copy(
                         selectedExercises = orderedItems,
+                        templateId = templateId,
                         isFromTemplate = true,
                         templateName = template.name,
                         error = null,

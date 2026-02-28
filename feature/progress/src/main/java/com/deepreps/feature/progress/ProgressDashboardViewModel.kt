@@ -153,6 +153,7 @@ class ProgressDashboardViewModel @Inject constructor(
             totalVolumeKg = totalVolume,
             muscleGroupNames = muscleGroupNames,
             setCount = totalSets,
+            sessionName = session.name,
         )
     }
 

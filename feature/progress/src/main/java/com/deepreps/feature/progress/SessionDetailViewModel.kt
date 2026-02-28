@@ -130,6 +130,7 @@ class SessionDetailViewModel @Inject constructor(
                         totalSets = totalSets,
                         exercises = exerciseUiList,
                         notes = session.notes,
+                        sessionName = session.name,
                         isLoading = false,
                         errorType = null,
                     )
@@ -150,6 +151,9 @@ class SessionDetailViewModel @Inject constructor(
             is SessionDetailIntent.RequestDelete -> handleRequestDelete()
             is SessionDetailIntent.ConfirmDelete -> handleConfirmDelete()
             is SessionDetailIntent.DismissDelete -> handleDismissDelete()
+            is SessionDetailIntent.RequestRename -> handleRequestRename()
+            is SessionDetailIntent.ConfirmRename -> handleConfirmRename(intent.name)
+            is SessionDetailIntent.DismissRename -> handleDismissRename()
         }
     }
 
@@ -173,6 +177,27 @@ class SessionDetailViewModel @Inject constructor(
 
     private fun handleDismissDelete() {
         _state.update { it.copy(showDeleteConfirmation = false) }
+    }
+
+    private fun handleRequestRename() {
+        _state.update { it.copy(showRenameDialog = true) }
+    }
+
+    private fun handleConfirmRename(name: String) {
+        _state.update { it.copy(showRenameDialog = false) }
+        val trimmedName = name.trim().ifBlank { null }
+        viewModelScope.launch {
+            try {
+                workoutSessionRepository.renameSession(sessionId, trimmedName)
+                _state.update { it.copy(sessionName = trimmedName) }
+            } catch (_: Exception) {
+                // Silent fail — name is non-critical
+            }
+        }
+    }
+
+    private fun handleDismissRename() {
+        _state.update { it.copy(showRenameDialog = false) }
     }
 
     companion object {

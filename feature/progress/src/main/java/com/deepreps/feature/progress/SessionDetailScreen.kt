@@ -16,8 +16,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -30,6 +32,9 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
@@ -94,10 +99,19 @@ internal fun SessionDetailContent(
     Column(modifier = Modifier.fillMaxSize()) {
         TopAppBar(
             title = {
-                Text(
-                    text = if (state.dateText.isNotEmpty()) state.dateText else "Session Detail",
-                    style = typography.headlineMedium,
-                )
+                Column {
+                    Text(
+                        text = state.sessionName ?: state.dateText.ifEmpty { "Session Detail" },
+                        style = typography.headlineMedium,
+                    )
+                    if (state.sessionName != null && state.dateText.isNotEmpty()) {
+                        Text(
+                            text = state.dateText,
+                            style = typography.bodySmall,
+                            color = colors.onSurfaceTertiary,
+                        )
+                    }
+                }
             },
             navigationIcon = {
                 IconButton(onClick = onNavigateBack) {
@@ -108,6 +122,15 @@ internal fun SessionDetailContent(
                 }
             },
             actions = {
+                IconButton(
+                    onClick = { onIntent(SessionDetailIntent.RequestRename) },
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = "Rename session",
+                        tint = colors.onSurfacePrimary,
+                    )
+                }
                 IconButton(
                     onClick = { onIntent(SessionDetailIntent.RequestDelete) },
                 ) {
@@ -158,6 +181,15 @@ internal fun SessionDetailContent(
         DeleteWorkoutConfirmationDialog(
             onConfirm = { onIntent(SessionDetailIntent.ConfirmDelete) },
             onDismiss = { onIntent(SessionDetailIntent.DismissDelete) },
+        )
+    }
+
+    // Rename dialog
+    if (state.showRenameDialog) {
+        RenameSessionDialog(
+            currentName = state.sessionName.orEmpty(),
+            onConfirm = { onIntent(SessionDetailIntent.ConfirmRename(it)) },
+            onDismiss = { onIntent(SessionDetailIntent.DismissRename) },
         )
     }
 }
@@ -502,6 +534,63 @@ private fun DeleteWorkoutConfirmationDialog(
     )
 }
 
+@Suppress("LongMethod")
+@Composable
+private fun RenameSessionDialog(
+    currentName: String,
+    onConfirm: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var name by remember { mutableStateOf(currentName) }
+    val colors = DeepRepsTheme.colors
+    val typography = DeepRepsTheme.typography
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "Rename Session",
+                style = typography.headlineMedium,
+                color = colors.onSurfacePrimary,
+            )
+        },
+        text = {
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = { Text("Session name") },
+                singleLine = true,
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onConfirm(name.trim()) },
+                enabled = name.trim() != currentName,
+            ) {
+                Text(
+                    text = "Rename",
+                    style = typography.labelLarge,
+                    color = if (name.trim() != currentName) {
+                        colors.accentPrimary
+                    } else {
+                        colors.onSurfaceTertiary
+                    },
+                )
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(
+                    text = "Cancel",
+                    style = typography.labelLarge,
+                    color = colors.onSurfaceSecondary,
+                )
+            }
+        },
+        containerColor = colors.surfaceHigh,
+    )
+}
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -540,6 +629,7 @@ private fun SessionDetailDarkPreview() {
     DeepRepsTheme(darkTheme = true) {
         SessionDetailContent(
             state = SessionDetailUiState(
+                sessionName = "Push Day",
                 dateText = "Feb 10, 2026",
                 durationText = "1h 12m",
                 totalVolumeKg = 8500.0,

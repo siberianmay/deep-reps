@@ -17,6 +17,8 @@ data class SessionDetailUiState(
     val isLoading: Boolean = true,
     val errorType: SessionDetailError? = null,
     val showDeleteConfirmation: Boolean = false,
+    val sessionName: String? = null,
+    val showRenameDialog: Boolean = false,
 )
 
 /**

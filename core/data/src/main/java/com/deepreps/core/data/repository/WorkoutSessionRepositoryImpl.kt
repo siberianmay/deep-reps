@@ -138,6 +138,11 @@ class WorkoutSessionRepositoryImpl @Inject constructor(
             sessionDao.getStaleActiveSessions(cutoffMillis).map { it.toDomain() }
         }
 
+    override suspend fun renameSession(id: Long, name: String?) =
+        withContext(dispatchers.io) {
+            sessionDao.updateName(id, name)
+        }
+
     override suspend fun deleteSession(id: Long) = withContext(dispatchers.io) {
         sessionDao.deleteById(id)
     }

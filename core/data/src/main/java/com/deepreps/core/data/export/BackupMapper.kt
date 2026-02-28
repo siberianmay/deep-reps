@@ -39,6 +39,7 @@ internal fun BackupWorkoutSession.toEntity(): WorkoutSessionEntity =
         status = status,
         notes = notes,
         templateId = templateId,
+        name = name,
     )
 
 internal fun BackupWorkoutExercise.toEntity(): WorkoutExerciseEntity =
@@ -133,6 +134,7 @@ internal fun WorkoutSessionEntity.toBackup(): BackupWorkoutSession =
         status = status,
         notes = notes,
         templateId = templateId,
+        name = name,
     )
 
 internal fun WorkoutExerciseEntity.toBackup(): BackupWorkoutExercise =

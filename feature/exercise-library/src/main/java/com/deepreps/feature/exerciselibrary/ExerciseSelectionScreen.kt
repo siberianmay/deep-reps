@@ -263,16 +263,16 @@ private fun SelectionExerciseList(
                 exercise = exercise,
                 onClick = {
                     onIntent(
-                        ExerciseSelectionIntent.ViewDetail(exercise.id),
+                        ExerciseSelectionIntent.ToggleExercise(
+                            exercise.id,
+                        ),
                     )
                 },
                 isCheckable = true,
                 isChecked = exercise.id in selectedIds,
-                onCheckedChange = {
+                onInfoClick = {
                     onIntent(
-                        ExerciseSelectionIntent.ToggleExercise(
-                            exercise.id,
-                        ),
+                        ExerciseSelectionIntent.ViewDetail(exercise.id),
                     )
                 },
             )

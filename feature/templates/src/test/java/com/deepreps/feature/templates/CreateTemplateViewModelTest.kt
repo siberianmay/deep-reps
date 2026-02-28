@@ -450,6 +450,28 @@ class CreateTemplateViewModelTest {
         }
     }
 
+    @Test
+    fun `loads exercises from exerciseIds preserving input order when Room returns different order`() = runTest {
+        // Room's IN query does not guarantee input order — simulate reversed return
+        coEvery { exerciseRepository.getExercisesByIds(listOf(101L, 100L)) } returns exerciseDetails.reversed()
+
+        viewModel = createViewModel(
+            savedState = mapOf(CreateTemplateViewModel.EXERCISE_IDS_ARG to "101,100"),
+        )
+
+        viewModel.state.test {
+            val state = awaitItem()
+            assertEquals(2, state.exercises.size)
+            // Order must match the input IDs (101 first, then 100), not Room's return order
+            assertEquals("Overhead Press", state.exercises[0].name)
+            assertEquals(101L, state.exercises[0].exerciseId)
+            assertEquals(0, state.exercises[0].orderIndex)
+            assertEquals("Bench Press", state.exercises[1].name)
+            assertEquals(100L, state.exercises[1].exerciseId)
+            assertEquals(1, state.exercises[1].orderIndex)
+        }
+    }
+
     companion object {
 
         fun makeExercise(

@@ -21,6 +21,7 @@ fun WorkoutSessionEntity.toDomain(): WorkoutSession = WorkoutSession(
     status = SessionStatus.fromValue(status),
     notes = notes,
     templateId = templateId,
+    name = name,
 )
 
 fun WorkoutSession.toEntity(): WorkoutSessionEntity = WorkoutSessionEntity(
@@ -32,6 +33,7 @@ fun WorkoutSession.toEntity(): WorkoutSessionEntity = WorkoutSessionEntity(
     status = status.value,
     notes = notes,
     templateId = templateId,
+    name = name,
 )
 
 // --- WorkoutExercise ---

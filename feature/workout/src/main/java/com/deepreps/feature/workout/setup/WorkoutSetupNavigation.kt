@@ -58,7 +58,7 @@ fun NavGraphBuilder.muscleGroupSelectorScreen(
  */
 fun NavGraphBuilder.exerciseOrderScreen(
     onNavigateBack: () -> Unit,
-    onGeneratePlan: (exerciseIds: List<Long>) -> Unit,
+    onGeneratePlan: (exerciseIds: List<Long>, templateId: Long?) -> Unit,
 ) {
     composable(
         route = WorkoutSetupNavigation.EXERCISE_ORDER_ROUTE,
@@ -85,7 +85,7 @@ fun NavGraphBuilder.exerciseOrderScreen(
             },
             onGeneratePlan = {
                 val exerciseIds = state.selectedExercises.map { it.exerciseId }
-                onGeneratePlan(exerciseIds)
+                onGeneratePlan(exerciseIds, state.templateId)
             },
             onNavigateBack = onNavigateBack,
         )

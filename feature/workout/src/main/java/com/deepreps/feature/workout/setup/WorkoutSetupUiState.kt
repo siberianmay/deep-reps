@@ -11,6 +11,7 @@ import com.deepreps.core.domain.model.enums.MuscleGroup
 data class WorkoutSetupUiState(
     val selectedGroups: Set<MuscleGroup> = emptySet(),
     val selectedExercises: List<ExerciseOrderItem> = emptyList(),
+    val templateId: Long? = null,
     val isFromTemplate: Boolean = false,
     val templateName: String? = null,
     val isGeneratingPlan: Boolean = false,

@@ -86,6 +86,9 @@ interface WorkoutSessionRepository {
      */
     suspend fun getStaleActiveSessions(cutoffMillis: Long): List<WorkoutSession>
 
+    /** Updates the session name. Pass null to clear. */
+    suspend fun renameSession(id: Long, name: String?)
+
     /** Deletes a completed workout session and all associated exercises/sets. */
     suspend fun deleteSession(id: Long)
 

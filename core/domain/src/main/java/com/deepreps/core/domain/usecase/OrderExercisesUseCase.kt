@@ -5,13 +5,15 @@ import com.deepreps.core.domain.model.enums.Difficulty
 import com.deepreps.core.domain.model.enums.MovementType
 
 /**
- * Orders exercises according to the CSCS auto-ordering algorithm.
+ * Orders exercises according to the CSCS auto-ordering algorithm with
+ * round-robin interleaving across muscle groups.
  *
  * Per exercise-science.md Section 6:
- * 1. Compounds before isolations (non-core)
- * 2. Within same type: large muscle groups before small (by group priority)
- * 3. Within same group and type: advanced before intermediate before beginner
- * 4. Core exercises always last (regardless of compound/isolation)
+ * 1. Non-core exercises are grouped by [Exercise.primaryGroupId]
+ * 2. Within each group: compounds before isolations, then by orderPriority,
+ *    then by difficulty (advanced first)
+ * 3. Groups are interleaved via round-robin (largest group first)
+ * 4. Core exercises always last (sorted: compounds first, then by difficulty)
  *
  * This is a default ordering. The user can freely reorder after.
  * Pure Kotlin, no dependencies.
@@ -23,19 +25,53 @@ class OrderExercisesUseCase {
             groupPriority(exercise.primaryGroupId) == CORE_PRIORITY
         }
 
-        val (nonCoreCompounds, nonCoreIsolations) = nonCoreExercises.partition { exercise ->
-            exercise.movementType == MovementType.COMPOUND
-        }
-
-        val sortedCompounds = nonCoreCompounds.sortedWith(exerciseComparator)
-        val sortedIsolations = nonCoreIsolations.sortedWith(exerciseComparator)
+        val interleaved = interleaveByMuscleGroup(nonCoreExercises)
         val sortedCore = coreExercises.sortedWith(coreComparator)
 
-        return sortedCompounds + sortedIsolations + sortedCore
+        return interleaved + sortedCore
     }
 
-    private val exerciseComparator: Comparator<Exercise> =
-        compareBy<Exercise> { exercise -> exercise.orderPriority }
+    /**
+     * Groups exercises by [Exercise.primaryGroupId], sorts each group internally
+     * (compounds first, then orderPriority, then difficulty), and interleaves
+     * across groups via round-robin.
+     *
+     * Groups are ordered by size descending so that the largest muscle group
+     * leads each round. Ties in size are broken by the first exercise's
+     * orderPriority (lower = earlier) for deterministic output.
+     */
+    private fun interleaveByMuscleGroup(exercises: List<Exercise>): List<Exercise> {
+        if (exercises.isEmpty()) return emptyList()
+
+        val groupQueues: List<ArrayDeque<Exercise>> = exercises
+            .groupBy { it.primaryGroupId }
+            .values
+            .map { group -> ArrayDeque(group.sortedWith(withinGroupComparator)) }
+            .sortedWith(
+                compareByDescending<ArrayDeque<Exercise>> { it.size }
+                    .thenBy { it.first().orderPriority }
+            )
+
+        val result = mutableListOf<Exercise>()
+        while (groupQueues.any { it.isNotEmpty() }) {
+            for (queue in groupQueues) {
+                if (queue.isNotEmpty()) {
+                    result.add(queue.removeFirst())
+                }
+            }
+        }
+        return result
+    }
+
+    /**
+     * Sorts exercises within a single muscle group:
+     * compounds first, then by orderPriority, then by difficulty (advanced first).
+     */
+    private val withinGroupComparator: Comparator<Exercise> =
+        compareBy<Exercise> { exercise ->
+            if (exercise.movementType == MovementType.COMPOUND) 0 else 1
+        }
+            .thenBy { exercise -> exercise.orderPriority }
             .thenBy { exercise -> difficultySort(exercise.difficulty) }
 
     private val coreComparator: Comparator<Exercise> =

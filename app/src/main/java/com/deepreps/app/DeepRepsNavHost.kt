@@ -211,8 +211,8 @@ fun DeepRepsNavHost(
 
             exerciseOrderScreen(
                 onNavigateBack = { navController.popBackStack() },
-                onGeneratePlan = { exerciseIds ->
-                    navController.navigateToPlanReview(exerciseIds)
+                onGeneratePlan = { exerciseIds, templateId ->
+                    navController.navigateToPlanReview(exerciseIds, templateId)
                 },
             )
 

@@ -18,4 +18,5 @@ data class WorkoutSession(
     val status: SessionStatus,
     val notes: String?,
     val templateId: Long?,
+    val name: String? = null,
 )

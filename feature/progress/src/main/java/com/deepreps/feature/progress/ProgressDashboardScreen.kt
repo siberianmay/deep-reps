@@ -210,31 +210,60 @@ private fun SessionHistoryItem(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.Center,
             ) {
-                // Line 1: Date + Duration
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
+                // Line 1: Name (if present) or Date + Duration
+                if (session.sessionName != null) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Text(
+                            text = session.sessionName,
+                            style = typography.bodyLarge,
+                            color = colors.onSurfacePrimary,
+                            maxLines = 1,
+                            modifier = Modifier.weight(1f, fill = false),
+                        )
+                        Text(
+                            text = session.durationText,
+                            style = typography.bodyMedium,
+                            color = colors.onSurfaceSecondary,
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(spacing.space1))
+
+                    // Line 2: Date + Muscle groups
                     Text(
-                        text = session.dateText,
-                        style = typography.bodyMedium,
-                        color = colors.onSurfacePrimary,
+                        text = "${session.dateText} \u00B7 ${session.muscleGroupNames}",
+                        style = typography.bodySmall,
+                        color = colors.onSurfaceSecondary,
                     )
+                } else {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Text(
+                            text = session.dateText,
+                            style = typography.bodyMedium,
+                            color = colors.onSurfacePrimary,
+                        )
+                        Text(
+                            text = session.durationText,
+                            style = typography.bodyMedium,
+                            color = colors.onSurfaceSecondary,
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(spacing.space1))
+
+                    // Line 2: Muscle groups
                     Text(
-                        text = session.durationText,
-                        style = typography.bodyMedium,
+                        text = session.muscleGroupNames,
+                        style = typography.bodySmall,
                         color = colors.onSurfaceSecondary,
                     )
                 }
-
-                Spacer(modifier = Modifier.height(spacing.space1))
-
-                // Line 2: Muscle groups
-                Text(
-                    text = session.muscleGroupNames,
-                    style = typography.bodySmall,
-                    color = colors.onSurfaceSecondary,
-                )
 
                 Spacer(modifier = Modifier.height(spacing.space1))
 
@@ -295,6 +324,7 @@ private fun DashboardDarkPreview() {
                         totalVolumeKg = 8500.0,
                         muscleGroupNames = "Chest, Shoulders",
                         setCount = 18,
+                        sessionName = "Push Day",
                     ),
                     SessionSummaryUi(
                         sessionId = 2,

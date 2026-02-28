@@ -57,6 +57,7 @@ data class BackupWorkoutSession(
     val status: String,
     val notes: String? = null,
     val templateId: Long? = null,
+    val name: String? = null,
 )
 
 @Serializable

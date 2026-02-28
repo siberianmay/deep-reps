@@ -46,4 +46,6 @@ data class WorkoutSessionEntity(
     val notes: String?,
     @ColumnInfo(name = "template_id")
     val templateId: Long?,
+    @ColumnInfo(name = "name")
+    val name: String? = null,
 )

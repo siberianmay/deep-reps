@@ -1,5 +1,6 @@
 package com.deepreps.feature.exerciselibrary.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -10,10 +11,13 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CheckboxDefaults
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -41,11 +45,12 @@ import com.deepreps.feature.exerciselibrary.ExerciseUi
  * - Checkbox variant: checkbox on left (48dp touch target).
  *
  * @param exercise The exercise UI model to display.
- * @param onClick Called when the row body is tapped (navigate to detail).
+ * @param onClick Called when the row body is tapped. In selection mode this toggles selection;
+ *   in browse mode this navigates to exercise detail.
  * @param modifier External modifier.
- * @param isCheckable Whether to show a checkbox (selection screen variant).
- * @param isChecked Whether the checkbox is checked. Ignored if [isCheckable] is false.
- * @param onCheckedChange Called when the checkbox is toggled. Ignored if [isCheckable] is false.
+ * @param isCheckable Whether the row is in selection mode (tap to select, info icon for details).
+ * @param isChecked Whether the exercise is currently selected. Ignored if [isCheckable] is false.
+ * @param onInfoClick Called when the info icon is tapped. Only shown when [isCheckable] is true.
  */
 @Suppress("LongMethod")
 @OptIn(ExperimentalLayoutApi::class)
@@ -56,7 +61,7 @@ fun ExerciseListItem(
     modifier: Modifier = Modifier,
     isCheckable: Boolean = false,
     isChecked: Boolean = false,
-    onCheckedChange: ((Boolean) -> Unit)? = null,
+    onInfoClick: (() -> Unit)? = null,
 ) {
     val colors = DeepRepsTheme.colors
     val typography = DeepRepsTheme.typography
@@ -71,28 +76,23 @@ fun ExerciseListItem(
         }
     }
 
+    val isSelected = isCheckable && isChecked
+    val rowBackground = if (isSelected) {
+        colors.accentPrimary.copy(alpha = 0.25f)
+    } else {
+        Color.Transparent
+    }
+
     Row(
         modifier = modifier
             .fillMaxWidth()
             .height(72.dp)
+            .background(rowBackground)
             .clickable(onClick = onClick)
             .padding(horizontal = spacing.space4)
             .semantics { contentDescription = accessibilityText },
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        if (isCheckable) {
-            Checkbox(
-                checked = isChecked,
-                onCheckedChange = onCheckedChange,
-                colors = CheckboxDefaults.colors(
-                    checkedColor = colors.accentPrimary,
-                    uncheckedColor = colors.onSurfaceSecondary,
-                    checkmarkColor = colors.surfaceLowest,
-                ),
-            )
-            Spacer(modifier = Modifier.width(spacing.space2))
-        }
-
         Column(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.Center,
@@ -100,7 +100,7 @@ fun ExerciseListItem(
             Text(
                 text = exercise.name,
                 style = typography.bodyLarge,
-                color = colors.onSurfacePrimary,
+                color = if (isSelected) colors.accentPrimary else colors.onSurfacePrimary,
                 maxLines = 1,
             )
 
@@ -121,6 +121,21 @@ fun ExerciseListItem(
                     contentColor = colors.onSurfaceSecondary,
                 )
                 DifficultyChip(difficulty = exercise.difficulty)
+            }
+        }
+
+        if (isCheckable && onInfoClick != null) {
+            Spacer(modifier = Modifier.width(spacing.space2))
+            IconButton(
+                onClick = onInfoClick,
+                modifier = Modifier.size(40.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Info,
+                    contentDescription = "Exercise details",
+                    tint = colors.onSurfaceSecondary,
+                    modifier = Modifier.size(20.dp),
+                )
             }
         }
     }
@@ -242,7 +257,7 @@ private fun CheckableSelectedDarkPreview() {
             onClick = {},
             isCheckable = true,
             isChecked = true,
-            onCheckedChange = {},
+            onInfoClick = {},
         )
     }
 }

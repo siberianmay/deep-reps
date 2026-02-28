@@ -17,10 +17,13 @@ import androidx.navigation.navArgument
 object PlanReviewNavigation {
 
     const val EXERCISE_IDS_ARG = "exercise_ids"
-    const val ROUTE = "plan_review/{$EXERCISE_IDS_ARG}"
+    const val TEMPLATE_ID_ARG = "template_id"
+    const val ROUTE = "plan_review/{$EXERCISE_IDS_ARG}?$TEMPLATE_ID_ARG={$TEMPLATE_ID_ARG}"
 
-    fun createRoute(exerciseIds: List<Long>): String =
-        "plan_review/${exerciseIds.joinToString(",")}"
+    fun createRoute(exerciseIds: List<Long>, templateId: Long? = null): String {
+        val base = "plan_review/${exerciseIds.joinToString(",")}"
+        return if (templateId != null) "$base?$TEMPLATE_ID_ARG=$templateId" else base
+    }
 }
 
 /**
@@ -38,6 +41,11 @@ fun NavGraphBuilder.planReviewScreen(
         arguments = listOf(
             navArgument(PlanReviewNavigation.EXERCISE_IDS_ARG) {
                 type = NavType.StringType
+            },
+            navArgument(PlanReviewNavigation.TEMPLATE_ID_ARG) {
+                type = NavType.StringType
+                nullable = true
+                defaultValue = null
             },
         ),
     ) { backStackEntry ->
@@ -60,6 +68,6 @@ fun NavGraphBuilder.planReviewScreen(
 /**
  * Navigate to the plan review screen with the given exercise IDs.
  */
-fun NavController.navigateToPlanReview(exerciseIds: List<Long>) {
-    navigate(PlanReviewNavigation.createRoute(exerciseIds))
+fun NavController.navigateToPlanReview(exerciseIds: List<Long>, templateId: Long? = null) {
+    navigate(PlanReviewNavigation.createRoute(exerciseIds, templateId))
 }

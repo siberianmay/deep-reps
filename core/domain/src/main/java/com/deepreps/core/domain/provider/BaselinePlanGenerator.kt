@@ -88,7 +88,8 @@ class BaselinePlanGenerator @Inject constructor() {
             fallbackWeight,
         )
 
-        var workingWeight = if (isBw) 0.0 else progression.weightKg
+        val isWeightableBw = isBw && exercise.stableId in WEIGHTABLE_BW_IDS
+        var workingWeight = if (isBw && !isWeightableBw) 0.0 else progression.weightKg
         val targetReps = progression.targetReps
 
         // Apply deload/age modifiers only for cold-start (no history).
@@ -108,7 +109,7 @@ class BaselinePlanGenerator @Inject constructor() {
         val workingSets = (1..workingSetsCount).map {
             PlannedSet(
                 setType = SetType.WORKING,
-                weight = if (isBw) 0.0 else workingWeight,
+                weight = if (isBw && !isWeightableBw) 0.0 else workingWeight,
                 reps = targetReps,
                 restSeconds = restSeconds,
             )
@@ -177,7 +178,7 @@ class BaselinePlanGenerator @Inject constructor() {
         else -> null
     }
 
-    @Suppress("LongMethod", "ComplexMethod")
+    @Suppress("LongMethod", "ComplexMethod", "ReturnCount")
     private fun generateWarmupSets(
         workingWeight: Double,
         exercise: ExerciseForPlan,
@@ -191,9 +192,25 @@ class BaselinePlanGenerator @Inject constructor() {
 
         if (isBw) {
             if (!isCompound) return emptyList()
-            return listOf(
-                PlannedSet(SetType.WARMUP, weight = 0.0, reps = 10, restSeconds = WARMUP_REST),
-            )
+            if (workingWeight <= 0.0) {
+                // Pure bodyweight — single warmup set
+                return listOf(
+                    PlannedSet(SetType.WARMUP, weight = 0.0, reps = 10, restSeconds = WARMUP_REST),
+                )
+            }
+            // Weighted bodyweight (e.g., +20kg pull-ups)
+            return if (workingWeight >= WEIGHTED_BW_HEAVY_THRESHOLD) {
+                listOf(
+                    warmupSet(0.0, reps = 8),
+                    warmupSet(roundDown(workingWeight * 0.50, equipment), reps = 5),
+                    warmupSet(roundDown(workingWeight * 0.75, equipment), reps = 3),
+                )
+            } else {
+                listOf(
+                    warmupSet(0.0, reps = 8),
+                    warmupSet(roundDown(workingWeight * 0.50, equipment), reps = 5),
+                )
+            }
         }
 
         val isOver50 = age != null && age >= 50
@@ -334,6 +351,19 @@ class BaselinePlanGenerator @Inject constructor() {
         private const val DELOAD_INTENSITY_FACTOR = 0.575 // Midpoint of 50-65%
         private const val GENDER_UNKNOWN_FACTOR = 0.85
         private const val DEFAULT_BODY_WEIGHT_KG = 75.0 // Conservative fallback for weight estimation
+
+        private const val WEIGHTED_BW_HEAVY_THRESHOLD = 30.0
+
+        /**
+         * Bodyweight exercises that can use added weight (belt, vest, etc.).
+         * Other BW exercises always stay at 0kg.
+         */
+        private val WEIGHTABLE_BW_IDS = setOf(
+            "back_bodyweight_pull_up",
+            "back_bodyweight_chin_up",
+            "chest_bodyweight_dips",
+            "lower_back_bodyweight_back_extension",
+        )
 
         /**
          * Heavy compound IDs for rest timer and warmup protocol.

@@ -230,12 +230,17 @@ class CreateTemplateViewModel @Inject constructor(
                 if (ids.isEmpty()) return@launch
 
                 val exercises = exerciseRepository.getExercisesByIds(ids)
-                val exerciseUiList = exercises.mapIndexed { index, exercise ->
-                    TemplateExerciseUi(
-                        exerciseId = exercise.id,
-                        name = exercise.name,
-                        orderIndex = index,
-                    )
+                // Room's IN query does not preserve input order.
+                // Re-order to match the original ids list (workout exercise order).
+                val exerciseMap = exercises.associateBy { it.id }
+                val exerciseUiList = ids.mapIndexedNotNull { index, id ->
+                    exerciseMap[id]?.let { exercise ->
+                        TemplateExerciseUi(
+                            exerciseId = exercise.id,
+                            name = exercise.name,
+                            orderIndex = index,
+                        )
+                    }
                 }
 
                 val muscleGroupNames = computeMuscleGroupNamesSync(exerciseUiList)

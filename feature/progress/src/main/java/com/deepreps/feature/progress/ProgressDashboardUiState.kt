@@ -25,6 +25,7 @@ data class SessionSummaryUi(
     val totalVolumeKg: Double,
     val muscleGroupNames: String,
     val setCount: Int,
+    val sessionName: String? = null,
 )
 
 /**

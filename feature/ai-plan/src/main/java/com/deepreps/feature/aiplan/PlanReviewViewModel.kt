@@ -19,6 +19,7 @@ import com.deepreps.core.domain.model.enums.SetStatus
 import com.deepreps.core.domain.model.enums.SetType
 import com.deepreps.core.domain.provider.AnalyticsTracker
 import com.deepreps.core.domain.repository.ExerciseRepository
+import com.deepreps.core.domain.repository.TemplateRepository
 import com.deepreps.core.domain.repository.UserProfileRepository
 import com.deepreps.core.domain.repository.WorkoutSessionRepository
 import com.deepreps.core.domain.usecase.DetectDeloadNeedUseCase
@@ -51,12 +52,13 @@ import javax.inject.Inject
 @HiltViewModel
 @Suppress("LongParameterList", "TooManyFunctions")
 class PlanReviewViewModel @Inject constructor(
-    @Suppress("UnusedPrivateProperty") private val savedStateHandle: SavedStateHandle,
+    private val savedStateHandle: SavedStateHandle,
     private val generatePlanUseCase: GeneratePlanUseCase,
     private val validatePlanSafetyUseCase: ValidatePlanSafetyUseCase,
     private val detectDeloadNeedUseCase: DetectDeloadNeedUseCase,
     private val determineSessionDayTypeUseCase: DetermineSessionDayTypeUseCase,
     private val exerciseRepository: ExerciseRepository,
+    private val templateRepository: TemplateRepository,
     private val userProfileRepository: UserProfileRepository,
     private val workoutSessionRepository: WorkoutSessionRepository,
     private val analyticsTracker: AnalyticsTracker,
@@ -67,6 +69,8 @@ class PlanReviewViewModel @Inject constructor(
 
     private val _sideEffect = Channel<PlanReviewSideEffect>(Channel.BUFFERED)
     val sideEffect: Flow<PlanReviewSideEffect> = _sideEffect.receiveAsFlow()
+
+    private val templateId: Long? = savedStateHandle.get<String>("template_id")?.toLongOrNull()
 
     // Cached request for regeneration
     private var lastPlanRequest: PlanRequest? = null
@@ -404,6 +408,12 @@ class PlanReviewViewModel @Inject constructor(
     ): Long {
         val now = System.currentTimeMillis()
 
+        val sessionName = if (templateId != null) {
+            templateRepository.getById(templateId)?.name
+        } else {
+            null
+        }
+
         val session = WorkoutSession(
             id = 0,
             startedAt = now,
@@ -412,7 +422,8 @@ class PlanReviewViewModel @Inject constructor(
             pausedDurationSeconds = 0,
             status = SessionStatus.ACTIVE,
             notes = null,
-            templateId = null,
+            templateId = templateId,
+            name = sessionName,
         )
 
         val sessionId = workoutSessionRepository.createSession(session)
