@@ -237,18 +237,24 @@ private fun PrRow(
                 )
 
                 Text(
-                    text = "${formatWeight(pr.bestWeightKg, weightUnit)} \u00B7 ${pr.achievedAtText}",
+                    text = pr.achievedAtText,
                     style = typography.bodySmall,
                     color = colors.onSurfaceSecondary,
                 )
             }
 
+            Text(
+                text = formatWeight(pr.bestWeightKg, weightUnit),
+                style = typography.headlineSmall,
+                color = colors.onSurfacePrimary,
+            )
+
+            Spacer(modifier = Modifier.width(spacing.space2))
+
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 contentDescription = "View exercise progress",
-                modifier = Modifier
-                    .size(24.dp)
-                    .padding(end = spacing.space3),
+                modifier = Modifier.size(24.dp),
                 tint = colors.onSurfaceTertiary,
             )
 

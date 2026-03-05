@@ -231,7 +231,15 @@ private fun ChartCanvas(
         )
 
         if (dataPoints.size == 1) {
-            drawSinglePoint(dataPoints[0], chartLayout, dotColor, prDotColor, secondaryLineColor)
+            drawSinglePoint(
+                dataPoints[0],
+                chartLayout,
+                paddedMin,
+                paddedRange,
+                dotColor,
+                prDotColor,
+                secondaryLineColor,
+            )
             return@Canvas
         }
 
@@ -337,21 +345,29 @@ private fun DrawScope.drawGridAndLabels(
     }
 }
 
+@Suppress("LongParameterList")
 private fun DrawScope.drawSinglePoint(
     dp: ChartDataPoint,
     layout: ChartLayout,
+    paddedMin: Double,
+    paddedRange: Double,
     dotColor: Color,
     prDotColor: Color,
     secondaryLineColor: Color?,
 ) {
     val centerX = layout.chartLeft + layout.chartWidth / 2
-    val centerY = layout.chartTop + layout.chartHeight / 2
-    val color = if (dp.isPersonalRecord) prDotColor else dotColor
-    drawCircle(color = color, radius = 4.dp.toPx(), center = Offset(centerX, centerY))
 
-    // Draw 1RM dot at same position if available
+    // Position primary dot using actual weight value on Y-axis
+    val primaryYFraction = ((dp.weightKg - paddedMin) / paddedRange).toFloat()
+    val primaryY = layout.chartBottom - primaryYFraction * layout.chartHeight
+    val color = if (dp.isPersonalRecord) prDotColor else dotColor
+    drawCircle(color = color, radius = 4.dp.toPx(), center = Offset(centerX, primaryY))
+
+    // Draw 1RM dot at its actual Y position
     if (secondaryLineColor != null && dp.estimated1rmKg != null) {
-        draw1rmDot(Offset(centerX, centerY), dp.confidence, secondaryLineColor)
+        val secondaryYFraction = ((dp.estimated1rmKg - paddedMin) / paddedRange).toFloat()
+        val secondaryY = layout.chartBottom - secondaryYFraction * layout.chartHeight
+        draw1rmDot(Offset(centerX, secondaryY), dp.confidence, secondaryLineColor)
     }
 }
 
