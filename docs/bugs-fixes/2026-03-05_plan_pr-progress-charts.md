@@ -1,7 +1,7 @@
 # Implementation Plan: Personal Records List + Dual-Line Progress Charts
 
 **Created:** 2026-03-05
-**Status:** IN PROGRESS
+**Status:** COMPLETED (2026-03-05)
 **Scope:** Add PR records list to Progress tab + dual-line chart (Max Weight + Estimated 1RM) on ExerciseProgressScreen
 
 ---
