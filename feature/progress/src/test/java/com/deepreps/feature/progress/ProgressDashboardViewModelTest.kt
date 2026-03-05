@@ -15,6 +15,7 @@ import com.deepreps.core.domain.model.enums.SetStatus
 import com.deepreps.core.domain.model.enums.SetType
 import com.deepreps.core.domain.model.enums.WeightUnit
 import com.deepreps.core.domain.repository.ExerciseRepository
+import com.deepreps.core.domain.repository.PersonalRecordRepository
 import com.deepreps.core.domain.repository.UserProfileRepository
 import com.deepreps.core.domain.repository.WorkoutSessionRepository
 import io.mockk.coEvery
@@ -44,6 +45,7 @@ class ProgressDashboardViewModelTest {
     private lateinit var workoutSessionRepository: WorkoutSessionRepository
     private lateinit var exerciseRepository: ExerciseRepository
     private lateinit var userProfileRepository: UserProfileRepository
+    private lateinit var personalRecordRepository: PersonalRecordRepository
     private lateinit var viewModel: ProgressDashboardViewModel
 
     private val now = System.currentTimeMillis()
@@ -130,6 +132,7 @@ class ProgressDashboardViewModelTest {
         workoutSessionRepository = mockk(relaxed = true)
         exerciseRepository = mockk(relaxed = true)
         userProfileRepository = mockk(relaxed = true)
+        personalRecordRepository = mockk(relaxed = true)
 
         every { workoutSessionRepository.getCompletedSessions() } returns flowOf(testSessions)
         every { workoutSessionRepository.getExercisesForSession(1L) } returns
@@ -153,7 +156,7 @@ class ProgressDashboardViewModelTest {
     @Test
     fun `loads completed sessions on init`() = runTest {
         viewModel = ProgressDashboardViewModel(
-            workoutSessionRepository, exerciseRepository, userProfileRepository,
+            workoutSessionRepository, exerciseRepository, userProfileRepository, personalRecordRepository,
         )
 
         viewModel.state.test {
@@ -166,7 +169,7 @@ class ProgressDashboardViewModelTest {
     @Test
     fun `session summary includes exercise count and volume`() = runTest {
         viewModel = ProgressDashboardViewModel(
-            workoutSessionRepository, exerciseRepository, userProfileRepository,
+            workoutSessionRepository, exerciseRepository, userProfileRepository, personalRecordRepository,
         )
 
         viewModel.state.test {
@@ -182,7 +185,7 @@ class ProgressDashboardViewModelTest {
     @Test
     fun `session summary includes duration text`() = runTest {
         viewModel = ProgressDashboardViewModel(
-            workoutSessionRepository, exerciseRepository, userProfileRepository,
+            workoutSessionRepository, exerciseRepository, userProfileRepository, personalRecordRepository,
         )
 
         viewModel.state.test {
@@ -195,7 +198,7 @@ class ProgressDashboardViewModelTest {
     @Test
     fun `session summary includes muscle group names`() = runTest {
         viewModel = ProgressDashboardViewModel(
-            workoutSessionRepository, exerciseRepository, userProfileRepository,
+            workoutSessionRepository, exerciseRepository, userProfileRepository, personalRecordRepository,
         )
 
         viewModel.state.test {
@@ -212,7 +215,7 @@ class ProgressDashboardViewModelTest {
         every { workoutSessionRepository.getCompletedSessions() } returns flowOf(emptyList())
 
         viewModel = ProgressDashboardViewModel(
-            workoutSessionRepository, exerciseRepository, userProfileRepository,
+            workoutSessionRepository, exerciseRepository, userProfileRepository, personalRecordRepository,
         )
 
         viewModel.state.test {
@@ -232,7 +235,7 @@ class ProgressDashboardViewModelTest {
         }
 
         viewModel = ProgressDashboardViewModel(
-            workoutSessionRepository, exerciseRepository, userProfileRepository,
+            workoutSessionRepository, exerciseRepository, userProfileRepository, personalRecordRepository,
         )
 
         viewModel.state.test {
@@ -255,7 +258,7 @@ class ProgressDashboardViewModelTest {
         }
 
         viewModel = ProgressDashboardViewModel(
-            workoutSessionRepository, exerciseRepository, userProfileRepository,
+            workoutSessionRepository, exerciseRepository, userProfileRepository, personalRecordRepository,
         )
 
         viewModel.state.test {
@@ -275,7 +278,7 @@ class ProgressDashboardViewModelTest {
     @Test
     fun `select time range updates state`() = runTest {
         viewModel = ProgressDashboardViewModel(
-            workoutSessionRepository, exerciseRepository, userProfileRepository,
+            workoutSessionRepository, exerciseRepository, userProfileRepository, personalRecordRepository,
         )
 
         viewModel.state.test {
@@ -293,7 +296,7 @@ class ProgressDashboardViewModelTest {
     @Test
     fun `view session emits NavigateToSessionDetail`() = runTest {
         viewModel = ProgressDashboardViewModel(
-            workoutSessionRepository, exerciseRepository, userProfileRepository,
+            workoutSessionRepository, exerciseRepository, userProfileRepository, personalRecordRepository,
         )
 
         viewModel.sideEffect.test {
@@ -311,7 +314,7 @@ class ProgressDashboardViewModelTest {
     @Test
     fun `view exercise progress emits NavigateToExerciseProgress`() = runTest {
         viewModel = ProgressDashboardViewModel(
-            workoutSessionRepository, exerciseRepository, userProfileRepository,
+            workoutSessionRepository, exerciseRepository, userProfileRepository, personalRecordRepository,
         )
 
         viewModel.sideEffect.test {
@@ -348,7 +351,7 @@ class ProgressDashboardViewModelTest {
         coEvery { userProfileRepository.get() } returns profile
 
         viewModel = ProgressDashboardViewModel(
-            workoutSessionRepository, exerciseRepository, userProfileRepository,
+            workoutSessionRepository, exerciseRepository, userProfileRepository, personalRecordRepository,
         )
 
         viewModel.state.test {

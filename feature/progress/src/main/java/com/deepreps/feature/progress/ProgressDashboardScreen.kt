@@ -36,6 +36,8 @@ import com.deepreps.core.ui.component.EmptyState
 import com.deepreps.core.ui.component.ErrorState
 import com.deepreps.core.ui.component.LoadingIndicator
 import com.deepreps.core.ui.theme.DeepRepsTheme
+import com.deepreps.feature.progress.components.DashboardTabSelector
+import com.deepreps.feature.progress.components.PersonalRecordsContent
 import com.deepreps.feature.progress.components.TimeRangeSelector
 import java.util.Locale
 
@@ -99,69 +101,109 @@ internal fun ProgressDashboardContent(
             ),
         )
 
-        // Time range selector
-        TimeRangeSelector(
-            selected = state.selectedTimeRange,
-            onSelect = { onIntent(ProgressDashboardIntent.SelectTimeRange(it)) },
+        // Dashboard tab selector (Records | History)
+        DashboardTabSelector(
+            selected = state.selectedTab,
+            onSelect = { onIntent(ProgressDashboardIntent.SelectTab(it)) },
             modifier = Modifier.padding(horizontal = spacing.space4, vertical = spacing.space2),
         )
 
-        // Content area
-        when {
-            state.isLoading -> {
-                LoadingIndicator(message = "Loading progress...")
-            }
-
-            state.errorType != null -> {
-                ErrorState(
-                    message = when (state.errorType) {
-                        ProgressDashboardError.LoadFailed -> "Failed to load workout history."
+        // Content area — branches on selected tab
+        when (state.selectedTab) {
+            DashboardTab.RECORDS -> {
+                PersonalRecordsContent(
+                    records = state.personalRecords,
+                    weightUnit = state.weightUnit,
+                    isLoading = state.isRecordsLoading,
+                    onExerciseClick = {
+                        onIntent(ProgressDashboardIntent.ViewExerciseProgress(it))
                     },
-                    onRetry = { onIntent(ProgressDashboardIntent.Retry) },
                 )
             }
 
-            state.recentSessions.isEmpty() -> {
-                EmptyState(
-                    title = "No workouts yet",
-                    message = "Complete your first workout to see it here",
+            DashboardTab.HISTORY -> {
+                HistoryContent(
+                    state = state,
+                    onIntent = onIntent,
                 )
             }
+        }
+    }
+}
 
-            else -> {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(
-                        horizontal = spacing.space4,
-                        vertical = spacing.space3,
-                    ),
-                    verticalArrangement = Arrangement.spacedBy(spacing.space2),
-                ) {
-                    // Section header
-                    item {
-                        Text(
-                            text = "Recent Workouts",
-                            style = typography.headlineSmall,
-                            color = colors.onSurfacePrimary,
-                            modifier = Modifier.padding(
-                                top = spacing.space6,
-                                bottom = spacing.space3,
-                            ),
-                        )
-                    }
+/**
+ * History tab content: time range selector + session list.
+ */
+@Suppress("LongMethod")
+@Composable
+private fun HistoryContent(
+    state: ProgressDashboardUiState,
+    onIntent: (ProgressDashboardIntent) -> Unit,
+) {
+    val colors = DeepRepsTheme.colors
+    val spacing = DeepRepsTheme.spacing
+    val typography = DeepRepsTheme.typography
 
-                    items(
-                        items = state.recentSessions,
-                        key = { it.sessionId },
-                    ) { session ->
-                        SessionHistoryItem(
-                            session = session,
-                            weightUnit = state.weightUnit,
-                            onClick = {
-                                onIntent(ProgressDashboardIntent.ViewSession(session.sessionId))
-                            },
-                        )
-                    }
+    // Time range selector (only in History tab)
+    TimeRangeSelector(
+        selected = state.selectedTimeRange,
+        onSelect = { onIntent(ProgressDashboardIntent.SelectTimeRange(it)) },
+        modifier = Modifier.padding(horizontal = spacing.space4, vertical = spacing.space2),
+    )
+
+    when {
+        state.isLoading -> {
+            LoadingIndicator(message = "Loading progress...")
+        }
+
+        state.errorType != null -> {
+            ErrorState(
+                message = when (state.errorType) {
+                    ProgressDashboardError.LoadFailed -> "Failed to load workout history."
+                },
+                onRetry = { onIntent(ProgressDashboardIntent.Retry) },
+            )
+        }
+
+        state.recentSessions.isEmpty() -> {
+            EmptyState(
+                title = "No workouts yet",
+                message = "Complete your first workout to see it here",
+            )
+        }
+
+        else -> {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(
+                    horizontal = spacing.space4,
+                    vertical = spacing.space3,
+                ),
+                verticalArrangement = Arrangement.spacedBy(spacing.space2),
+            ) {
+                item {
+                    Text(
+                        text = "Recent Workouts",
+                        style = typography.headlineSmall,
+                        color = colors.onSurfacePrimary,
+                        modifier = Modifier.padding(
+                            top = spacing.space6,
+                            bottom = spacing.space3,
+                        ),
+                    )
+                }
+
+                items(
+                    items = state.recentSessions,
+                    key = { it.sessionId },
+                ) { session ->
+                    SessionHistoryItem(
+                        session = session,
+                        weightUnit = state.weightUnit,
+                        onClick = {
+                            onIntent(ProgressDashboardIntent.ViewSession(session.sessionId))
+                        },
+                    )
                 }
             }
         }
@@ -210,60 +252,31 @@ private fun SessionHistoryItem(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.Center,
             ) {
-                // Line 1: Name (if present) or Date + Duration
-                if (session.sessionName != null) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                    ) {
-                        Text(
-                            text = session.sessionName,
-                            style = typography.bodyLarge,
-                            color = colors.onSurfacePrimary,
-                            maxLines = 1,
-                            modifier = Modifier.weight(1f, fill = false),
-                        )
-                        Text(
-                            text = session.durationText,
-                            style = typography.bodyMedium,
-                            color = colors.onSurfaceSecondary,
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(spacing.space1))
-
-                    // Line 2: Date + Muscle groups
+                // Line 1: Date + Duration
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
                     Text(
-                        text = "${session.dateText} \u00B7 ${session.muscleGroupNames}",
-                        style = typography.bodySmall,
-                        color = colors.onSurfaceSecondary,
+                        text = session.dateText,
+                        style = typography.bodyMedium,
+                        color = colors.onSurfacePrimary,
                     )
-                } else {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                    ) {
-                        Text(
-                            text = session.dateText,
-                            style = typography.bodyMedium,
-                            color = colors.onSurfacePrimary,
-                        )
-                        Text(
-                            text = session.durationText,
-                            style = typography.bodyMedium,
-                            color = colors.onSurfaceSecondary,
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(spacing.space1))
-
-                    // Line 2: Muscle groups
                     Text(
-                        text = session.muscleGroupNames,
-                        style = typography.bodySmall,
+                        text = session.durationText,
+                        style = typography.bodyMedium,
                         color = colors.onSurfaceSecondary,
                     )
                 }
+
+                Spacer(modifier = Modifier.height(spacing.space1))
+
+                // Line 2: Muscle groups
+                Text(
+                    text = session.muscleGroupNames,
+                    style = typography.bodySmall,
+                    color = colors.onSurfaceSecondary,
+                )
 
                 Spacer(modifier = Modifier.height(spacing.space1))
 
@@ -324,7 +337,6 @@ private fun DashboardDarkPreview() {
                         totalVolumeKg = 8500.0,
                         muscleGroupNames = "Chest, Shoulders",
                         setCount = 18,
-                        sessionName = "Push Day",
                     ),
                     SessionSummaryUi(
                         sessionId = 2,

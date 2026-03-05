@@ -1,16 +1,39 @@
 package com.deepreps.feature.progress
 
+import com.deepreps.core.domain.model.enums.MuscleGroup
 import com.deepreps.core.domain.model.enums.WeightUnit
 
 /**
  * UI state for the progress dashboard screen.
  */
+@Suppress("ForbiddenPublicDataClass")
 data class ProgressDashboardUiState(
     val recentSessions: List<SessionSummaryUi> = emptyList(),
+    val selectedTab: DashboardTab = DashboardTab.HISTORY,
     val selectedTimeRange: TimeRange = TimeRange.TWELVE_WEEKS,
     val weightUnit: WeightUnit = WeightUnit.KG,
+    val personalRecords: Map<MuscleGroup, List<PrSummaryUi>> = emptyMap(),
+    val isRecordsLoading: Boolean = false,
     val isLoading: Boolean = true,
     val errorType: ProgressDashboardError? = null,
+)
+
+/**
+ * Tabs for the progress dashboard: Records (personal records) or History (session list).
+ */
+enum class DashboardTab { RECORDS, HISTORY }
+
+/**
+ * UI model for a personal record summary displayed in the Records tab.
+ */
+@Suppress("ForbiddenPublicDataClass")
+data class PrSummaryUi(
+    val exerciseId: Long,
+    val exerciseName: String,
+    val muscleGroup: MuscleGroup,
+    val bestWeightKg: Double,
+    val bestReps: Int?,
+    val achievedAtText: String,
 )
 
 /**
@@ -25,7 +48,6 @@ data class SessionSummaryUi(
     val totalVolumeKg: Double,
     val muscleGroupNames: String,
     val setCount: Int,
-    val sessionName: String? = null,
 )
 
 /**

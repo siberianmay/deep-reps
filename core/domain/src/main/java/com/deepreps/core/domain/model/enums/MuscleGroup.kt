@@ -17,5 +17,8 @@ enum class MuscleGroup(val value: String) {
         fun fromValue(value: String): MuscleGroup =
             entries.firstOrNull { it.value == value }
                 ?: throw IllegalArgumentException("Unknown muscle group: $value")
+
+        fun fromId(id: Long): MuscleGroup? =
+            entries.getOrNull((id - 1).toInt())
     }
 }

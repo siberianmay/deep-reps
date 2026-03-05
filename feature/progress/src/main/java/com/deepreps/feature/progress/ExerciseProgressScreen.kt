@@ -3,13 +3,16 @@ package com.deepreps.feature.progress
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -20,6 +23,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.deepreps.core.domain.model.enums.WeightUnit
+import com.deepreps.core.domain.util.Estimated1rmCalculator
 import com.deepreps.core.ui.component.ErrorState
 import com.deepreps.core.ui.component.LoadingIndicator
 import com.deepreps.core.ui.theme.DeepRepsTheme
@@ -111,14 +115,50 @@ internal fun ExerciseProgressContent(
             else -> {
                 ProgressChart(
                     dataPoints = state.chartData,
-                    title = "Weight Progression",
+                    title = "Progress",
                     currentValue = formatWeight(state.currentBestKg, state.weightUnit),
-                    peakValue = formatWeight(state.allTimeBestKg, state.weightUnit),
+                    peakValue = formatWeight(
+                        state.currentBestEstimated1rmKg,
+                        state.weightUnit,
+                    ),
                     deltaText = computeDelta(state.chartData, state.weightUnit),
+                    secondaryLineColor = DeepRepsTheme.colors.accentSecondary,
+                    currentLabel = "Max",
+                    peakLabel = "Est. 1RM",
+                    changeLabel = "Change",
+                    weightUnit = state.weightUnit,
                     modifier = Modifier.padding(horizontal = spacing.space4),
                 )
+
+                if (state.isBodyweightMissingProfile) {
+                    Spacer(modifier = Modifier.height(spacing.space3))
+                    BodyweightMissingCard(
+                        modifier = Modifier.padding(horizontal = spacing.space4),
+                    )
+                }
             }
         }
+    }
+}
+
+@Composable
+private fun BodyweightMissingCard(modifier: Modifier = Modifier) {
+    val colors = DeepRepsTheme.colors
+    val typography = DeepRepsTheme.typography
+    val spacing = DeepRepsTheme.spacing
+    val radius = DeepRepsTheme.radius
+
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(radius.md),
+        color = colors.surfaceLow,
+    ) {
+        Text(
+            text = "Add your body weight in Settings to see estimated 1RM for this exercise",
+            style = typography.bodySmall,
+            color = colors.onSurfaceSecondary,
+            modifier = Modifier.padding(spacing.space3),
+        )
     }
 }
 
@@ -158,6 +198,7 @@ private const val KG_TO_LBS = 2.20462
 // Previews
 // ---------------------------------------------------------------------------
 
+@Suppress("LongMethod")
 @Preview(name = "Exercise Progress - Dark", showBackground = true, backgroundColor = 0xFF0A0A0F)
 @Composable
 private fun ExerciseProgressDarkPreview() {
@@ -168,15 +209,43 @@ private fun ExerciseProgressDarkPreview() {
             state = ExerciseProgressUiState(
                 exerciseName = "Barbell Bench Press",
                 chartData = listOf(
-                    ChartDataPoint(now - 10 * oneWeekMs, 60.0),
-                    ChartDataPoint(now - 8 * oneWeekMs, 62.5),
-                    ChartDataPoint(now - 6 * oneWeekMs, 65.0),
-                    ChartDataPoint(now - 4 * oneWeekMs, 67.5),
-                    ChartDataPoint(now - 2 * oneWeekMs, 70.0, isPersonalRecord = true),
+                    ChartDataPoint(
+                        now - 10 * oneWeekMs,
+                        60.0,
+                        estimated1rmKg = 72.0,
+                        confidence = Estimated1rmCalculator.Confidence.HIGH,
+                    ),
+                    ChartDataPoint(
+                        now - 8 * oneWeekMs,
+                        62.5,
+                        estimated1rmKg = 75.0,
+                        confidence = Estimated1rmCalculator.Confidence.MODERATE,
+                    ),
+                    ChartDataPoint(
+                        now - 6 * oneWeekMs,
+                        65.0,
+                        estimated1rmKg = 78.0,
+                        confidence = Estimated1rmCalculator.Confidence.HIGH,
+                    ),
+                    ChartDataPoint(
+                        now - 4 * oneWeekMs,
+                        67.5,
+                        estimated1rmKg = 81.0,
+                        confidence = Estimated1rmCalculator.Confidence.MODERATE,
+                    ),
+                    ChartDataPoint(
+                        now - 2 * oneWeekMs,
+                        70.0,
+                        isPersonalRecord = true,
+                        estimated1rmKg = 84.0,
+                        confidence = Estimated1rmCalculator.Confidence.HIGH,
+                    ),
                 ),
                 selectedTimeRange = TimeRange.TWELVE_WEEKS,
                 currentBestKg = 70.0,
                 allTimeBestKg = 70.0,
+                currentBestEstimated1rmKg = 84.0,
+                allTimeBestEstimated1rmKg = 84.0,
                 isLoading = false,
             ),
             onIntent = {},

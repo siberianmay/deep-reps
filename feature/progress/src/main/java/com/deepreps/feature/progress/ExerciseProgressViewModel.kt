@@ -4,10 +4,12 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.deepreps.core.domain.model.WorkoutSet
+import com.deepreps.core.domain.model.enums.Equipment
 import com.deepreps.core.domain.model.enums.SetStatus
 import com.deepreps.core.domain.repository.ExerciseRepository
 import com.deepreps.core.domain.repository.UserProfileRepository
 import com.deepreps.core.domain.repository.WorkoutSessionRepository
+import com.deepreps.core.domain.util.Estimated1rmCalculator
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -93,6 +95,11 @@ class ExerciseProgressViewModel @Inject constructor(
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true) }
             try {
+                val exercise = exerciseRepository.getExerciseById(exerciseId)
+                val isBodyweight = exercise?.equipment == Equipment.BODYWEIGHT
+                val bodyWeightKg = resolveBodyWeightKg(isBodyweight)
+                val bodyweightMissing = isBodyweight && bodyWeightKg == null
+
                 val completedSessions = workoutSessionRepository
                     .getCompletedSessions()
                     .first()
@@ -103,45 +110,24 @@ class ExerciseProgressViewModel @Inject constructor(
                     timeRange,
                 )
 
-                val dataPoints = mutableListOf<ChartDataPoint>()
-
-                for (session in filtered) {
-                    val exercises = workoutSessionRepository
-                        .getExercisesForSession(session.id)
-                        .first()
-
-                    val targetExercise = exercises.find { it.exerciseId == exerciseId }
-                        ?: continue
-
-                    val sets = workoutSessionRepository
-                        .getSetsForExercise(targetExercise.id)
-                        .first()
-
-                    val bestWeight = findBestWeight(sets)
-                    if (bestWeight != null) {
-                        dataPoints.add(
-                            ChartDataPoint(
-                                dateEpochMs = session.startedAt,
-                                weightKg = bestWeight,
-                                isPersonalRecord = sets.any {
-                                    it.isPersonalRecord &&
-                                        it.actualWeightKg == bestWeight
-                                },
-                            ),
-                        )
-                    }
+                val dataPoints = filtered.mapNotNull { session ->
+                    buildDataPoint(session.id, session.startedAt, isBodyweight, bodyWeightKg)
                 }
 
-                // Sort by date ascending for chart rendering
                 val sorted = dataPoints.sortedBy { it.dateEpochMs }
                 val currentBest = sorted.lastOrNull()?.weightKg
                 val allTimeBest = sorted.maxByOrNull { it.weightKg }?.weightKg
+                val current1rm = sorted.lastOrNull()?.estimated1rmKg
+                val allTime1rm = sorted.mapNotNull { it.estimated1rmKg }.maxOrNull()
 
                 _state.update { current ->
                     current.copy(
                         chartData = sorted,
                         currentBestKg = currentBest,
                         allTimeBestKg = allTimeBest,
+                        currentBestEstimated1rmKg = current1rm,
+                        allTimeBestEstimated1rmKg = allTime1rm,
+                        isBodyweightMissingProfile = bodyweightMissing,
                         isLoading = false,
                         errorType = null,
                     )
@@ -157,6 +143,47 @@ class ExerciseProgressViewModel @Inject constructor(
         }
     }
 
+    private suspend fun resolveBodyWeightKg(isBodyweight: Boolean): Double? {
+        if (!isBodyweight) return null
+        return try {
+            userProfileRepository.get()?.bodyWeightKg
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    private suspend fun buildDataPoint(
+        sessionId: Long,
+        startedAt: Long,
+        isBodyweight: Boolean,
+        bodyWeightKg: Double?,
+    ): ChartDataPoint? {
+        val exercises = workoutSessionRepository
+            .getExercisesForSession(sessionId)
+            .first()
+
+        val targetExercise = exercises.find { it.exerciseId == exerciseId }
+            ?: return null
+
+        val sets = workoutSessionRepository
+            .getSetsForExercise(targetExercise.id)
+            .first()
+
+        val bestWeight = findBestWeight(sets) ?: return null
+
+        val best1rm = computeBest1rm(sets, isBodyweight, bodyWeightKg)
+
+        return ChartDataPoint(
+            dateEpochMs = startedAt,
+            weightKg = bestWeight,
+            isPersonalRecord = sets.any {
+                it.isPersonalRecord && it.actualWeightKg == bestWeight
+            },
+            estimated1rmKg = best1rm?.estimatedKg,
+            confidence = best1rm?.confidence,
+        )
+    }
+
     companion object {
         const val EXERCISE_ID_ARG = "exerciseId"
 
@@ -170,5 +197,48 @@ class ExerciseProgressViewModel @Inject constructor(
                 .maxByOrNull { it.actualWeightKg!! }
                 ?.actualWeightKg
         }
+
+        /**
+         * Computes the best estimated 1RM across all completed working sets.
+         *
+         * For bodyweight exercises, substitutes body weight when actual weight
+         * is null/zero, or adds body weight to actual weight.
+         * Returns null if no valid 1RM can be computed.
+         */
+        internal fun computeBest1rm(
+            sets: List<WorkoutSet>,
+            isBodyweight: Boolean,
+            bodyWeightKg: Double?,
+        ): Best1rmResult? {
+            if (isBodyweight && bodyWeightKg == null) return null
+
+            return sets
+                .filter { it.status == SetStatus.COMPLETED && it.actualReps != null }
+                .mapNotNull { set ->
+                    val effectiveWeight = resolveEffectiveWeight(set, isBodyweight, bodyWeightKg)
+                        ?: return@mapNotNull null
+                    val reps = set.actualReps ?: return@mapNotNull null
+                    val result = Estimated1rmCalculator.calculateWithConfidence(effectiveWeight, reps)
+                        ?: return@mapNotNull null
+                    Best1rmResult(result.estimatedKg, result.confidence)
+                }
+                .maxByOrNull { it.estimatedKg }
+        }
+
+        private fun resolveEffectiveWeight(
+            set: WorkoutSet,
+            isBodyweight: Boolean,
+            bodyWeightKg: Double?,
+        ): Double? {
+            if (!isBodyweight) return set.actualWeightKg
+            val bw = bodyWeightKg ?: return null
+            val actual = set.actualWeightKg
+            return if (actual == null || actual == 0.0) bw else bw + actual
+        }
     }
+
+    internal data class Best1rmResult(
+        val estimatedKg: Double,
+        val confidence: Estimated1rmCalculator.Confidence,
+    )
 }

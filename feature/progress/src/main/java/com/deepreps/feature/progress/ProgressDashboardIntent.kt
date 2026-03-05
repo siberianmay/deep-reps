@@ -16,4 +16,7 @@ sealed interface ProgressDashboardIntent {
 
     /** User requested a retry after an error. */
     data object Retry : ProgressDashboardIntent
+
+    /** User switched between Records and History tabs. */
+    data class SelectTab(val tab: DashboardTab) : ProgressDashboardIntent
 }

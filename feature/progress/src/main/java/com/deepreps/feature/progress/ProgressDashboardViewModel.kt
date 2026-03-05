@@ -2,11 +2,14 @@ package com.deepreps.feature.progress
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.deepreps.core.domain.model.PersonalRecord
 import com.deepreps.core.domain.model.WorkoutExercise
 import com.deepreps.core.domain.model.WorkoutSession
 import com.deepreps.core.domain.model.enums.MuscleGroup
+import com.deepreps.core.domain.model.enums.RecordType
 import com.deepreps.core.domain.model.enums.SetStatus
 import com.deepreps.core.domain.repository.ExerciseRepository
+import com.deepreps.core.domain.repository.PersonalRecordRepository
 import com.deepreps.core.domain.repository.UserProfileRepository
 import com.deepreps.core.domain.repository.WorkoutSessionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -23,10 +26,12 @@ import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.Date
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.Locale
 import javax.inject.Inject
+import kotlinx.coroutines.Job
 
 /**
  * ViewModel for the progress dashboard screen.
@@ -39,6 +44,7 @@ class ProgressDashboardViewModel @Inject constructor(
     private val workoutSessionRepository: WorkoutSessionRepository,
     private val exerciseRepository: ExerciseRepository,
     private val userProfileRepository: UserProfileRepository,
+    private val personalRecordRepository: PersonalRecordRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ProgressDashboardUiState())
@@ -46,6 +52,9 @@ class ProgressDashboardViewModel @Inject constructor(
 
     private val _sideEffect = Channel<ProgressDashboardSideEffect>(Channel.BUFFERED)
     val sideEffect: Flow<ProgressDashboardSideEffect> = _sideEffect.receiveAsFlow()
+
+    private var sessionsJob: Job? = null
+    private var recordsJob: Job? = null
 
     init {
         loadWeightUnit()
@@ -60,6 +69,7 @@ class ProgressDashboardViewModel @Inject constructor(
                 intent.exerciseId,
             )
             is ProgressDashboardIntent.Retry -> handleRetry()
+            is ProgressDashboardIntent.SelectTab -> handleSelectTab(intent.tab)
         }
     }
 
@@ -81,6 +91,60 @@ class ProgressDashboardViewModel @Inject constructor(
         observeSessions()
     }
 
+    private fun handleSelectTab(tab: DashboardTab) {
+        _state.update { it.copy(selectedTab = tab) }
+        if (tab == DashboardTab.RECORDS) {
+            loadPersonalRecords()
+        }
+    }
+
+    private fun loadPersonalRecords() {
+        recordsJob?.cancel()
+        _state.update { it.copy(isRecordsLoading = true) }
+        recordsJob = personalRecordRepository.observeAll()
+            .onEach { records -> processPersonalRecords(records) }
+            .catch {
+                _state.update { it.copy(isRecordsLoading = false) }
+            }
+            .launchIn(viewModelScope)
+    }
+
+    private suspend fun processPersonalRecords(records: List<PersonalRecord>) {
+        val maxWeightRecords = records.filter { it.recordType == RecordType.MAX_WEIGHT }
+
+        val bestByExercise = maxWeightRecords
+            .groupBy { it.exerciseId }
+            .mapValues { (_, exerciseRecords) ->
+                exerciseRecords.maxByOrNull { it.weightValue ?: 0.0 }
+            }
+            .values
+            .filterNotNull()
+
+        val summaries = bestByExercise.mapNotNull { record ->
+            mapRecordToSummary(record)
+        }
+
+        val grouped = summaries
+            .groupBy { it.muscleGroup }
+            .mapValues { (_, list) -> list.sortedByDescending { it.bestWeightKg } }
+
+        _state.update { it.copy(personalRecords = grouped, isRecordsLoading = false) }
+    }
+
+    private suspend fun mapRecordToSummary(record: PersonalRecord): PrSummaryUi? {
+        val exercise = exerciseRepository.getExerciseById(record.exerciseId) ?: return null
+        val muscleGroup = MuscleGroup.fromId(exercise.primaryGroupId) ?: return null
+
+        return PrSummaryUi(
+            exerciseId = exercise.id,
+            exerciseName = exercise.name,
+            muscleGroup = muscleGroup,
+            bestWeightKg = record.weightValue ?: 0.0,
+            bestReps = record.reps,
+            achievedAtText = formatDate(record.achievedAt),
+        )
+    }
+
     private fun loadWeightUnit() {
         viewModelScope.launch {
             try {
@@ -95,7 +159,8 @@ class ProgressDashboardViewModel @Inject constructor(
     }
 
     private fun observeSessions() {
-        workoutSessionRepository.getCompletedSessions()
+        sessionsJob?.cancel()
+        sessionsJob = workoutSessionRepository.getCompletedSessions()
             .onStart { _state.update { it.copy(isLoading = true) } }
             .onEach { sessions ->
                 val timeRange = _state.value.selectedTimeRange
@@ -153,7 +218,6 @@ class ProgressDashboardViewModel @Inject constructor(
             totalVolumeKg = totalVolume,
             muscleGroupNames = muscleGroupNames,
             setCount = totalSets,
-            sessionName = session.name,
         )
     }
 
@@ -167,8 +231,7 @@ class ProgressDashboardViewModel @Inject constructor(
         val groupIds = exerciseDetails.map { it.primaryGroupId }.distinct()
 
         return groupIds.mapNotNull { groupId ->
-            val index = (groupId - 1).toInt()
-            MuscleGroup.entries.getOrNull(index)?.let { group ->
+            MuscleGroup.fromId(groupId)?.let { group ->
                 when (group) {
                     MuscleGroup.LEGS -> "Legs"
                     MuscleGroup.LOWER_BACK -> "Lower Back"
@@ -184,10 +247,12 @@ class ProgressDashboardViewModel @Inject constructor(
 
     companion object {
 
-        private val dateFormat = SimpleDateFormat("MMM d, yyyy", Locale.US)
+        private val dateFormatter = DateTimeFormatter.ofPattern("MMM d, yyyy", Locale.US)
 
         internal fun formatDate(epochMillis: Long): String {
-            return dateFormat.format(Date(epochMillis))
+            return Instant.ofEpochMilli(epochMillis)
+                .atZone(ZoneId.systemDefault())
+                .format(dateFormatter)
         }
 
         internal fun formatDuration(seconds: Long?): String {
