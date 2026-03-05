@@ -15,6 +15,10 @@ import com.deepreps.core.domain.model.enums.SetType
 import com.deepreps.core.domain.repository.ExerciseRepository
 import com.deepreps.core.domain.repository.UserProfileRepository
 import com.deepreps.core.domain.repository.WorkoutSessionRepository
+import com.deepreps.core.domain.model.UserProfile
+import com.deepreps.core.domain.model.enums.ExperienceLevel
+import com.deepreps.core.domain.model.enums.WeightUnit
+import com.deepreps.core.domain.util.Estimated1rmCalculator
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -28,11 +32,13 @@ import kotlinx.coroutines.test.setMain
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
+@Suppress("LargeClass")
 @OptIn(ExperimentalCoroutinesApi::class)
 class ExerciseProgressViewModelTest {
 
@@ -400,5 +406,320 @@ class ExerciseProgressViewModelTest {
     @Test
     fun `findBestWeight returns null for empty list`() {
         assertNull(ExerciseProgressViewModel.findBestWeight(emptyList()))
+    }
+
+    // --- Dual-Line: Estimated 1RM Computation ---
+
+    private fun completedSet(id: Long, num: Int, weight: Double, reps: Int) = WorkoutSet(
+        id = id,
+        setNumber = num,
+        type = SetType.WORKING,
+        status = SetStatus.COMPLETED,
+        plannedWeightKg = weight,
+        plannedReps = reps,
+        actualWeightKg = weight,
+        actualReps = reps,
+    )
+
+    private fun setupSingleSessionSets(sets: List<WorkoutSet>) {
+        every { workoutSessionRepository.getCompletedSessions() } returns
+            flowOf(listOf(testSessions[0]))
+        every { workoutSessionRepository.getSetsForExercise(10L) } returns flowOf(sets)
+    }
+
+    @Test
+    fun `estimated 1RM uses highest Epley estimate across working sets`() = runTest {
+        // 80x5 -> 93.33, 70x10 -> 93.33, 60x15 -> 90.0
+        setupSingleSessionSets(
+            listOf(
+                completedSet(1, 1, 80.0, 5),
+                completedSet(2, 2, 70.0, 10),
+                completedSet(3, 3, 60.0, 15),
+            ),
+        )
+
+        viewModel = createViewModel()
+
+        viewModel.state.test {
+            val dataPoint = awaitItem().chartData.first()
+            assertNotNull(dataPoint.estimated1rmKg)
+            assertEquals(93.33, dataPoint.estimated1rmKg!!, 0.01)
+        }
+    }
+
+    @Test
+    fun `confidence is HIGH for best 1RM from 3-rep set`() = runTest {
+        setupSingleSessionSets(listOf(completedSet(1, 1, 100.0, 3)))
+        viewModel = createViewModel()
+
+        viewModel.state.test {
+            assertEquals(Estimated1rmCalculator.Confidence.HIGH, awaitItem().chartData.first().confidence)
+        }
+    }
+
+    @Test
+    fun `confidence is MODERATE for best 1RM from 8-rep set`() = runTest {
+        setupSingleSessionSets(listOf(completedSet(1, 1, 80.0, 8)))
+        viewModel = createViewModel()
+
+        viewModel.state.test {
+            assertEquals(
+                Estimated1rmCalculator.Confidence.MODERATE,
+                awaitItem().chartData.first().confidence,
+            )
+        }
+    }
+
+    @Test
+    fun `confidence is LOW for best 1RM from 15-rep set`() = runTest {
+        setupSingleSessionSets(listOf(completedSet(1, 1, 60.0, 15)))
+        viewModel = createViewModel()
+
+        viewModel.state.test {
+            assertEquals(Estimated1rmCalculator.Confidence.LOW, awaitItem().chartData.first().confidence)
+        }
+    }
+
+    @Test
+    fun `21-plus rep sets produce null estimated 1RM`() = runTest {
+        setupSingleSessionSets(listOf(completedSet(1, 1, 40.0, 25)))
+        viewModel = createViewModel()
+
+        viewModel.state.test {
+            val dataPoint = awaitItem().chartData.first()
+            assertEquals(40.0, dataPoint.weightKg, 0.01)
+            assertNull(dataPoint.estimated1rmKg)
+            assertNull(dataPoint.confidence)
+        }
+    }
+
+    @Test
+    fun `single rep set has estimated 1RM equal to weight`() = runTest {
+        setupSingleSessionSets(listOf(completedSet(1, 1, 120.0, 1)))
+        viewModel = createViewModel()
+
+        viewModel.state.test {
+            val dataPoint = awaitItem().chartData.first()
+            assertEquals(120.0, dataPoint.estimated1rmKg!!, 0.01)
+            assertEquals(120.0, dataPoint.weightKg, 0.01)
+            assertEquals(Estimated1rmCalculator.Confidence.HIGH, dataPoint.confidence)
+        }
+    }
+
+    @Test
+    fun `both weight and estimated 1RM populated when valid sets exist`() = runTest {
+        viewModel = createViewModel()
+
+        viewModel.state.test {
+            val state = awaitItem()
+            // Default test data: session1Sets has 80kg x 8 and 85kg x 6
+            // Session 2 has 90kg x 5
+            for (dataPoint in state.chartData) {
+                assertNotNull(dataPoint.weightKg)
+                assertNotNull(dataPoint.estimated1rmKg)
+                assertNotNull(dataPoint.confidence)
+            }
+        }
+    }
+
+    // --- Bodyweight Exercise 1RM ---
+
+    private val bwExercise = testExercise.copy(
+        id = 200L,
+        stableId = "core_bodyweight_pullup",
+        name = "Pull-Up",
+        equipment = Equipment.BODYWEIGHT,
+    )
+
+    private val bwSession = WorkoutSession(
+        id = 3L,
+        startedAt = now - oneWeekMs,
+        completedAt = now - oneWeekMs + 3_600_000,
+        durationSeconds = 3600L,
+        pausedDurationSeconds = 0L,
+        status = SessionStatus.COMPLETED,
+        notes = null,
+        templateId = null,
+    )
+
+    private val bwWorkoutExercises = listOf(
+        WorkoutExercise(
+            id = 30L,
+            sessionId = 3L,
+            exerciseId = 200L,
+            orderIndex = 0,
+            supersetGroupId = null,
+            restTimerSeconds = 60,
+            notes = null,
+        ),
+    )
+
+    private val bwSets = listOf(
+        WorkoutSet(
+            id = 10,
+            setNumber = 1,
+            type = SetType.WORKING,
+            status = SetStatus.COMPLETED,
+            plannedWeightKg = null,
+            plannedReps = 8,
+            actualWeightKg = null,
+            actualReps = 8,
+        ),
+    )
+
+    private fun setupBodyweightMocks(profile: UserProfile?) {
+        every { workoutSessionRepository.getCompletedSessions() } returns flowOf(listOf(bwSession))
+        every { workoutSessionRepository.getExercisesForSession(3L) } returns flowOf(bwWorkoutExercises)
+        every { workoutSessionRepository.getSetsForExercise(30L) } returns flowOf(bwSets)
+        coEvery { exerciseRepository.getExerciseById(200L) } returns bwExercise
+        coEvery { userProfileRepository.get() } returns profile
+    }
+
+    @Test
+    fun `bodyweight exercise with profile weight uses body weight for 1RM`() = runTest {
+        val profile = UserProfile(
+            id = 1L, experienceLevel = ExperienceLevel.INTERMEDIATE,
+            preferredUnit = WeightUnit.KG, age = 30, heightCm = 180.0,
+            gender = null, bodyWeightKg = 70.0,
+            compoundRepMin = 6, compoundRepMax = 10,
+            isolationRepMin = 10, isolationRepMax = 15,
+            createdAt = now, updatedAt = now,
+        )
+        setupBodyweightMocks(profile)
+
+        viewModel = createViewModel(exerciseId = 200L)
+
+        viewModel.state.test {
+            val state = awaitItem()
+            assertFalse(state.isBodyweightMissingProfile)
+            val dataPoint = state.chartData.first()
+            val expected1rm = Estimated1rmCalculator.epley(70.0, 8)
+            assertNotNull(expected1rm)
+            assertEquals(expected1rm!!, dataPoint.estimated1rmKg!!, 0.01)
+        }
+    }
+
+    @Test
+    fun `bodyweight exercise without profile weight has null 1RM`() = runTest {
+        setupBodyweightMocks(profile = null)
+
+        viewModel = createViewModel(exerciseId = 200L)
+
+        viewModel.state.test {
+            val state = awaitItem()
+            assertTrue(state.isBodyweightMissingProfile)
+            assertTrue(state.chartData.isEmpty())
+        }
+    }
+
+    // --- 1RM Summary Fields ---
+
+    @Test
+    fun `current and all-time best estimated 1RM are computed`() = runTest {
+        viewModel = createViewModel()
+
+        viewModel.state.test {
+            val state = awaitItem()
+            // Session 1: sets at 80x8, 85x6
+            //   80*8: Epley = 80*(1+8/30) = 101.33
+            //   85*6: Epley = 85*(1+6/30) = 102.0
+            //   Best 1RM = 102.0
+            // Session 2: set at 90x5
+            //   90*5: Epley = 90*(1+5/30) = 105.0
+            //   Best 1RM = 105.0
+            // current = last data point = 105.0
+            // allTime = max = 105.0
+            assertNotNull(state.currentBestEstimated1rmKg)
+            assertNotNull(state.allTimeBestEstimated1rmKg)
+            assertEquals(105.0, state.currentBestEstimated1rmKg!!, 0.01)
+            assertEquals(105.0, state.allTimeBestEstimated1rmKg!!, 0.01)
+        }
+    }
+
+    // --- Companion: computeBest1rm ---
+
+    @Test
+    fun `computeBest1rm returns null for bodyweight without body weight`() {
+        val sets = listOf(
+            WorkoutSet(
+                id = 1,
+                setNumber = 1,
+                type = SetType.WORKING,
+                status = SetStatus.COMPLETED,
+                plannedWeightKg = null,
+                plannedReps = 8,
+                actualWeightKg = null,
+                actualReps = 8,
+            ),
+        )
+        assertNull(ExerciseProgressViewModel.computeBest1rm(sets, isBodyweight = true, bodyWeightKg = null))
+    }
+
+    @Test
+    fun `computeBest1rm for non-bodyweight uses actual weight`() {
+        val sets = listOf(
+            WorkoutSet(
+                id = 1,
+                setNumber = 1,
+                type = SetType.WORKING,
+                status = SetStatus.COMPLETED,
+                plannedWeightKg = 80.0,
+                plannedReps = 5,
+                actualWeightKg = 80.0,
+                actualReps = 5,
+            ),
+        )
+        val result = ExerciseProgressViewModel.computeBest1rm(sets, isBodyweight = false, bodyWeightKg = null)
+        assertNotNull(result)
+        // Epley: 80 * (1 + 5/30) = 93.33
+        assertEquals(93.33, result!!.estimatedKg, 0.01)
+        assertEquals(Estimated1rmCalculator.Confidence.HIGH, result.confidence)
+    }
+
+    @Test
+    fun `computeBest1rm excludes 21-plus rep sets`() {
+        val sets = listOf(
+            WorkoutSet(
+                id = 1,
+                setNumber = 1,
+                type = SetType.WORKING,
+                status = SetStatus.COMPLETED,
+                plannedWeightKg = 40.0,
+                plannedReps = 25,
+                actualWeightKg = 40.0,
+                actualReps = 25,
+            ),
+        )
+        assertNull(ExerciseProgressViewModel.computeBest1rm(sets, isBodyweight = false, bodyWeightKg = null))
+    }
+
+    @Test
+    fun `computeBest1rm picks highest estimate across multiple sets`() {
+        val sets = listOf(
+            WorkoutSet(
+                id = 1,
+                setNumber = 1,
+                type = SetType.WORKING,
+                status = SetStatus.COMPLETED,
+                plannedWeightKg = 80.0,
+                plannedReps = 5,
+                actualWeightKg = 80.0,
+                actualReps = 5,
+            ),
+            WorkoutSet(
+                id = 2,
+                setNumber = 2,
+                type = SetType.WORKING,
+                status = SetStatus.COMPLETED,
+                plannedWeightKg = 70.0,
+                plannedReps = 10,
+                actualWeightKg = 70.0,
+                actualReps = 10,
+            ),
+        )
+        val result = ExerciseProgressViewModel.computeBest1rm(sets, isBodyweight = false, bodyWeightKg = null)
+        assertNotNull(result)
+        // 80*(1+5/30) = 93.33, 70*(1+10/30) = 93.33 -> tied, either is fine
+        assertEquals(93.33, result!!.estimatedKg, 0.01)
     }
 }

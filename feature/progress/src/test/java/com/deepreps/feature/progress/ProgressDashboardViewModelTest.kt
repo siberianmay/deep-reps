@@ -2,6 +2,7 @@ package com.deepreps.feature.progress
 
 import app.cash.turbine.test
 import com.deepreps.core.domain.model.Exercise
+import com.deepreps.core.domain.model.PersonalRecord
 import com.deepreps.core.domain.model.UserProfile
 import com.deepreps.core.domain.model.WorkoutExercise
 import com.deepreps.core.domain.model.WorkoutSession
@@ -9,7 +10,9 @@ import com.deepreps.core.domain.model.WorkoutSet
 import com.deepreps.core.domain.model.enums.Difficulty
 import com.deepreps.core.domain.model.enums.Equipment
 import com.deepreps.core.domain.model.enums.ExperienceLevel
+import com.deepreps.core.domain.model.enums.MuscleGroup
 import com.deepreps.core.domain.model.enums.MovementType
+import com.deepreps.core.domain.model.enums.RecordType
 import com.deepreps.core.domain.model.enums.SessionStatus
 import com.deepreps.core.domain.model.enums.SetStatus
 import com.deepreps.core.domain.model.enums.SetType
@@ -394,5 +397,269 @@ class ProgressDashboardViewModelTest {
     fun `filterByTimeRange with ALL returns all sessions`() {
         val result = ProgressDashboardViewModel.filterByTimeRange(testSessions, TimeRange.ALL)
         assertEquals(2, result.size)
+    }
+
+    // --- Tab Switching ---
+
+    @Test
+    fun `select tab updates selectedTab in state`() = runTest {
+        viewModel = createViewModel()
+
+        viewModel.state.test {
+            val initial = awaitItem()
+            assertEquals(DashboardTab.HISTORY, initial.selectedTab)
+
+            viewModel.onIntent(ProgressDashboardIntent.SelectTab(DashboardTab.RECORDS))
+
+            val updated = awaitItem()
+            assertEquals(DashboardTab.RECORDS, updated.selectedTab)
+        }
+    }
+
+    @Test
+    fun `personal records empty before Records tab selected`() = runTest {
+        viewModel = createViewModel()
+
+        viewModel.state.test {
+            val state = awaitItem()
+            assertTrue(state.personalRecords.isEmpty())
+        }
+    }
+
+    @Test
+    fun `personal records populated after Records tab selected`() = runTest {
+        val records = listOf(
+            PersonalRecord(
+                id = 1L,
+                exerciseId = 100L,
+                recordType = RecordType.MAX_WEIGHT,
+                weightValue = 90.0,
+                reps = 5,
+                estimated1rm = null,
+                achievedAt = now,
+                sessionId = 1L,
+            ),
+        )
+        every { personalRecordRepository.observeAll() } returns flowOf(records)
+        coEvery { exerciseRepository.getExerciseById(100L) } returns testExerciseLibrary
+
+        viewModel = createViewModel()
+
+        viewModel.state.test {
+            awaitItem() // initial HISTORY
+
+            viewModel.onIntent(ProgressDashboardIntent.SelectTab(DashboardTab.RECORDS))
+
+            val state = expectMostRecentItem()
+            assertEquals(DashboardTab.RECORDS, state.selectedTab)
+            assertFalse(state.isRecordsLoading)
+            assertTrue(state.personalRecords.isNotEmpty())
+            // Bench Press has primaryGroupId = 3 -> CHEST
+            assertTrue(state.personalRecords.containsKey(MuscleGroup.CHEST))
+            assertEquals(1, state.personalRecords[MuscleGroup.CHEST]!!.size)
+            assertEquals("Bench Press", state.personalRecords[MuscleGroup.CHEST]!![0].exerciseName)
+        }
+    }
+
+    // --- PR List: Grouping ---
+
+    private fun maxWeightRecord(id: Long, exerciseId: Long, weight: Double, reps: Int) =
+        PersonalRecord(
+            id = id,
+            exerciseId = exerciseId,
+            recordType = RecordType.MAX_WEIGHT,
+            weightValue = weight,
+            reps = reps,
+            estimated1rm = null,
+            achievedAt = now,
+            sessionId = 1L,
+        )
+
+    @Test
+    fun `PRs grouped by muscle group correctly`() = runTest {
+        val squat = testExerciseLibrary.copy(
+            id = 200L,
+            stableId = "legs_barbell_squat",
+            name = "Squat",
+            primaryGroupId = 1L,
+        )
+        every { personalRecordRepository.observeAll() } returns flowOf(
+            listOf(maxWeightRecord(1, 100L, 90.0, 5), maxWeightRecord(2, 200L, 120.0, 3)),
+        )
+        coEvery { exerciseRepository.getExerciseById(100L) } returns testExerciseLibrary
+        coEvery { exerciseRepository.getExerciseById(200L) } returns squat
+        viewModel = createViewModel()
+
+        viewModel.state.test {
+            awaitItem()
+            viewModel.onIntent(ProgressDashboardIntent.SelectTab(DashboardTab.RECORDS))
+            val state = expectMostRecentItem()
+            assertEquals(2, state.personalRecords.size)
+            assertTrue(state.personalRecords.containsKey(MuscleGroup.CHEST))
+            assertTrue(state.personalRecords.containsKey(MuscleGroup.LEGS))
+        }
+    }
+
+    // --- PR List: Deduplication ---
+
+    @Test
+    fun `only best MAX_WEIGHT record per exercise kept`() = runTest {
+        val older = maxWeightRecord(1, 100L, 80.0, 8).copy(achievedAt = now - 86_400_000)
+        every { personalRecordRepository.observeAll() } returns flowOf(
+            listOf(older, maxWeightRecord(2, 100L, 90.0, 5)),
+        )
+        coEvery { exerciseRepository.getExerciseById(100L) } returns testExerciseLibrary
+        viewModel = createViewModel()
+
+        viewModel.state.test {
+            awaitItem()
+            viewModel.onIntent(ProgressDashboardIntent.SelectTab(DashboardTab.RECORDS))
+            val chestRecords = expectMostRecentItem().personalRecords[MuscleGroup.CHEST]!!
+            assertEquals(1, chestRecords.size)
+            assertEquals(90.0, chestRecords[0].bestWeightKg, 0.01)
+        }
+    }
+
+    // --- PR List: Sorting within group ---
+
+    @Test
+    fun `PRs sorted by weight descending within group`() = runTest {
+        val fly = testExerciseLibrary.copy(id = 201L, stableId = "chest_fly", name = "Fly", primaryGroupId = 3L)
+        val incline = testExerciseLibrary.copy(id = 202L, stableId = "chest_inc", name = "Incline", primaryGroupId = 3L)
+        every { personalRecordRepository.observeAll() } returns flowOf(
+            listOf(
+                maxWeightRecord(1, 100L, 60.0, 10),
+                maxWeightRecord(2, 201L, 90.0, 5),
+                maxWeightRecord(3, 202L, 75.0, 8),
+            ),
+        )
+        coEvery { exerciseRepository.getExerciseById(100L) } returns testExerciseLibrary
+        coEvery { exerciseRepository.getExerciseById(201L) } returns fly
+        coEvery { exerciseRepository.getExerciseById(202L) } returns incline
+        viewModel = createViewModel()
+
+        viewModel.state.test {
+            awaitItem()
+            viewModel.onIntent(ProgressDashboardIntent.SelectTab(DashboardTab.RECORDS))
+            val chestRecords = expectMostRecentItem().personalRecords[MuscleGroup.CHEST]!!
+            assertEquals(listOf(90.0, 75.0, 60.0), chestRecords.map { it.bestWeightKg })
+        }
+    }
+
+    // --- PR List: Non-MAX_WEIGHT records excluded ---
+
+    @Test
+    fun `non MAX_WEIGHT records excluded from PR list`() = runTest {
+        val records = listOf(
+            PersonalRecord(
+                id = 1L,
+                exerciseId = 100L,
+                recordType = RecordType.MAX_REPS,
+                weightValue = null,
+                reps = 20,
+                estimated1rm = null,
+                achievedAt = now,
+                sessionId = 1L,
+            ),
+            PersonalRecord(
+                id = 2L,
+                exerciseId = 100L,
+                recordType = RecordType.MAX_VOLUME,
+                weightValue = 5000.0,
+                reps = null,
+                estimated1rm = null,
+                achievedAt = now,
+                sessionId = 1L,
+            ),
+        )
+        every { personalRecordRepository.observeAll() } returns flowOf(records)
+
+        viewModel = createViewModel()
+
+        viewModel.state.test {
+            awaitItem()
+            viewModel.onIntent(ProgressDashboardIntent.SelectTab(DashboardTab.RECORDS))
+            val state = expectMostRecentItem()
+
+            assertTrue(state.personalRecords.isEmpty())
+        }
+    }
+
+    // --- History tab unaffected ---
+
+    @Test
+    fun `history tab still loads sessions after switching tabs`() = runTest {
+        every { personalRecordRepository.observeAll() } returns flowOf(emptyList())
+
+        viewModel = createViewModel()
+
+        viewModel.state.test {
+            val initial = awaitItem()
+            assertEquals(DashboardTab.HISTORY, initial.selectedTab)
+            assertEquals(2, initial.recentSessions.size)
+
+            // Switch to Records
+            viewModel.onIntent(ProgressDashboardIntent.SelectTab(DashboardTab.RECORDS))
+            val recordsState = expectMostRecentItem()
+            assertEquals(DashboardTab.RECORDS, recordsState.selectedTab)
+            // Sessions should still be in state
+            assertEquals(2, recordsState.recentSessions.size)
+
+            // Switch back to History
+            viewModel.onIntent(ProgressDashboardIntent.SelectTab(DashboardTab.HISTORY))
+            val historyState = expectMostRecentItem()
+            assertEquals(DashboardTab.HISTORY, historyState.selectedTab)
+            assertEquals(2, historyState.recentSessions.size)
+        }
+    }
+
+    // --- Job Cancellation: Time Range ---
+
+    @Test
+    fun `multiple time range changes reflect latest selection`() = runTest {
+        viewModel = createViewModel()
+
+        viewModel.state.test {
+            awaitItem()
+
+            viewModel.onIntent(ProgressDashboardIntent.SelectTimeRange(TimeRange.FOUR_WEEKS))
+            viewModel.onIntent(ProgressDashboardIntent.SelectTimeRange(TimeRange.SIX_MONTHS))
+            viewModel.onIntent(ProgressDashboardIntent.SelectTimeRange(TimeRange.ALL))
+
+            val state = expectMostRecentItem()
+            assertEquals(TimeRange.ALL, state.selectedTimeRange)
+        }
+    }
+
+    // --- Job Cancellation: Records Tab ---
+
+    @Test
+    fun `switching tabs multiple times does not produce stale state`() = runTest {
+        every { personalRecordRepository.observeAll() } returns flowOf(emptyList())
+
+        viewModel = createViewModel()
+
+        viewModel.state.test {
+            awaitItem()
+
+            viewModel.onIntent(ProgressDashboardIntent.SelectTab(DashboardTab.RECORDS))
+            viewModel.onIntent(ProgressDashboardIntent.SelectTab(DashboardTab.HISTORY))
+            viewModel.onIntent(ProgressDashboardIntent.SelectTab(DashboardTab.RECORDS))
+
+            val state = expectMostRecentItem()
+            assertEquals(DashboardTab.RECORDS, state.selectedTab)
+            assertFalse(state.isRecordsLoading)
+        }
+    }
+
+    // --- Helper ---
+
+    private fun createViewModel(): ProgressDashboardViewModel {
+        return ProgressDashboardViewModel(
+            workoutSessionRepository,
+            exerciseRepository,
+            userProfileRepository,
+            personalRecordRepository,
+        )
     }
 }
