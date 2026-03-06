@@ -5,6 +5,7 @@ import com.deepreps.core.data.mapper.toDomain
 import com.deepreps.core.database.dao.ExerciseDao
 import com.deepreps.core.database.dao.MuscleGroupDao
 import com.deepreps.core.domain.model.Exercise
+import com.deepreps.core.domain.model.ExerciseMuscleLink
 import com.deepreps.core.domain.model.MuscleGroupModel
 import com.deepreps.core.domain.repository.ExerciseRepository
 import kotlinx.coroutines.flow.Flow
@@ -48,6 +49,16 @@ class ExerciseRepositoryImpl @Inject constructor(
         exerciseDao.searchByName(query)
             .map { entities -> entities.map { it.toDomain() } }
             .flowOn(dispatchers.io)
+
+    override suspend fun getMuscleLinksForExercise(exerciseId: Long): List<ExerciseMuscleLink> =
+        withContext(dispatchers.io) {
+            exerciseDao.getMusclesForExercise(exerciseId).map { entity ->
+                ExerciseMuscleLink(
+                    muscleGroupId = entity.muscleGroupId,
+                    isPrimary = entity.isPrimary,
+                )
+            }
+        }
 
     override fun getExercisesWithMuscles(groupId: Long): Flow<List<Exercise>> =
         exerciseDao.getExercisesWithMuscles(groupId)

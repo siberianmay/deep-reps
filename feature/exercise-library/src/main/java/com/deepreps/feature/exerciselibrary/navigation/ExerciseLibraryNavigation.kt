@@ -21,6 +21,8 @@ object ExerciseLibraryNavigation {
     const val EXERCISE_LIST_ROUTE = "exercise_list"
     const val EXERCISE_DETAIL_ROUTE = "exercise_detail/{exerciseId}"
     const val EXERCISE_SELECTION_ROUTE = "exercise_selection/{selectedGroupIds}"
+    const val EXERCISE_SELECTION_FOR_TEMPLATE_ROUTE =
+        "exercise_selection_for_template"
 
     /** Navigation argument key for exercise ID. */
     const val EXERCISE_ID_ARG = "exerciseId"
@@ -28,12 +30,24 @@ object ExerciseLibraryNavigation {
     /** Navigation argument key for selected muscle group IDs (comma-separated). */
     const val SELECTED_GROUP_IDS_ARG = "selectedGroupIds"
 
+    /** Key for passing selected exercise IDs back via SavedStateHandle. */
+    const val EXERCISE_SELECTION_RESULT_KEY = "selected_exercise_ids"
+
+    /** Navigation argument key for pre-selected exercise IDs (comma-separated). */
+    const val PRE_SELECTED_ARG = "preSelected"
+
     /** Build the route string for navigating to exercise detail with a specific ID. */
     fun exerciseDetailRoute(exerciseId: Long): String = "exercise_detail/$exerciseId"
 
     /** Build the route string for navigating to exercise selection with pre-selected groups. */
     fun exerciseSelectionRoute(groupIds: List<Long>): String =
         "exercise_selection/${groupIds.joinToString(",")}"
+
+    /** Build the route for exercise selection for template with pre-selected IDs. */
+    fun exerciseSelectionForTemplateRoute(preSelectedIds: List<Long>): String {
+        val param = preSelectedIds.joinToString(",")
+        return "$EXERCISE_SELECTION_FOR_TEMPLATE_ROUTE?$PRE_SELECTED_ARG=$param"
+    }
 }
 
 /**
@@ -101,6 +115,42 @@ fun NavGraphBuilder.exerciseSelectionScreen(
 }
 
 /**
+ * Adds the exercise selection screen for template editing.
+ *
+ * Shows all muscle groups and returns selected exercise IDs via
+ * [NavController.previousBackStackEntry]'s SavedStateHandle.
+ */
+fun NavGraphBuilder.exerciseSelectionForTemplateScreen(
+    navController: NavController,
+    onNavigateToDetail: (exerciseId: Long) -> Unit,
+) {
+    composable(
+        route = "${ExerciseLibraryNavigation.EXERCISE_SELECTION_FOR_TEMPLATE_ROUTE}" +
+            "?${ExerciseLibraryNavigation.PRE_SELECTED_ARG}" +
+            "={${ExerciseLibraryNavigation.PRE_SELECTED_ARG}}",
+        arguments = listOf(
+            navArgument(ExerciseLibraryNavigation.PRE_SELECTED_ARG) {
+                type = NavType.StringType
+                nullable = true
+                defaultValue = null
+            },
+        ),
+    ) {
+        ExerciseSelectionScreen(
+            onNavigateBack = { navController.popBackStack() },
+            onSelectionConfirmed = { selectedIds ->
+                navController.previousBackStackEntry?.savedStateHandle?.set(
+                    ExerciseLibraryNavigation.EXERCISE_SELECTION_RESULT_KEY,
+                    selectedIds.toLongArray(),
+                )
+                navController.popBackStack()
+            },
+            onNavigateToDetail = onNavigateToDetail,
+        )
+    }
+}
+
+/**
  * NavController extension for navigating to the exercise list screen.
  */
 fun NavController.navigateToExerciseList() {
@@ -119,4 +169,11 @@ fun NavController.navigateToExerciseDetail(exerciseId: Long) {
  */
 fun NavController.navigateToExerciseSelection(groupIds: List<Long>) {
     navigate(ExerciseLibraryNavigation.exerciseSelectionRoute(groupIds))
+}
+
+/**
+ * NavController extension for navigating to exercise selection for template editing.
+ */
+fun NavController.navigateToExerciseSelectionForTemplate(preSelectedIds: List<Long>) {
+    navigate(ExerciseLibraryNavigation.exerciseSelectionForTemplateRoute(preSelectedIds))
 }

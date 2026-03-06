@@ -44,10 +44,15 @@ class ExerciseSelectionViewModel @Inject constructor(
 
     private val initialGroup: MuscleGroup = allowedGroups.firstOrNull() ?: MuscleGroup.CHEST
 
+    private val preSelectedIds: Set<Long> = parsePreSelectedIds(
+        savedStateHandle[ExerciseLibraryNavigation.PRE_SELECTED_ARG],
+    )
+
     private val _state = MutableStateFlow(
         ExerciseSelectionUiState(
             allowedGroups = allowedGroups,
             activeGroup = initialGroup,
+            selectedExerciseIds = preSelectedIds,
         ),
     )
     val state: StateFlow<ExerciseSelectionUiState> = _state.asStateFlow()
@@ -161,6 +166,11 @@ private fun parseAllowedGroups(groupIdsArg: String?): Set<MuscleGroup> {
         val ordinal = (id - 1).toInt()
         MuscleGroup.entries.getOrNull(ordinal)
     }.toSet()
+}
+
+private fun parsePreSelectedIds(preSelectedArg: String?): Set<Long> {
+    if (preSelectedArg.isNullOrBlank()) return emptySet()
+    return preSelectedArg.split(",").mapNotNull { it.trim().toLongOrNull() }.toSet()
 }
 
 private fun Exercise.toSelectionUi(): ExerciseUi = ExerciseUi(

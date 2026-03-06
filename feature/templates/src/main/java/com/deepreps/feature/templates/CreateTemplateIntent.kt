@@ -19,4 +19,10 @@ sealed interface CreateTemplateIntent {
 
     /** User tapped close/back. */
     data object Close : CreateTemplateIntent
+
+    /** User tapped "Add Exercise" to navigate to the exercise picker. */
+    data object NavigateToExerciseSelection : CreateTemplateIntent
+
+    /** Exercises returned from the exercise picker. */
+    data class AddExercises(val exerciseIds: List<Long>) : CreateTemplateIntent
 }

@@ -11,8 +11,13 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -45,6 +50,7 @@ fun TemplateCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     onLongClick: (() -> Unit)? = null,
+    onMenuClick: (() -> Unit)? = null,
 ) {
     val colors = DeepRepsTheme.colors
     val typography = DeepRepsTheme.typography
@@ -79,6 +85,17 @@ fun TemplateCard(
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f),
                 )
+
+                if (onMenuClick != null) {
+                    IconButton(onClick = onMenuClick) {
+                        Icon(
+                            imageVector = Icons.Default.MoreVert,
+                            contentDescription = "Template options",
+                            modifier = Modifier.size(24.dp),
+                            tint = colors.onSurfaceTertiary,
+                        )
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(spacing.space1))

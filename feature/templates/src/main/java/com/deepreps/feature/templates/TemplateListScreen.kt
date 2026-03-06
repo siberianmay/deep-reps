@@ -5,6 +5,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -95,13 +96,37 @@ internal fun TemplateListContent(
     val colors = DeepRepsTheme.colors
     val spacing = DeepRepsTheme.spacing
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Column(modifier = Modifier.fillMaxSize()) {
+        TopAppBar(
+            title = {
+                Text(
+                    text = "Templates",
+                    style = DeepRepsTheme.typography.headlineMedium,
+                )
+            },
+            actions = {
+                IconButton(
+                    onClick = { onIntent(TemplateListIntent.CreateTemplate) },
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Add,
+                        contentDescription = "Create new template",
+                        tint = colors.accentPrimary,
+                    )
+                }
+            },
+            colors = TopAppBarDefaults.topAppBarColors(
+                containerColor = colors.surfaceLowest,
+                titleContentColor = colors.onSurfacePrimary,
+            ),
+        )
+
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(
                 start = spacing.space4,
                 end = spacing.space4,
-                top = 64.dp, // Below top app bar
+                top = spacing.space3,
                 bottom = spacing.space4,
             ),
             verticalArrangement = Arrangement.spacedBy(spacing.space3),
@@ -161,31 +186,6 @@ internal fun TemplateListContent(
                 }
             }
         }
-
-        // Top app bar overlaid
-        TopAppBar(
-            title = {
-                Text(
-                    text = "Templates",
-                    style = DeepRepsTheme.typography.headlineMedium,
-                )
-            },
-            actions = {
-                IconButton(
-                    onClick = { onIntent(TemplateListIntent.CreateTemplate) },
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.Add,
-                        contentDescription = "Create new template",
-                        tint = colors.accentPrimary,
-                    )
-                }
-            },
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = colors.surfaceLowest,
-                titleContentColor = colors.onSurfacePrimary,
-            ),
-        )
     }
 
     // Delete confirmation dialog
@@ -233,12 +233,26 @@ private fun TemplateItemWithContextMenu(
                 )
             },
             onLongPress = { showMenu = true },
+            onMenuClick = { showMenu = true },
         )
 
         DropdownMenu(
             expanded = showMenu,
             onDismissRequest = { showMenu = false },
         ) {
+            DropdownMenuItem(
+                text = { Text("Edit") },
+                onClick = {
+                    showMenu = false
+                    onIntent(TemplateListIntent.EditTemplate(template.id))
+                },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = null,
+                    )
+                },
+            )
             DropdownMenuItem(
                 text = { Text("Rename") },
                 onClick = {
@@ -294,6 +308,7 @@ private fun SwipeToDeleteTemplateItem(
     onTap: () -> Unit,
     onSwipeDelete: () -> Unit,
     onLongPress: () -> Unit = {},
+    onMenuClick: () -> Unit = {},
 ) {
     val colors = DeepRepsTheme.colors
     val dismissState = rememberSwipeToDismissBoxState(
@@ -340,6 +355,7 @@ private fun SwipeToDeleteTemplateItem(
             template = template,
             onClick = onTap,
             onLongClick = onLongPress,
+            onMenuClick = onMenuClick,
         )
     }
 }

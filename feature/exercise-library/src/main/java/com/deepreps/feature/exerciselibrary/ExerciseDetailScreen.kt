@@ -36,10 +36,12 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.deepreps.core.domain.model.enums.Difficulty
+import com.deepreps.core.domain.model.enums.MuscleGroup
 import com.deepreps.core.ui.component.ErrorState
+import com.deepreps.core.ui.component.HighlightLevel
 import com.deepreps.core.ui.component.LoadingIndicator
 import com.deepreps.core.ui.theme.DeepRepsTheme
-import com.deepreps.feature.exerciselibrary.components.AnatomyDiagram
+import com.deepreps.core.ui.component.AnatomyDiagram
 import com.deepreps.feature.exerciselibrary.components.difficultyDisplayName
 import com.deepreps.feature.exerciselibrary.components.equipmentDisplayName
 import com.deepreps.feature.exerciselibrary.components.movementTypeDisplayName
@@ -124,7 +126,10 @@ internal fun ExerciseDetailContent(
             }
 
             state.exercise != null -> {
-                ExerciseDetailBody(exercise = state.exercise)
+                ExerciseDetailBody(
+                    exercise = state.exercise,
+                    muscleHighlights = state.muscleHighlights,
+                )
             }
         }
     }
@@ -133,7 +138,10 @@ internal fun ExerciseDetailContent(
 @Suppress("LongMethod")
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun ExerciseDetailBody(exercise: ExerciseDetailUi) {
+private fun ExerciseDetailBody(
+    exercise: ExerciseDetailUi,
+    muscleHighlights: Map<MuscleGroup, HighlightLevel>,
+) {
     val colors = DeepRepsTheme.colors
     val typography = DeepRepsTheme.typography
     val spacing = DeepRepsTheme.spacing
@@ -159,8 +167,7 @@ private fun ExerciseDetailBody(exercise: ExerciseDetailUi) {
         Spacer(modifier = Modifier.height(spacing.space5))
 
         AnatomyDiagram(
-            exerciseId = exercise.id,
-            primaryGroupId = exercise.primaryGroupId,
+            muscleHighlights = muscleHighlights,
         )
 
         Spacer(modifier = Modifier.height(spacing.space5))

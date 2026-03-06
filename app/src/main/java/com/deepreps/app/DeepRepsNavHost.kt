@@ -24,11 +24,14 @@ import androidx.navigation.compose.rememberNavController
 import com.deepreps.core.ui.theme.DeepRepsTheme
 import com.deepreps.feature.aiplan.navigateToPlanReview
 import com.deepreps.feature.aiplan.planReviewScreen
+import com.deepreps.feature.exerciselibrary.navigation.ExerciseLibraryNavigation
 import com.deepreps.feature.exerciselibrary.navigation.exerciseDetailScreen
 import com.deepreps.feature.exerciselibrary.navigation.exerciseListScreen
+import com.deepreps.feature.exerciselibrary.navigation.exerciseSelectionForTemplateScreen
 import com.deepreps.feature.exerciselibrary.navigation.exerciseSelectionScreen
 import com.deepreps.feature.exerciselibrary.navigation.navigateToExerciseDetail
 import com.deepreps.feature.exerciselibrary.navigation.navigateToExerciseSelection
+import com.deepreps.feature.exerciselibrary.navigation.navigateToExerciseSelectionForTemplate
 import com.deepreps.feature.onboarding.navigation.OnboardingNavigation
 import com.deepreps.feature.onboarding.navigation.onboardingScreen
 import com.deepreps.feature.profile.navigation.settingsScreen
@@ -184,11 +187,27 @@ fun DeepRepsNavHost(
             createTemplateScreen(
                 onNavigateBack = { navController.popBackStack() },
                 onTemplateSaved = { navController.popBackStack() },
+                onAddExercises = { existingIds ->
+                    navController.navigateToExerciseSelectionForTemplate(existingIds)
+                },
+                exerciseResultKey = ExerciseLibraryNavigation.EXERCISE_SELECTION_RESULT_KEY,
             )
 
             editTemplateScreen(
                 onNavigateBack = { navController.popBackStack() },
                 onTemplateSaved = { navController.popBackStack() },
+                onAddExercises = { existingIds ->
+                    navController.navigateToExerciseSelectionForTemplate(existingIds)
+                },
+                exerciseResultKey = ExerciseLibraryNavigation.EXERCISE_SELECTION_RESULT_KEY,
+            )
+
+            // Exercise selection for template editing
+            exerciseSelectionForTemplateScreen(
+                navController = navController,
+                onNavigateToDetail = { exerciseId ->
+                    navController.navigateToExerciseDetail(exerciseId)
+                },
             )
 
             // Workout Setup

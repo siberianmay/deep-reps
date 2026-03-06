@@ -55,11 +55,15 @@ fun NavGraphBuilder.templateListScreen(
  * Adds the create template screen to the navigation graph.
  *
  * Supports optional exerciseIds query parameter for the "Save as Template" flow
- * from workout summary.
+ * from workout summary. Also supports returning exercise selections from picker.
+ *
+ * @param exerciseResultKey The SavedStateHandle key for exercise picker results.
  */
 fun NavGraphBuilder.createTemplateScreen(
     onNavigateBack: () -> Unit,
     onTemplateSaved: (message: String) -> Unit,
+    onAddExercises: (existingExerciseIds: List<Long>) -> Unit,
+    exerciseResultKey: String = "",
 ) {
     composable(
         route = "${TemplateNavigation.CREATE_TEMPLATE_ROUTE}" +
@@ -72,20 +76,37 @@ fun NavGraphBuilder.createTemplateScreen(
                 defaultValue = null
             },
         ),
-    ) {
+    ) { backStackEntry ->
         CreateTemplateScreen(
             onNavigateBack = onNavigateBack,
             onTemplateSaved = onTemplateSaved,
+            onAddExercises = onAddExercises,
+            selectedExerciseResult = {
+                if (exerciseResultKey.isNotEmpty()) {
+                    backStackEntry.savedStateHandle.get<LongArray>(exerciseResultKey)
+                } else {
+                    null
+                }
+            },
+            clearExerciseResult = {
+                if (exerciseResultKey.isNotEmpty()) {
+                    backStackEntry.savedStateHandle.remove<LongArray>(exerciseResultKey)
+                }
+            },
         )
     }
 }
 
 /**
  * Adds the edit template screen to the navigation graph.
+ *
+ * @param exerciseResultKey The SavedStateHandle key for exercise picker results.
  */
 fun NavGraphBuilder.editTemplateScreen(
     onNavigateBack: () -> Unit,
     onTemplateSaved: (message: String) -> Unit,
+    onAddExercises: (existingExerciseIds: List<Long>) -> Unit,
+    exerciseResultKey: String = "",
 ) {
     composable(
         route = TemplateNavigation.EDIT_TEMPLATE_ROUTE,
@@ -94,10 +115,23 @@ fun NavGraphBuilder.editTemplateScreen(
                 type = NavType.LongType
             },
         ),
-    ) {
+    ) { backStackEntry ->
         CreateTemplateScreen(
             onNavigateBack = onNavigateBack,
             onTemplateSaved = onTemplateSaved,
+            onAddExercises = onAddExercises,
+            selectedExerciseResult = {
+                if (exerciseResultKey.isNotEmpty()) {
+                    backStackEntry.savedStateHandle.get<LongArray>(exerciseResultKey)
+                } else {
+                    null
+                }
+            },
+            clearExerciseResult = {
+                if (exerciseResultKey.isNotEmpty()) {
+                    backStackEntry.savedStateHandle.remove<LongArray>(exerciseResultKey)
+                }
+            },
         )
     }
 }

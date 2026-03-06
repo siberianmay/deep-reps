@@ -252,37 +252,67 @@ private fun SessionHistoryItem(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.Center,
             ) {
-                // Line 1: Date + Duration
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
+                if (session.sessionName != null) {
+                    // Line 1: Name + Duration
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Text(
+                            text = session.sessionName,
+                            style = typography.bodyLarge,
+                            color = colors.onSurfacePrimary,
+                            maxLines = 1,
+                            modifier = Modifier.weight(1f, fill = false),
+                        )
+                        Text(
+                            text = session.durationText,
+                            style = typography.bodyMedium,
+                            color = colors.onSurfaceSecondary,
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(spacing.space1))
+
+                    // Line 2: Date + Muscle groups
                     Text(
-                        text = session.dateText,
-                        style = typography.bodyMedium,
-                        color = colors.onSurfacePrimary,
+                        text = "${session.dateText} · ${session.muscleGroupNames}",
+                        style = typography.bodySmall,
+                        color = colors.onSurfaceSecondary,
                     )
+                } else {
+                    // Line 1: Date + Duration
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Text(
+                            text = session.dateText,
+                            style = typography.bodyMedium,
+                            color = colors.onSurfacePrimary,
+                        )
+                        Text(
+                            text = session.durationText,
+                            style = typography.bodyMedium,
+                            color = colors.onSurfaceSecondary,
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(spacing.space1))
+
+                    // Line 2: Muscle groups
                     Text(
-                        text = session.durationText,
-                        style = typography.bodyMedium,
+                        text = session.muscleGroupNames,
+                        style = typography.bodySmall,
                         color = colors.onSurfaceSecondary,
                     )
                 }
 
                 Spacer(modifier = Modifier.height(spacing.space1))
 
-                // Line 2: Muscle groups
-                Text(
-                    text = session.muscleGroupNames,
-                    style = typography.bodySmall,
-                    color = colors.onSurfaceSecondary,
-                )
-
-                Spacer(modifier = Modifier.height(spacing.space1))
-
                 // Line 3: Sets + Volume
                 Text(
-                    text = "${session.setCount} sets \u00B7 $volumeText volume",
+                    text = "${session.setCount} sets · $volumeText volume",
                     style = typography.bodySmall,
                     color = colors.onSurfaceSecondary,
                 )

@@ -212,6 +212,7 @@ class ProgressDashboardViewModel @Inject constructor(
 
         return SessionSummaryUi(
             sessionId = session.id,
+            sessionName = session.name,
             dateText = formatDate(session.startedAt),
             durationText = formatDuration(session.durationSeconds),
             exerciseCount = exercises.size,

@@ -64,6 +64,9 @@ class CreateTemplateViewModel @Inject constructor(
                 intent.toIndex,
             )
             is CreateTemplateIntent.Close -> handleClose()
+            is CreateTemplateIntent.NavigateToExerciseSelection ->
+                handleNavigateToExerciseSelection()
+            is CreateTemplateIntent.AddExercises -> handleAddExercises(intent.exerciseIds)
         }
     }
 
@@ -279,6 +282,62 @@ class CreateTemplateViewModel @Inject constructor(
         // Without primaryGroupId in TemplateExerciseUi, we preserve existing muscle group names.
         // The authoritative muscle group computation happens in handleSave via exerciseRepository.
         return _state.value.muscleGroupNames
+    }
+
+    private fun handleNavigateToExerciseSelection() {
+        val existingIds = _state.value.exercises.map { it.exerciseId }
+        _sideEffect.trySend(
+            CreateTemplateSideEffect.NavigateToExerciseSelection(existingIds),
+        )
+    }
+
+    @Suppress("LongMethod")
+    private fun handleAddExercises(exerciseIds: List<Long>) {
+        if (exerciseIds.isEmpty()) return
+        viewModelScope.launch {
+            try {
+                val currentExercises = _state.value.exercises
+                val currentIds = currentExercises.map { it.exerciseId }.toSet()
+                val newIds = exerciseIds.filter { it !in currentIds }
+                if (newIds.isEmpty()) return@launch
+
+                val exercises = exerciseRepository.getExercisesByIds(newIds)
+                val exerciseMap = exercises.associateBy { it.id }
+                val startIndex = currentExercises.size
+
+                val newExerciseUis = newIds.mapIndexedNotNull { index, id ->
+                    exerciseMap[id]?.let { exercise ->
+                        TemplateExerciseUi(
+                            exerciseId = exercise.id,
+                            name = exercise.name,
+                            orderIndex = startIndex + index,
+                        )
+                    }
+                }
+
+                _state.update { current ->
+                    val updatedExercises = current.exercises + newExerciseUis
+                    current.copy(
+                        exercises = updatedExercises,
+                        exerciseError = null,
+                        muscleGroupNames = current.muscleGroupNames,
+                    )
+                }
+
+                // Recompute muscle groups asynchronously
+                val allIds = _state.value.exercises.map { it.exerciseId }
+                val allExercises = exerciseRepository.getExercisesByIds(allIds)
+                val groupIds = allExercises.map { it.primaryGroupId }.distinct()
+                val groupNames = groupIds.mapNotNull { groupId ->
+                    TemplateListViewModel.muscleGroupNameFromId(groupId)
+                }
+                _state.update { it.copy(muscleGroupNames = groupNames) }
+            } catch (_: Exception) {
+                _sideEffect.trySend(
+                    CreateTemplateSideEffect.ShowError("Failed to add exercises"),
+                )
+            }
+        }
     }
 
     companion object {

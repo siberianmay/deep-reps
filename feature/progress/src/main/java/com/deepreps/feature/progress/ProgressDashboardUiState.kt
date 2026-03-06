@@ -42,6 +42,7 @@ data class PrSummaryUi(
  */
 data class SessionSummaryUi(
     val sessionId: Long,
+    val sessionName: String? = null,
     val dateText: String,
     val durationText: String,
     val exerciseCount: Int,

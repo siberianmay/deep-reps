@@ -13,4 +13,9 @@ sealed interface CreateTemplateSideEffect {
 
     /** Navigate back (close without saving). */
     data object NavigateBack : CreateTemplateSideEffect
+
+    /** Navigate to exercise selection picker with IDs of already-selected exercises. */
+    data class NavigateToExerciseSelection(
+        val existingExerciseIds: List<Long>,
+    ) : CreateTemplateSideEffect
 }

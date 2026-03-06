@@ -1,6 +1,7 @@
 package com.deepreps.core.domain.repository
 
 import com.deepreps.core.domain.model.Exercise
+import com.deepreps.core.domain.model.ExerciseMuscleLink
 import com.deepreps.core.domain.model.MuscleGroupModel
 import kotlinx.coroutines.flow.Flow
 
@@ -29,6 +30,9 @@ interface ExerciseRepository {
 
     /** Searches exercises by name (case-insensitive partial match). */
     fun searchExercises(query: String): Flow<List<Exercise>>
+
+    /** Returns the primary and secondary muscle group links for a given exercise. */
+    suspend fun getMuscleLinksForExercise(exerciseId: Long): List<ExerciseMuscleLink>
 
     /** Returns exercises for a group, including their muscle group cross-references. */
     fun getExercisesWithMuscles(groupId: Long): Flow<List<Exercise>>

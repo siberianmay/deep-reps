@@ -1,12 +1,14 @@
 package com.deepreps.feature.templates
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -19,6 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
@@ -35,7 +38,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.deepreps.core.ui.component.DeepRepsButton
 import com.deepreps.core.ui.component.DeepRepsTextField
+import com.deepreps.core.ui.component.EmptyState
 import com.deepreps.core.ui.theme.DeepRepsTheme
 
 /**
@@ -46,14 +51,27 @@ import com.deepreps.core.ui.theme.DeepRepsTheme
  * - Name text field with validation
  * - Auto-computed muscle group chips (non-interactive)
  * - Reorderable exercise list with drag handles and delete buttons
+ * - Bottom bar: "Add Exercise" button
  */
 @Composable
 fun CreateTemplateScreen(
     onNavigateBack: () -> Unit,
     onTemplateSaved: (message: String) -> Unit,
+    onAddExercises: (existingExerciseIds: List<Long>) -> Unit,
+    selectedExerciseResult: () -> LongArray? = { null },
+    clearExerciseResult: () -> Unit = {},
     viewModel: CreateTemplateViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+
+    // Consume exercise selection result when returning from picker
+    val result = selectedExerciseResult()
+    LaunchedEffect(result) {
+        if (result != null) {
+            viewModel.onIntent(CreateTemplateIntent.AddExercises(result.toList()))
+            clearExerciseResult()
+        }
+    }
 
     LaunchedEffect(Unit) {
         viewModel.sideEffect.collect { effect ->
@@ -67,6 +85,9 @@ fun CreateTemplateScreen(
                 }
                 is CreateTemplateSideEffect.NavigateBack -> {
                     onNavigateBack()
+                }
+                is CreateTemplateSideEffect.NavigateToExerciseSelection -> {
+                    onAddExercises(effect.existingExerciseIds)
                 }
             }
         }
@@ -129,88 +150,127 @@ internal fun CreateTemplateContent(
             ),
         )
 
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(
-                horizontal = spacing.space4,
-                vertical = spacing.space4,
-            ),
-            verticalArrangement = Arrangement.spacedBy(spacing.space4),
-        ) {
-            // Name input
-            item {
-                DeepRepsTextField(
-                    value = state.name,
-                    onValueChange = { onIntent(CreateTemplateIntent.UpdateName(it)) },
-                    label = "Template Name",
-                    placeholder = "e.g., Push Day A",
-                    errorMessage = state.nameError,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-
-            // Muscle group chips (auto-computed, non-interactive)
-            if (state.muscleGroupNames.isNotEmpty()) {
+        // Scrollable content area
+        Box(modifier = Modifier.weight(1f)) {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(
+                    horizontal = spacing.space4,
+                    vertical = spacing.space4,
+                ),
+                verticalArrangement = Arrangement.spacedBy(spacing.space4),
+            ) {
+                // Name input
                 item {
-                    FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(spacing.space2),
-                        verticalArrangement = Arrangement.spacedBy(spacing.space1),
-                    ) {
-                        state.muscleGroupNames.forEach { name ->
-                            MuscleGroupDisplayChip(name = name)
-                        }
-                    }
-                }
-            }
-
-            // Exercise error
-            if (state.exerciseError != null) {
-                item {
-                    Text(
-                        text = state.exerciseError,
-                        style = typography.bodySmall,
-                        color = colors.statusError,
-                    )
-                }
-            }
-
-            // Exercise list header
-            if (state.exercises.isNotEmpty()) {
-                item {
-                    Text(
-                        text = "Exercises (${state.exercises.size})",
-                        style = typography.headlineSmall,
-                        color = colors.onSurfacePrimary,
-                    )
-                }
-            }
-
-            // Exercise items
-            itemsIndexed(
-                items = state.exercises,
-                key = { _, item -> item.exerciseId },
-            ) { _, exercise ->
-                TemplateExerciseRow(
-                    exercise = exercise,
-                    onRemove = {
-                        onIntent(CreateTemplateIntent.RemoveExercise(exercise.exerciseId))
-                    },
-                )
-            }
-
-            // Empty exercises prompt
-            if (state.exercises.isEmpty()) {
-                item {
-                    Spacer(modifier = Modifier.height(spacing.space7))
-                    Text(
-                        text = "No exercises added yet",
-                        style = typography.bodyMedium,
-                        color = colors.onSurfaceTertiary,
+                    DeepRepsTextField(
+                        value = state.name,
+                        onValueChange = {
+                            onIntent(CreateTemplateIntent.UpdateName(it))
+                        },
+                        label = "Template Name",
+                        placeholder = "e.g., Push Day A",
+                        errorMessage = state.nameError,
                         modifier = Modifier.fillMaxWidth(),
                     )
                 }
+
+                // Muscle group chips (auto-computed, non-interactive)
+                if (state.muscleGroupNames.isNotEmpty()) {
+                    item {
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(spacing.space2),
+                            verticalArrangement = Arrangement.spacedBy(spacing.space1),
+                        ) {
+                            state.muscleGroupNames.forEach { name ->
+                                MuscleGroupDisplayChip(name = name)
+                            }
+                        }
+                    }
+                }
+
+                // Exercise error
+                if (state.exerciseError != null) {
+                    item {
+                        Text(
+                            text = state.exerciseError,
+                            style = typography.bodySmall,
+                            color = colors.statusError,
+                        )
+                    }
+                }
+
+                // Exercise list header
+                if (state.exercises.isNotEmpty()) {
+                    item {
+                        Text(
+                            text = "Exercises (${state.exercises.size})",
+                            style = typography.headlineSmall,
+                            color = colors.onSurfacePrimary,
+                        )
+                    }
+                }
+
+                // Exercise items
+                itemsIndexed(
+                    items = state.exercises,
+                    key = { _, item -> item.exerciseId },
+                ) { _, exercise ->
+                    TemplateExerciseRow(
+                        exercise = exercise,
+                        onRemove = {
+                            onIntent(
+                                CreateTemplateIntent.RemoveExercise(exercise.exerciseId),
+                            )
+                        },
+                    )
+                }
+
+                // Empty exercises prompt
+                if (state.exercises.isEmpty()) {
+                    item {
+                        EmptyState(
+                            title = "No exercises yet",
+                            message = "Tap \"Add Exercise\" to build your template",
+                        )
+                    }
+                }
             }
         }
+
+        // Bottom bar with Add Exercise button
+        AddExerciseBottomBar(
+            onAddExercise = {
+                onIntent(CreateTemplateIntent.NavigateToExerciseSelection)
+            },
+        )
+    }
+}
+
+/**
+ * Bottom bar containing the "Add Exercise" button.
+ *
+ * Design spec: 80dp height, surface-low bg, border-subtle top border, 16dp horizontal padding.
+ */
+@Composable
+private fun AddExerciseBottomBar(
+    onAddExercise: () -> Unit,
+) {
+    val colors = DeepRepsTheme.colors
+
+    HorizontalDivider(color = colors.borderSubtle, thickness = 1.dp)
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(80.dp)
+            .background(colors.surfaceLow)
+            .padding(horizontal = 16.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        DeepRepsButton(
+            text = "Add Exercise",
+            onClick = onAddExercise,
+            modifier = Modifier.fillMaxWidth(),
+        )
     }
 }
 
@@ -234,7 +294,7 @@ private fun TemplateExerciseRow(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(radius.sm),
         color = colors.surfaceLow,
-        border = androidx.compose.foundation.BorderStroke(1.dp, colors.borderSubtle),
+        border = BorderStroke(1.dp, colors.borderSubtle),
     ) {
         Row(
             modifier = Modifier

@@ -4,7 +4,9 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.deepreps.core.domain.model.Exercise
+import com.deepreps.core.domain.model.enums.MuscleGroup
 import com.deepreps.core.domain.repository.ExerciseRepository
+import com.deepreps.core.ui.component.HighlightLevel
 import com.deepreps.feature.exerciselibrary.navigation.ExerciseLibraryNavigation
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
@@ -60,10 +62,12 @@ class ExerciseDetailViewModel @Inject constructor(
             try {
                 val exercise = exerciseRepository.getExerciseById(exerciseId)
                 if (exercise != null) {
+                    val highlights = buildMuscleHighlights(exerciseId)
                     _state.update {
                         it.copy(
                             isLoading = false,
                             exercise = exercise.toDetailUi(),
+                            muscleHighlights = highlights,
                             errorType = null,
                         )
                     }
@@ -85,6 +89,33 @@ class ExerciseDetailViewModel @Inject constructor(
             }
         }
     }
+
+    private suspend fun buildMuscleHighlights(
+        exerciseId: Long,
+    ): Map<MuscleGroup, HighlightLevel> {
+        val links = exerciseRepository.getMuscleLinksForExercise(exerciseId)
+        return buildMap {
+            for (link in links) {
+                val group = muscleGroupFromId(link.muscleGroupId) ?: continue
+                val level = if (link.isPrimary) {
+                    HighlightLevel.PRIMARY
+                } else {
+                    HighlightLevel.SECONDARY
+                }
+                put(group, level)
+            }
+        }
+    }
+}
+
+/**
+ * Maps a muscle group database ID back to the [MuscleGroup] enum.
+ * Returns null if the ID doesn't map to a known group.
+ * Assumes 1-indexed IDs matching [MuscleGroup] enum ordinal + 1.
+ */
+private fun muscleGroupFromId(groupId: Long): MuscleGroup? {
+    val index = (groupId - 1).toInt()
+    return MuscleGroup.entries.getOrNull(index)
 }
 
 private fun Exercise.toDetailUi(): ExerciseDetailUi = ExerciseDetailUi(

@@ -2,7 +2,9 @@ package com.deepreps.feature.exerciselibrary
 
 import com.deepreps.core.domain.model.enums.Difficulty
 import com.deepreps.core.domain.model.enums.Equipment
+import com.deepreps.core.domain.model.enums.MuscleGroup
 import com.deepreps.core.domain.model.enums.MovementType
+import com.deepreps.core.ui.component.HighlightLevel
 
 /**
  * UI state for the exercise detail screen / bottom sheet.
@@ -12,6 +14,7 @@ data class ExerciseDetailUiState(
     val isLoading: Boolean = true,
     val exercise: ExerciseDetailUi? = null,
     val errorType: ExerciseDetailError? = null,
+    val muscleHighlights: Map<MuscleGroup, HighlightLevel> = emptyMap(),
 )
 
 /**
